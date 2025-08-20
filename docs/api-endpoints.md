@@ -23,7 +23,7 @@
 | ログイン | POST | `/auth/login` | ユーザー認証 | `{"email": "user@example.com", "password": "password123"}` |
 
 ### APIレスポンス例
-```json
+\`\`\`json
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",

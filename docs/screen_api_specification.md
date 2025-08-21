@@ -6,7 +6,7 @@
 
 ## 画面フロー
 
-```
+\`\`\`
 /clients（クライアント一覧）※スタート画面
     ↓
 /clients/{id}（クライアント詳細）
@@ -19,7 +19,7 @@
     - NG企業は選択不可（グレーアウト）
             ↓
 /projects/{id}（案件詳細・営業進捗管理）
-```
+\`\`\`
 
 ## 1. クライアント一覧画面（/clients）
 
@@ -35,7 +35,7 @@
 | `/clients` | POST | 新規クライアント作成 |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /clients
 Query params: {
   search?: string
@@ -48,7 +48,7 @@ Response: {
   count: number
   results: Client[]
 }
-```
+\`\`\`
 
 ## 2. クライアント詳細画面（/clients/{id}）
 
@@ -69,7 +69,7 @@ Response: {
 | | `/projects` | POST | 新規案件作成 |
 
 ### NGリストタブ詳細
-```typescript
+\`\`\`typescript
 // GET /clients/{id}/ng-companies
 Response: {
   count: number
@@ -96,7 +96,7 @@ Response: {
   unmatched_count: number
   errors?: string[]
 }
-```
+\`\`\`
 
 ## 3. 企業選択画面（/clients/{id}/select-companies）
 
@@ -112,7 +112,7 @@ Response: {
 | `/projects/{project_id}/add-companies` | POST | 選択企業を案件に追加 |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /clients/{id}/available-companies
 Query params: {
   search?: string
@@ -150,7 +150,7 @@ Response: {
   added_count: number
   companies: ProjectCompany[]
 }
-```
+\`\`\`
 
 ## 4. 案件詳細画面（/projects/{id}）
 
@@ -173,7 +173,7 @@ Response: {
 | | `/projects/{id}/activities` | POST | 活動記録追加 |
 
 ### 営業進捗管理
-```typescript
+\`\`\`typescript
 // GET /projects/{id}/companies
 Response: {
   count: number
@@ -199,7 +199,7 @@ Body: {
   notes?: string
   staff_id?: number
 }
-```
+\`\`\`
 
 ## 5. 企業マスタ管理画面（/companies）※管理画面
 
@@ -220,7 +220,7 @@ Body: {
 | `/companies/export` | GET | CSVエクスポート |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /companies
 Query params: {
   search?: string
@@ -238,7 +238,7 @@ Response: {
   count: number
   results: Company[]
 }
-```
+\`\`\`
 
 ## 6. 管理画面（/admin）
 
@@ -266,7 +266,7 @@ Response: {
 | `/auth/me` | GET | 現在のユーザー情報 |
 
 ### 認証フロー
-```typescript
+\`\`\`typescript
 // POST /auth/login
 Body: {
   email: string
@@ -286,13 +286,13 @@ Response: {
   access_token: string
   refresh_token: string
 }
-```
+\`\`\`
 
 ## エラーレスポンス
 
 すべてのAPIは以下の形式でエラーを返す：
 
-```typescript
+\`\`\`typescript
 {
   error: {
     code: string
@@ -300,7 +300,7 @@ Response: {
     details?: any
   }
 }
-```
+\`\`\`
 
 ### HTTPステータスコード
 
@@ -320,7 +320,7 @@ Response: {
 
 リスト系APIは共通のページネーション形式を使用：
 
-```typescript
+\`\`\`typescript
 // Request
 Query params: {
   page?: number    // デフォルト: 1
@@ -334,13 +334,13 @@ Query params: {
   previous: string | null // 前ページURL
   results: T[]       // データ配列
 }
-```
+\`\`\`
 
 ## リアルタイム更新（将来実装）
 
 WebSocketを使用したリアルタイム更新：
 
-```typescript
+\`\`\`typescript
 // WebSocket接続
 ws://api.example.com/ws
 
@@ -349,4 +349,4 @@ ws://api.example.com/ws
   type: 'project.updated' | 'company.status_changed' | 'ng_list.imported'
   data: any
 }
-```
+\`\`\`

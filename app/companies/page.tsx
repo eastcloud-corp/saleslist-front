@@ -7,9 +7,10 @@ import { CompanyTable } from "@/components/companies/company-table"
 import { CSVImportDialog } from "@/components/companies/csv-import-dialog"
 import { useCompanies } from "@/hooks/use-companies"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
 import type { CompanyFilters as CompanyFiltersType } from "@/lib/types"
-import { Download, Plus, Upload } from "lucide-react"
+import { Download, Plus, Upload, ArrowLeft, Database } from "lucide-react"
 import Link from "next/link"
 
 export default function CompaniesPage() {
@@ -22,7 +23,7 @@ export default function CompaniesPage() {
 
   const handleFiltersChange = (newFilters: CompanyFiltersType) => {
     setFilters(newFilters)
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1)
   }
 
   const handleClearFilters = () => {
@@ -33,8 +34,6 @@ export default function CompaniesPage() {
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      // In a real app, you might want to export all companies, not just the current page
-      // For now, we'll export the current filtered results
       const csvContent = exportCompaniesToCSV(companies)
       const timestamp = new Date().toISOString().split("T")[0]
       downloadCSV(csvContent, `companies-export-${timestamp}.csv`)
@@ -47,10 +46,7 @@ export default function CompaniesPage() {
 
   const handleImport = async (importedCompanies: any[]) => {
     try {
-      // In a real app, you would send this data to your API
       console.log("Importing companies:", importedCompanies)
-
-      // For now, we'll just refresh the company list
       await refetch()
     } catch (error) {
       console.error("Import failed:", error)
@@ -61,11 +57,22 @@ export default function CompaniesPage() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">企業一覧</h1>
-            <p className="text-muted-foreground">企業データベースと営業見込み客を管理</p>
+          <div className="flex items-center gap-4">
+            <Link href="/clients">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                クライアント一覧へ
+              </Button>
+            </Link>
+            <div>
+              <div className="flex items-center gap-2">
+                <Database className="h-6 w-6 text-gray-600" />
+                <h1 className="text-3xl font-bold">企業データベース管理</h1>
+                <Badge variant="secondary">管理画面</Badge>
+              </div>
+              <p className="text-muted-foreground mt-1">営業対象企業のマスターデータを管理・メンテナンス</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleExport} disabled={isExporting}>

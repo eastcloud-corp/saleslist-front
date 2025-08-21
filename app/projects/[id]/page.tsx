@@ -59,8 +59,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   }
 
   const handleAddCompany = () => {
-    // TODO: Open company selection dialog
-    console.log("Add company to project")
+    if (project?.client_id) {
+      router.push(`/clients/${project.client_id}/select-companies?project=${params.id}`)
+    }
   }
 
   const formatDate = (dateString: string) => {

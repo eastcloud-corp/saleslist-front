@@ -28,7 +28,7 @@
 ## 2. テーブル詳細設計
 
 ### 2.1 clients（顧客マスタ）
-```sql
+\`\`\`sql
 CREATE TABLE clients (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,           -- 顧客企業名
@@ -49,7 +49,7 @@ CREATE TABLE clients (
 CREATE INDEX idx_clients_name ON clients(name);
 CREATE INDEX idx_clients_is_active ON clients(is_active);
 CREATE INDEX idx_clients_industry ON clients(industry);
-```
+\`\`\`
 
 **説明**
 - バジェットアドテクノロジーの顧客（営業代行を依頼する企業）を管理
@@ -57,7 +57,7 @@ CREATE INDEX idx_clients_industry ON clients(industry);
 - クライアント中心のビジネスフローの起点となるテーブル
 
 ### 2.2 companies（企業マスタ）
-```sql
+\`\`\`sql
 CREATE TABLE companies (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -83,7 +83,7 @@ CREATE INDEX idx_companies_prefecture ON companies(prefecture);
 CREATE INDEX idx_companies_employee_count ON companies(employee_count);
 CREATE INDEX idx_companies_is_global_ng ON companies(is_global_ng);
 CREATE INDEX idx_companies_created_at ON companies(created_at);
-```
+\`\`\`
 
 **説明**
 - 企業の基本情報を管理
@@ -91,7 +91,7 @@ CREATE INDEX idx_companies_created_at ON companies(created_at);
 - 検索頻度が高い項目にインデックスを設定
 
 ### 2.2 executives（代表者・役員情報）
-```sql
+\`\`\`sql
 CREATE TABLE executives (
     id SERIAL PRIMARY KEY,
     company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -109,7 +109,7 @@ CREATE TABLE executives (
 CREATE INDEX idx_executives_company_id ON executives(company_id);
 CREATE INDEX idx_executives_name ON executives(name);
 CREATE INDEX idx_executives_facebook_url ON executives(facebook_url) WHERE facebook_url IS NOT NULL;
-```
+\`\`\`
 
 **説明**
 - 企業の代表者・役員情報
@@ -117,7 +117,7 @@ CREATE INDEX idx_executives_facebook_url ON executives(facebook_url) WHERE faceb
 - Facebook URLの有無での検索が頻繁なため条件付きインデックス
 
 ### 2.4 projects（案件マスタ）
-```sql
+\`\`\`sql
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
@@ -139,7 +139,7 @@ CREATE INDEX idx_projects_client_id ON projects(client_id);
 CREATE INDEX idx_projects_name ON projects(name);
 CREATE INDEX idx_projects_status ON projects(status);
 CREATE INDEX idx_projects_created_at ON projects(created_at);
-```
+\`\`\`
 
 **説明**
 - 営業案件の基本情報
@@ -147,7 +147,7 @@ CREATE INDEX idx_projects_created_at ON projects(created_at);
 - ターゲット企業の条件も記録
 
 ### 2.5 project_companies（案件企業リスト）
-```sql
+\`\`\`sql
 CREATE TABLE project_companies (
     id SERIAL PRIMARY KEY,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -168,7 +168,7 @@ CREATE INDEX idx_project_companies_project_id ON project_companies(project_id);
 CREATE INDEX idx_project_companies_company_id ON project_companies(company_id);
 CREATE INDEX idx_project_companies_status ON project_companies(status);
 CREATE INDEX idx_project_companies_contact_date ON project_companies(contact_date);
-```
+\`\`\`
 
 **営業ステータス一覧**
 - `未接触` - 初期状態
@@ -184,7 +184,7 @@ CREATE INDEX idx_project_companies_contact_date ON project_companies(contact_dat
 - 営業活動の進捗状況を詳細に記録
 
 ### 2.6 project_ng_companies（案件NG企業）
-```sql
+\`\`\`sql
 CREATE TABLE project_ng_companies (
     id SERIAL PRIMARY KEY,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -199,14 +199,14 @@ CREATE TABLE project_ng_companies (
 -- インデックス
 CREATE INDEX idx_project_ng_companies_project_id ON project_ng_companies(project_id);
 CREATE INDEX idx_project_ng_companies_company_id ON project_ng_companies(company_id);
-```
+\`\`\`
 
 **説明**
 - 案件ごとのNG企業設定
 - クライアントから指定されたNG企業を管理
 
 ### 2.7 client_ng_companies（クライアント単位のNG企業）
-```sql
+\`\`\`sql
 CREATE TABLE client_ng_companies (
     id SERIAL PRIMARY KEY,
     client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -227,7 +227,7 @@ CREATE INDEX idx_client_ng_companies_client_id ON client_ng_companies(client_id)
 CREATE INDEX idx_client_ng_companies_company_name ON client_ng_companies(company_name);
 CREATE INDEX idx_client_ng_companies_company_id ON client_ng_companies(company_id);
 CREATE INDEX idx_client_ng_companies_matched ON client_ng_companies(matched);
-```
+\`\`\`
 
 **説明**
 - クライアント単位でのNG企業管理
@@ -235,7 +235,7 @@ CREATE INDEX idx_client_ng_companies_matched ON client_ng_companies(matched);
 - マッチング状態を管理し、既存企業との紐付けを保持
 
 ### 2.8 ng_import_logs（NGリストインポート履歴）
-```sql
+\`\`\`sql
 CREATE TABLE ng_import_logs (
     id SERIAL PRIMARY KEY,
     client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
@@ -253,7 +253,7 @@ CREATE TABLE ng_import_logs (
 CREATE INDEX idx_ng_import_logs_client_id ON ng_import_logs(client_id);
 CREATE INDEX idx_ng_import_logs_project_id ON ng_import_logs(project_id);
 CREATE INDEX idx_ng_import_logs_created_at ON ng_import_logs(created_at);
-```
+\`\`\`
 
 **説明**
 - NGリストのインポート履歴を管理
@@ -261,7 +261,7 @@ CREATE INDEX idx_ng_import_logs_created_at ON ng_import_logs(created_at);
 - エラー発生時のトラブルシューティングに使用
 
 ### 2.10 saved_filters（保存済みフィルタ）
-```sql
+\`\`\`sql
 CREATE TABLE saved_filters (
     id SERIAL PRIMARY KEY,
     user_id INTEGER,                        -- 将来のユーザー管理用（現在は不使用）
@@ -274,10 +274,10 @@ CREATE TABLE saved_filters (
 -- インデックス
 CREATE INDEX idx_saved_filters_user_id ON saved_filters(user_id);
 CREATE INDEX idx_saved_filters_name ON saved_filters(name);
-```
+\`\`\`
 
 **filter_conditions例**
-```json
+\`\`\`json
 {
   "search": "人材",
   "industry": "人材・派遣",
@@ -287,10 +287,10 @@ CREATE INDEX idx_saved_filters_name ON saved_filters(name);
   "has_facebook": true,
   "exclude_ng": true
 }
-```
+\`\`\`
 
 ### 2.11 random_orders（ランダム表示順序）
-```sql
+\`\`\`sql
 CREATE TABLE random_orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER,                        -- 将来のユーザー管理用
@@ -305,7 +305,7 @@ CREATE TABLE random_orders (
 CREATE INDEX idx_random_orders_session_id ON random_orders(session_id);
 CREATE INDEX idx_random_orders_filter_hash ON random_orders(filter_hash);
 CREATE INDEX idx_random_orders_project_id ON random_orders(project_id);
-```
+\`\`\`
 
 **説明**
 - ユーザーごと・フィルタ条件ごとのランダム表示順序を保持
@@ -315,7 +315,7 @@ CREATE INDEX idx_random_orders_project_id ON random_orders(project_id);
 
 ## 3. リレーション図
 
-```
+\`\`\`
 clients (1) ←→ (N) projects
     ↓                    ↓
     ↓ (1)                ↓ (1)
@@ -335,7 +335,7 @@ project_ng_companies (N) ←→ (1) projects
 ng_import_logs ←→ clients, projects
 saved_filters (独立)
 random_orders (独立、将来的にprojectsと関連)
-```
+\`\`\`
 
 ### 業務フローでのデータ関係
 1. **顧客から案件受注**: clients → projects
@@ -390,12 +390,12 @@ random_orders (独立、将来的にprojectsと関連)
 ## 6. セキュリティ考慮
 
 ### 6.1 Row Level Security（RLS）準備
-```sql
+\`\`\`sql
 -- 将来のマルチテナント対応用
 -- ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 -- CREATE POLICY tenant_isolation ON companies FOR ALL TO authenticated 
 --   USING (tenant_id = current_setting('app.current_tenant_id')::INTEGER);
-```
+\`\`\`
 
 ### 6.2 データ暗号化
 - 機密度の高いデータ（メールアドレス等）の暗号化検討
@@ -420,16 +420,16 @@ random_orders (独立、将来的にprojectsと関連)
 ## 8. 初期データ投入
 
 ### 8.1 マスタデータ
-```sql
+\`\`\`sql
 -- 業界マスタ（アプリケーション側で管理）
 -- 都道府県マスタ（アプリケーション側で管理）
 -- ステータスマスタ（アプリケーション側で管理）
-```
+\`\`\`
 
 ### 8.2 CSVインポート用テンプレート
-```csv
+\`\`\`csv
 企業名,業界,従業員数,売上高,都道府県,市区町村,設立年,企業HP,連絡先メール,電話番号,代表者名,代表者役職,Facebook URL
 株式会社サンプル,IT・ソフトウェア,150,500000000,東京都,渋谷区,2010,https://example.com,info@example.com,03-1234-5678,山田太郎,代表取締役,https://facebook.com/yamada
-```
+\`\`\`
 
 この設計でDjango ORMのモデル作成とマイグレーションファイル生成が可能です！

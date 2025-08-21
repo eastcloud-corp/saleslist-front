@@ -19,7 +19,7 @@
 - 日本語UI
 
 ## 画面フロー
-```
+\`\`\`
 /clients（クライアント一覧）※スタート画面
     ↓
 /clients/{id}（クライアント詳細）
@@ -32,7 +32,7 @@
     - NG企業は選択不可（グレーアウト）
             ↓
 /projects/{id}（案件詳細・営業進捗管理）
-```
+\`\`\`
 
 ## 必要なファイル一覧
 以下のファイルを参照して実装してください：
@@ -79,17 +79,17 @@
 ## API接続設定
 
 ### 環境変数（.env.local）
-```
+\`\`\`
 NEXT_PUBLIC_API_URL=https://saleslist-mock-api.onrender.com
 NEXT_PUBLIC_APP_NAME=営業リスト管理システム
 NEXT_PUBLIC_APP_VERSION=1.0.0
-```
+\`\`\`
 
 ### 認証情報（テスト用）
-```
+\`\`\`
 Email: user@example.com
 Password: password123
-```
+\`\`\`
 
 ## 主要APIエンドポイント
 
@@ -117,17 +117,17 @@ Password: password123
 ## コンポーネント実装例
 
 ### NGリストタブ（implementation_guide.md参照）
-```typescript
+\`\`\`typescript
 export function NGListTab({ clientId }: { clientId: number }) {
   // CSVインポート機能
   // NGリスト表示
   // マッチ状態の可視化
   // 個別削除機能
 }
-```
+\`\`\`
 
 ### 企業選択時のNG表示
-```typescript
+\`\`\`typescript
 function CompanyRow({ company, clientId }: Props) {
   const ngStatus = company.ng_status
   
@@ -143,7 +143,7 @@ function CompanyRow({ company, clientId }: Props) {
     </TableRow>
   )
 }
-```
+\`\`\`
 
 ## UI/UX要件
 

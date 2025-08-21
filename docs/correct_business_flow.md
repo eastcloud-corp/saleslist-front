@@ -3,24 +3,24 @@
 ## 業務フロー
 
 ### 1️⃣ クライアントから営業代行依頼
-```
+\`\`\`
 クライアント企業
     ↓ 
 「この企業リストに営業してください」
 「ただし、このNG企業リストは除外してください」
     ↓
 バジェットアドテクノロジー
-```
+\`\`\`
 
 ### 2️⃣ システムへの登録
-```
+\`\`\`
 1. クライアント情報登録
 2. NGリスト登録（CSV一括）
 3. 案件作成
-```
+\`\`\`
 
 ### 3️⃣ 営業対象企業の選択
-```
+\`\`\`
 クライアント詳細画面
     ↓
 「営業対象企業を選択」ボタン
@@ -28,20 +28,20 @@
 企業選択画面（NG企業は選択不可）
     ↓
 選択した企業を案件に追加
-```
+\`\`\`
 
 ### 4️⃣ 営業進捗管理
-```
+\`\`\`
 案件詳細画面
     ↓
 営業ステータス管理
 （未接触 → DM送信済み → 返信あり → アポ獲得 → 成約）
-```
+\`\`\`
 
 ## 画面構成（修正版）
 
 ### メイン画面フロー
-```
+\`\`\`
 /clients（クライアント一覧）※スタート画面
     ↓
 /clients/{id}（クライアント詳細）
@@ -58,10 +58,10 @@
 /projects/{id}（案件詳細・営業進捗管理）
     - 選択した企業の一覧
     - 各企業の営業ステータス管理
-```
+\`\`\`
 
 ### 管理画面（マスタメンテナンス）
-```
+\`\`\`
 /companies（企業マスタ管理）
     - 全企業データの管理
     - CSVインポート/エクスポート
@@ -70,12 +70,12 @@
 /settings（システム設定）
     - ユーザー管理
     - マスタデータ管理
-```
+\`\`\`
 
 ## 画面詳細
 
 ### 1. クライアント一覧（/clients）- スタート画面
-```tsx
+\`\`\`tsx
 function ClientListPage() {
   return (
     <div>
@@ -109,10 +109,10 @@ function ClientListPage() {
     </div>
   )
 }
-```
+\`\`\`
 
 ### 2. クライアント詳細（/clients/{id}）
-```tsx
+\`\`\`tsx
 function ClientDetailPage() {
   return (
     <div>
@@ -147,10 +147,10 @@ function ClientDetailPage() {
     </div>
   )
 }
-```
+\`\`\`
 
 ### 3. 企業選択画面（/clients/{id}/select-companies）
-```tsx
+\`\`\`tsx
 function CompanySelectionPage({ clientId }) {
   const [selectedCompanies, setSelectedCompanies] = useState([])
   const ngList = useNGList(clientId) // このクライアントのNGリスト
@@ -217,10 +217,10 @@ function CompanySelectionPage({ clientId }) {
     </div>
   )
 }
-```
+\`\`\`
 
 ### 4. 案件詳細・営業進捗管理（/projects/{id}）
-```tsx
+\`\`\`tsx
 function ProjectDetailPage({ projectId }) {
   return (
     <div>
@@ -291,12 +291,12 @@ function ProjectDetailPage({ projectId }) {
     </div>
   )
 }
-```
+\`\`\`
 
 ## APIエンドポイント（修正）
 
 ### 企業選択用API
-```typescript
+\`\`\`typescript
 // クライアント用の企業一覧（NG判定付き）
 GET /clients/{client_id}/available-companies
 Query params:
@@ -327,11 +327,11 @@ Body:
 {
   company_ids: number[]
 }
-```
+\`\`\`
 
 ## データフロー
 
-```
+\`\`\`
 1. クライアント登録
    POST /clients
 
@@ -349,7 +349,7 @@ Body:
 5. 営業進捗更新
    PATCH /projects/{id}/companies/{company_id}
    { status, contact_date, notes }
-```
+\`\`\`
 
 ## 重要な変更点
 

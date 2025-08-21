@@ -7,7 +7,7 @@
 ## 業務フロー
 
 ### クライアント中心のフロー
-```
+\`\`\`
 1. クライアントから営業代行依頼
    ↓
 2. クライアント情報とNGリストを登録
@@ -16,12 +16,12 @@
    （NG企業は自動的に選択不可）
    ↓
 4. 案件詳細画面で営業進捗を管理
-```
+\`\`\`
 
 ## データモデル
 
 ### 1. クライアントテーブル (clients)
-```sql
+\`\`\`sql
 CREATE TABLE clients (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -37,10 +37,10 @@ CREATE TABLE clients (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
+\`\`\`
 
 ### 2. クライアントNGリストテーブル (client_ng_companies)
-```sql
+\`\`\`sql
 CREATE TABLE client_ng_companies (
     id SERIAL PRIMARY KEY,
     client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -56,10 +56,10 @@ CREATE TABLE client_ng_companies (
     INDEX idx_client_ng_company_name (company_name),
     UNIQUE(client_id, company_name)
 );
-```
+\`\`\`
 
 ### 3. NGインポート履歴テーブル (ng_import_logs)
-```sql
+\`\`\`sql
 CREATE TABLE ng_import_logs (
     id SERIAL PRIMARY KEY,
     client_id INTEGER REFERENCES clients(id),
@@ -71,7 +71,7 @@ CREATE TABLE ng_import_logs (
     imported_by VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
+\`\`\`
 
 ## 画面仕様
 
@@ -103,7 +103,7 @@ CREATE TABLE ng_import_logs (
 ### 4. NGリスト管理タブ詳細
 
 #### インポート機能
-```typescript
+\`\`\`typescript
 // CSVインポート処理
 async function importNGList(clientId: number, file: File) {
   const formData = new FormData()
@@ -116,7 +116,7 @@ async function importNGList(clientId: number, file: File) {
   
   return response.json()
 }
-```
+\`\`\`
 
 #### NGリスト表示
 - マッチ済み/未マッチの可視化
@@ -127,7 +127,7 @@ async function importNGList(clientId: number, file: File) {
 
 ### クライアント管理API
 
-```typescript
+\`\`\`typescript
 // クライアント一覧取得
 GET /clients
 Query params:
@@ -158,11 +158,11 @@ PUT /clients/{id}
 
 // クライアント削除
 DELETE /clients/{id}
-```
+\`\`\`
 
 ### NGリスト管理API
 
-```typescript
+\`\`\`typescript
 // クライアントNGリスト取得
 GET /clients/{id}/ng-companies
 Response: {
@@ -188,11 +188,11 @@ DELETE /clients/{id}/ng-companies/{ng_id}
 // NGテンプレートダウンロード
 GET /ng-companies/template
 Response: CSV file
-```
+\`\`\`
 
 ### 企業選択API（クライアント用）
 
-```typescript
+\`\`\`typescript
 // クライアント用企業一覧（NG判定付き）
 GET /clients/{client_id}/available-companies
 Query params:
@@ -222,11 +222,11 @@ POST /projects/{project_id}/add-companies
 Body: {
   company_ids: number[]
 }
-```
+\`\`\`
 
 ## NG判定ロジック
 
-```javascript
+\`\`\`javascript
 function isNGCompany(company, context) {
   // 1. グローバルNG
   if (company.is_global_ng) {
@@ -263,17 +263,17 @@ function isNGCompany(company, context) {
   
   return { is_ng: false }
 }
-```
+\`\`\`
 
 ## CSVフォーマット
 
 ### NGリストCSVテンプレート
-```csv
+\`\`\`csv
 企業名,理由
 株式会社ABC,競合他社
 ○○コーポレーション,既存取引先
 △△商事,クライアント指定NG
-```
+\`\`\`
 
 ### インポート処理の要件
 1. **企業名マッチング**
@@ -293,7 +293,7 @@ function isNGCompany(company, context) {
 ## UI/UXコンポーネント
 
 ### NGリスト管理コンポーネント
-```tsx
+\`\`\`tsx
 export function NGListTab({ clientId }: { clientId: number }) {
   const [ngList, setNgList] = useState<ClientNGCompany[]>([])
   const [isImporting, setIsImporting] = useState(false)
@@ -353,10 +353,10 @@ export function NGListTab({ clientId }: { clientId: number }) {
     </div>
   )
 }
-```
+\`\`\`
 
 ### 企業選択時のNG表示
-```tsx
+\`\`\`tsx
 function CompanyRow({ company, clientId }: Props) {
   const ngStatus = company.ng_status
   
@@ -386,7 +386,7 @@ function CompanyRow({ company, clientId }: Props) {
     </TableRow>
   )
 }
-```
+\`\`\`
 
 ## 実装優先度
 

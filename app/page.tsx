@@ -12,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!isLoading) {
       if (isAuthenticated) {
-        router.push("/companies")
+        router.push("/clients")
       } else {
         router.push("/login")
       }

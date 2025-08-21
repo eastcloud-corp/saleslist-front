@@ -6,13 +6,6 @@ export const API_CONFIG = {
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
 
-    // Clients
-    CLIENTS: "/clients",
-    CLIENT_DETAIL: (id: string) => `/clients/${id}`,
-    CLIENT_PROJECTS: (id: string) => `/clients/${id}/projects`,
-    CLIENT_STATS: (id: string) => `/clients/${id}/stats`,
-    CLIENT_ARCHIVE: (id: string) => `/clients/${id}/archive`,
-
     // Companies
     COMPANIES: "/companies",
     COMPANY_DETAIL: (id: string) => `/companies/${id}`,

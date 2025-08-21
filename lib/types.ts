@@ -10,7 +10,7 @@ export interface User {
 
 // API Response Types
 export interface ApiResponse<T = any> {
-  status: 'success' | 'error'
+  status: "success" | "error"
   data: T
   message?: string
   error?: string
@@ -21,6 +21,25 @@ export interface PaginatedResponse<T> {
   next: string | null
   previous: string | null
   results: T[]
+}
+
+// Client Types
+export interface Client {
+  id: number
+  name: string // クライアント企業名
+  contact_person?: string // 担当者名
+  email?: string // 連絡先メール
+  phone?: string // 連絡先電話
+  industry?: string // クライアントの業界
+  notes?: string // 備考
+  is_active: boolean // アクティブ状態
+  created_at: string // 作成日時
+  updated_at: string // 更新日時
+
+  // リレーション
+  projects?: Project[] // 関連案件
+  project_count?: number // 案件数（集計値）
+  active_project_count?: number // 進行中案件数
 }
 
 // Company Types
@@ -41,6 +60,17 @@ export interface Company {
   created_at: string
   updated_at: string
   executives?: Executive[]
+
+  // NG判定情報（追加）
+  ng_status?: {
+    is_ng: boolean
+    types: Array<"global" | "client" | "project">
+    reasons: {
+      global?: string
+      client?: { id: number; name: string; reason: string }
+      project?: { id: number; name: string; reason: string }
+    }
+  }
 }
 
 export interface Executive {
@@ -54,38 +84,15 @@ export interface Executive {
   company_id?: number
 }
 
-// Client Types
-export interface Client {
-  id: number
-  name: string
-  contact_person?: string
-  email?: string
-  phone?: string
-  industry?: string
-  notes?: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  projects?: Project[]
-  project_count?: number
-  active_project_count?: number
-}
-
 // Project Types
 export interface Project {
   id: number
-  client_id: number
-  client?: Client
+  client_id?: number // クライアントID（新規追加）
+  client?: Client // クライアント情報（リレーション）
   name: string
-  client_company: string  // 後方互換性のため残す（廃止予定）
+  client_company: string
   description: string
-  manager?: string
-  target_industry?: string
-  target_company_size?: string
-  dm_template?: string
-  status: 'planning' | 'in_progress' | 'completed' | 'cancelled'
-  start_date?: string
-  end_date?: string
+  status: "planning" | "in_progress" | "completed" | "cancelled"
   assigned_user?: string
   created_at: string
   updated_at: string
@@ -113,6 +120,25 @@ export interface NGCompany {
   is_global: boolean
   created_at: string
   created_by: string
+}
+
+export interface ClientNGCompany {
+  id: number
+  client_id: number
+  company_name: string // NG企業名（部分一致用）
+  company_id?: number // マッチした企業ID（NULL可）
+  matched: boolean // マッチ状態
+  reason?: string // NG理由
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface NGImportResult {
+  imported_count: number
+  matched_count: number
+  unmatched_count: number
+  errors: string[]
 }
 
 // Filter Types
@@ -161,7 +187,7 @@ export interface ProjectFormData {
   name: string
   client_company: string
   description: string
-  status: 'planning' | 'in_progress' | 'completed' | 'cancelled'
+  status: "planning" | "in_progress" | "completed" | "cancelled"
   assigned_user?: string
 }
 

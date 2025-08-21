@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
-import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings } from "lucide-react"
+import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings, Users } from "lucide-react"
 
 const navigation = [
   {
@@ -23,6 +23,11 @@ const navigation = [
     name: "案件",
     href: "/projects",
     icon: FolderOpen,
+  },
+  {
+    name: "クライアント",
+    href: "/clients",
+    icon: Users,
   },
   {
     name: "設定",

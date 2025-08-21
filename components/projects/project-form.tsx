@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Project } from "@/lib/types"
+import { useClients } from "@/hooks/use-clients"
 import { Save, X } from "lucide-react"
 
 interface ProjectFormProps {
@@ -28,7 +29,11 @@ const statuses = [
 export function ProjectForm({ project, onSave, onCancel, isLoading = false }: ProjectFormProps) {
   const [formData, setFormData] = useState({
     name: project?.name || "",
+    client_id: project?.client_id || "",
     description: project?.description || "",
+    manager: project?.manager || "",
+    target_industry: project?.target_industry || "",
+    target_company_size: project?.target_company_size || "",
     status: project?.status || "active",
     start_date: project?.start_date || "",
     end_date: project?.end_date || "",
@@ -36,11 +41,17 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const { clients, loading: clientsLoading } = useClients({ limit: 100 })
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
     if (!formData.name.trim()) {
       newErrors.name = "案件名は必須です"
+    }
+
+    if (!formData.client_id) {
+      newErrors.client_id = "クライアントは必須です"
     }
 
     if (!formData.start_date) {
@@ -97,6 +108,40 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
             </div>
 
+            <div className="md:col-span-2">
+              <Label htmlFor="client_id">クライアント *</Label>
+              <Select value={formData.client_id} onValueChange={(value) => updateField("client_id", value)}>
+                <SelectTrigger className={errors.client_id ? "border-destructive" : ""}>
+                  <SelectValue placeholder="クライアントを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsLoading ? (
+                    <SelectItem value="" disabled>
+                      読み込み中...
+                    </SelectItem>
+                  ) : (
+                    clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.client_id && <p className="text-sm text-destructive mt-1">{errors.client_id}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="manager">担当者</Label>
+              <Input
+                id="manager"
+                value={formData.manager}
+                onChange={(e) => updateField("manager", e.target.value)}
+                disabled={isLoading}
+                placeholder="バジェット側担当者名"
+              />
+            </div>
+
             {/* Status */}
             <div>
               <Label htmlFor="status">ステータス</Label>
@@ -112,6 +157,28 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="target_industry">ターゲット業界</Label>
+              <Input
+                id="target_industry"
+                value={formData.target_industry}
+                onChange={(e) => updateField("target_industry", e.target.value)}
+                disabled={isLoading}
+                placeholder="IT・ソフトウェア"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="target_company_size">ターゲット企業規模</Label>
+              <Input
+                id="target_company_size"
+                value={formData.target_company_size}
+                onChange={(e) => updateField("target_company_size", e.target.value)}
+                disabled={isLoading}
+                placeholder="50-500名"
+              />
             </div>
 
             {/* Start Date */}

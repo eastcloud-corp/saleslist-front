@@ -37,18 +37,18 @@
 - フォームデータ型
 
 ## テスト用認証情報
-```javascript
+\`\`\`javascript
 // ログインテスト用
 const testCredentials = {
   email: "user@example.com",
   password: "password123"
 }
-```
+\`\`\`
 
 ## API呼び出し例
 
 ### ログイン
-```javascript
+\`\`\`javascript
 import { authService } from '@/lib/auth'
 
 const response = await authService.login({
@@ -56,23 +56,23 @@ const response = await authService.login({
   password: "password123"
 })
 // response.access_token と response.refresh_token が自動的に保存される
-```
+\`\`\`
 
 ### 企業リスト取得
-```javascript
+\`\`\`javascript
 import { apiClient } from '@/lib/api-client'
 import { API_CONFIG } from '@/lib/api-config'
 
 const companies = await apiClient.get(
   `${API_CONFIG.ENDPOINTS.COMPANIES}?page=1&page_size=50`
 )
-```
+\`\`\`
 
 ### 認証が必要なAPIの呼び出し
-```javascript
+\`\`\`javascript
 // トークンは自動的にヘッダーに追加される
 const projects = await apiClient.get(API_CONFIG.ENDPOINTS.PROJECTS)
-```
+\`\`\`
 
 ## トラブルシューティング
 
@@ -90,27 +90,27 @@ const projects = await apiClient.get(API_CONFIG.ENDPOINTS.PROJECTS)
 ### 問題: ネットワークエラー
 **解決方法:**
 1. モックサーバーの状態確認: 
-   ```bash
+   \`\`\`bash
    curl https://saleslist-mock-api.onrender.com
-   ```
+   \`\`\`
 2. ネットワーク接続を確認
 
 ## 開発の開始
 
 1. 依存関係のインストール
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 2. 開発サーバーの起動
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 3. ブラウザで確認
-```
+\`\`\`
 http://localhost:3000
-```
+\`\`\`
 
 4. ログインページでテスト
 - Email: user@example.com

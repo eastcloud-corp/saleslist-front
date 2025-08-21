@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Company } from "@/lib/types"
-import { ExternalLink, Building2 } from "lucide-react"
+import { ExternalLink, Building2, Info } from "lucide-react"
 
 interface CompanyTableProps {
   companies: Company[]
@@ -96,36 +97,91 @@ export function CompanyTable({ companies, isLoading }: CompanyTableProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                companies.map((company) => (
-                  <TableRow key={company.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{company.name}</div>
-                        {company.website && (
-                          <a
-                            href={company.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1"
-                          >
-                            {company.website.replace(/^https?:\/\//, "")}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{company.industry}</TableCell>
-                    <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>
-                    <TableCell>{formatCurrency(company.revenue)}</TableCell>
-                    <TableCell>{company.location}</TableCell>
-                    <TableCell>{getStatusBadge(company.status)}</TableCell>
-                    <TableCell>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/companies/${company.id}`}>詳細</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                companies.map((company) => {
+                  const ngStatus = company.ng_status
+                  const hasClientNG = ngStatus?.types.includes("client")
+                  const hasProjectNG = ngStatus?.types.includes("project")
+                  const hasGlobalNG = company.is_global_ng
+                  const hasAnyNG = hasClientNG || hasProjectNG || hasGlobalNG
+
+                  return (
+                    <TableRow key={company.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <div className="font-medium">{company.name}</div>
+                            {company.website_url && (
+                              <a
+                                href={company.website_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1"
+                              >
+                                {company.website_url.replace(/^https?:\/\//, "")}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                          {hasAnyNG && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <div className="flex items-center gap-1">
+                                    <Info className="h-4 w-4 text-amber-600" />
+                                    <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
+                                      NG情報あり
+                                    </Badge>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-sm">
+                                  <div className="space-y-2">
+                                    <p className="font-semibold text-sm">NGリスト情報</p>
+                                    {hasGlobalNG && (
+                                      <div className="p-2 bg-red-50 rounded border-l-2 border-red-200">
+                                        <p className="text-sm font-medium text-red-800">グローバルNG</p>
+                                        <p className="text-xs text-red-600">全案件で営業対象外</p>
+                                      </div>
+                                    )}
+                                    {hasClientNG && ngStatus?.reasons.client && (
+                                      <div className="p-2 bg-amber-50 rounded border-l-2 border-amber-200">
+                                        <p className="text-sm font-medium text-amber-800">
+                                          クライアントNG: {ngStatus.reasons.client.name}
+                                        </p>
+                                        <p className="text-xs text-amber-600">理由: {ngStatus.reasons.client.reason}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          ※他のクライアントの案件には追加可能
+                                        </p>
+                                      </div>
+                                    )}
+                                    {hasProjectNG && ngStatus?.reasons.project && (
+                                      <div className="p-2 bg-blue-50 rounded border-l-2 border-blue-200">
+                                        <p className="text-sm font-medium text-blue-800">
+                                          案件NG: {ngStatus.reasons.project.name}
+                                        </p>
+                                        <p className="text-xs text-blue-600">理由: {ngStatus.reasons.project.reason}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">※他の案件には追加可能</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{company.industry}</TableCell>
+                      <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>
+                      <TableCell>{formatCurrency(company.revenue)}</TableCell>
+                      <TableCell>{company.prefecture}</TableCell>
+                      <TableCell>{getStatusBadge(company.status)}</TableCell>
+                      <TableCell>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/companies/${company.id}`}>詳細</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>

@@ -54,13 +54,38 @@ export interface Executive {
   company_id?: number
 }
 
+// Client Types
+export interface Client {
+  id: number
+  name: string
+  contact_person?: string
+  email?: string
+  phone?: string
+  industry?: string
+  notes?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  projects?: Project[]
+  project_count?: number
+  active_project_count?: number
+}
+
 // Project Types
 export interface Project {
   id: number
+  client_id: number
+  client?: Client
   name: string
-  client_company: string
+  client_company: string  // 後方互換性のため残す（廃止予定）
   description: string
+  manager?: string
+  target_industry?: string
+  target_company_size?: string
+  dm_template?: string
   status: 'planning' | 'in_progress' | 'completed' | 'cancelled'
+  start_date?: string
+  end_date?: string
   assigned_user?: string
   created_at: string
   updated_at: string

@@ -69,7 +69,7 @@ Response: {
 | | `/projects` | POST | 新規案件作成 |
 
 ### 案件作成・更新
-```typescript
+\`\`\`typescript
 // POST /projects (作成)
 Body: {
   name: string           // 必須
@@ -99,7 +99,7 @@ Body: {
   status?: 'active' | 'completed' | '進行中' | '完了' | '中止'
   assigned_user?: string
 }
-```
+\`\`\`
 
 ### NGリストタブ詳細
 \`\`\`typescript
@@ -256,7 +256,7 @@ Response: {
 | | `/projects/{id}/activities` | POST | 活動記録追加 |
 
 ### 案件詳細情報
-```typescript
+\`\`\`typescript
 // GET /projects/{id}
 Response: {
   id: number
@@ -274,7 +274,7 @@ Response: {
   success_count: number      // 成約数
   assigned_user: string
 }
-```
+\`\`\`
 
 ### 営業進捗管理
 \`\`\`typescript

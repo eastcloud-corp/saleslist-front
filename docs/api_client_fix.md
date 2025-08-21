@@ -4,10 +4,10 @@
 `/clients/`エンドポイントで422エラーが発生しています。
 
 ### エラー詳細
-```
+\`\`\`
 GET https://saleslist-mock-api.onrender.com/clients/?page=1&page_size=100&industry=all
 → 422 Unprocessable Entity
-```
+\`\`\`
 
 ## 原因
 1. URLに不要なトレイリングスラッシュ（`/clients/`）が含まれている
@@ -16,16 +16,16 @@ GET https://saleslist-mock-api.onrender.com/clients/?page=1&page_size=100&indust
 ## 修正方法
 
 ### Option 1: URLからトレイリングスラッシュを削除
-```typescript
+\`\`\`typescript
 // ❌ 間違い
 const url = `${API_URL}/clients/?page=1&page_size=100`
 
 // ✅ 正しい
 const url = `${API_URL}/clients?page=1&page_size=100`
-```
+\`\`\`
 
 ### Option 2: APIクライアントの修正
-```typescript
+\`\`\`typescript
 class ApiClient {
   private buildUrl(path: string, params?: Record<string, any>): string {
     // パスの末尾のスラッシュを削除
@@ -58,10 +58,10 @@ class ApiClient {
     return response.json()
   }
 }
-```
+\`\`\`
 
 ### Option 3: fetchClients関数の修正
-```typescript
+\`\`\`typescript
 export async function fetchClients(params: {
   page?: number
   pageSize?: number
@@ -85,10 +85,10 @@ export async function fetchClients(params: {
   // トレイリングスラッシュなしでリクエスト
   return apiClient.get('/clients', queryParams)
 }
-```
+\`\`\`
 
 ## テスト用コード
-```typescript
+\`\`\`typescript
 // 動作確認
 const testApi = async () => {
   try {
@@ -109,7 +109,7 @@ const testApi = async () => {
     console.error('Failed:', error)
   }
 }
-```
+\`\`\`
 
 ## 推奨される修正
 1. APIクライアントでトレイリングスラッシュを自動削除

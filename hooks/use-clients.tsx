@@ -50,8 +50,7 @@ export function useClients(options: UseClientsOptions = {}) {
         const data = await response.json()
         console.log("[v0] クライアント一覧取得成功:", data)
 
-        // APIレスポンス形式に対応
-        if (data.results) {
+        if (data && data.results) {
           setClients(data.results)
           setPagination({
             page: page,
@@ -60,44 +59,7 @@ export function useClients(options: UseClientsOptions = {}) {
             total_pages: Math.ceil((data.count || 0) / limit),
           })
         } else {
-          // モックデータ
-          const mockClients: Client[] = [
-            {
-              id: 1,
-              name: "株式会社テックソリューション",
-              contact_person: "田中 太郎",
-              email: "tanaka@techsolution.co.jp",
-              phone: "03-1234-5678",
-              industry: "IT・ソフトウェア",
-              notes: "SaaS企業向けの営業代行を依頼",
-              is_active: true,
-              created_at: "2025-01-01T10:00:00Z",
-              updated_at: "2025-01-20T15:30:00Z",
-              project_count: 3,
-              active_project_count: 2,
-            },
-            {
-              id: 2,
-              name: "株式会社マーケティングプロ",
-              contact_person: "佐藤 花子",
-              email: "sato@marketing-pro.com",
-              phone: "06-9876-5432",
-              industry: "マーケティング・広告",
-              notes: "BtoB企業向けのリード獲得支援",
-              is_active: true,
-              created_at: "2025-01-05T14:20:00Z",
-              updated_at: "2025-01-22T09:15:00Z",
-              project_count: 1,
-              active_project_count: 1,
-            },
-          ]
-          setClients(mockClients)
-          setPagination({
-            page: 1,
-            limit: 50,
-            total: mockClients.length,
-            total_pages: 1,
-          })
+          setError("APIからデータを取得できませんでした")
         }
       } else {
         throw new Error("クライアント一覧の取得に失敗しました")
@@ -182,7 +144,12 @@ export function useClient(id: number) {
       if (response.ok) {
         const data = await response.json()
         console.log("[v0] クライアント詳細取得成功:", data)
-        setClient(data)
+
+        if (data && data.id) {
+          setClient(data)
+        } else {
+          setError("クライアント詳細データが見つかりません")
+        }
       } else {
         throw new Error("クライアント詳細の取得に失敗しました")
       }
@@ -232,19 +199,13 @@ export function useClientStats(id: number) {
       if (response.ok) {
         const data = await response.json()
         console.log("[v0] クライアント統計情報取得成功:", data)
-        setStats(data)
-      } else {
-        // モックデータで代替
-        const mockStats = {
-          project_count: 5,
-          active_project_count: 3,
-          completed_project_count: 2,
-          total_companies: 250,
-          total_contacted: 180,
-          success_rate: 12.5,
+        if (data) {
+          setStats(data)
+        } else {
+          setError("統計情報が見つかりません")
         }
-        console.log("[v0] モック統計データを使用:", mockStats)
-        setStats(mockStats)
+      } else {
+        throw new Error("統計情報の取得に失敗しました")
       }
     } catch (err) {
       console.error("[v0] クライアント統計情報取得エラー:", err)
@@ -285,20 +246,16 @@ export function useClientProjects(id: number) {
       if (response.ok) {
         const data = await response.json()
         console.log("[v0] クライアント関連案件取得成功:", data)
-        setProjects(data.results || data)
+
+        if (data && Array.isArray(data.results)) {
+          setProjects(data.results)
+        } else if (data && Array.isArray(data)) {
+          setProjects(data)
+        } else {
+          setError("関連案件データが見つかりません")
+        }
       } else {
-        // モックデータで代替
-        const mockProjects = [
-          {
-            id: 1,
-            name: "IT企業向けDMキャンペーン2025Q1",
-            status: "進行中",
-            company_count: 85,
-            created_at: "2025-01-01T10:00:00Z",
-          },
-        ]
-        console.log("[v0] モック案件データを使用:", mockProjects)
-        setProjects(mockProjects)
+        throw new Error("関連案件の取得に失敗しました")
       }
     } catch (err) {
       console.error("[v0] クライアント関連案件取得エラー:", err)

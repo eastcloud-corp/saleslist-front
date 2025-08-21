@@ -74,50 +74,12 @@ export function useProjects(page = 1, limit = 20) {
       console.error("[v0] Projects API error:", err)
       setError(err instanceof Error ? err.message : "エラーが発生しました")
 
-      setProjects([
-        {
-          id: "1",
-          name: "2024年Q1 エンタープライズ営業",
-          description: "大企業向けの新しいソフトウェアソリューションの営業活動",
-          status: "active",
-          start_date: "2024-01-01",
-          end_date: "2024-03-31",
-          created_by: "user1",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-15T10:00:00Z",
-          companies: [],
-        },
-        {
-          id: "2",
-          name: "ヘルスケア業界キャンペーン",
-          description: "デジタル変革サービスのヘルスケア企業向け営業",
-          status: "active",
-          start_date: "2024-02-01",
-          end_date: "2024-06-30",
-          created_by: "user1",
-          created_at: "2024-02-01T00:00:00Z",
-          updated_at: "2024-02-01T00:00:00Z",
-          companies: [],
-        },
-        {
-          id: "3",
-          name: "製造業パイロットプログラム",
-          description: "製造業企業向けのパイロットプログラム",
-          status: "completed",
-          start_date: "2023-10-01",
-          end_date: "2023-12-31",
-          created_by: "user1",
-          created_at: "2023-10-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          companies: [],
-        },
-      ])
-
+      setProjects([])
       setPagination({
         page: 1,
         limit: 20,
-        total: 3,
-        total_pages: 1,
+        total: 0,
+        total_pages: 0,
       })
     } finally {
       setIsLoading(false)

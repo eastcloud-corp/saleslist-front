@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { apiClient, API_CONFIG } from "@/lib/api-config"
-import type { Company, CompanyFilters } from "@/lib/types"
-import { authService } from "@/lib/auth"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
+import type { Company, CompanyFilter, PaginatedResponse } from "@/lib/types"
 
-export function useCompanies(filters: CompanyFilters = {}, page = 1, limit = 100) {
+export function useCompanies(filters: CompanyFilter = {}, page = 1, limit = 100) {
   const [companies, setCompanies] = useState<Company[]>([])
   const [pagination, setPagination] = useState({
     page: 1,
@@ -30,57 +30,32 @@ export function useCompanies(filters: CompanyFilters = {}, page = 1, limit = 100
         // Build query parameters
         const params = new URLSearchParams({
           page: currentPage.toString(),
-          limit: limit.toString(),
+          page_size: limit.toString(),
         })
 
         // Add filters to params
         if (filters.search) params.append("search", filters.search)
-        if (filters.industry?.length) {
-          filters.industry.forEach((industry) => params.append("industry", industry))
-        }
-        if (filters.employee_count_min) params.append("employee_count_min", filters.employee_count_min.toString())
-        if (filters.employee_count_max) params.append("employee_count_max", filters.employee_count_max.toString())
+        if (filters.industry) params.append("industry", filters.industry)
+        if (filters.employee_min) params.append("employee_min", filters.employee_min.toString())
+        if (filters.employee_max) params.append("employee_max", filters.employee_max.toString())
         if (filters.revenue_min) params.append("revenue_min", filters.revenue_min.toString())
         if (filters.revenue_max) params.append("revenue_max", filters.revenue_max.toString())
-        if (filters.location?.length) {
-          filters.location.forEach((location) => params.append("location", location))
-        }
-        if (filters.status?.length) {
-          filters.status.forEach((status) => params.append("status", status))
-        }
+        if (filters.prefecture) params.append("prefecture", filters.prefecture)
+        if (filters.established_year_min) params.append("established_year_min", filters.established_year_min.toString())
+        if (filters.established_year_max) params.append("established_year_max", filters.established_year_max.toString())
+        if (filters.has_facebook !== undefined) params.append("has_facebook", filters.has_facebook.toString())
+        if (filters.exclude_ng !== undefined) params.append("exclude_ng", filters.exclude_ng.toString())
+        if (filters.project_id) params.append("project_id", filters.project_id.toString())
 
-        const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.COMPANIES}?${params.toString()}`, {
-          headers: authService.getAuthHeaders(),
-        })
-
-        console.log("[v0] Companies API response status for page", currentPage, ":", response.status)
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch companies")
-        }
-
-        const data = await response.json()
+        const data = await apiClient.get<PaginatedResponse<Company>>(
+          `${API_CONFIG.ENDPOINTS.COMPANIES}?${params.toString()}`
+        )
         console.log("[v0] Page", currentPage, "API response data:", data)
         console.log("[v0] Page", currentPage, "Results array length:", data.results?.length)
 
         if (data && data.results && Array.isArray(data.results)) {
-          // APIレスポンスの形式をCompany型に変換
-          const transformedCompanies: Company[] = data.results.map((item: any) => ({
-            id: item.id.toString(),
-            name: item.name || "",
-            industry: item.industry || "",
-            employee_count: item.employee_count || 0,
-            revenue: item.revenue || 0,
-            location: `${item.prefecture || ""}${item.city ? `, ${item.city}` : ""}`.trim(),
-            website: item.website_url || "",
-            phone: item.phone || "",
-            email: item.contact_email || "",
-            description: item.notes || "",
-            status: "active", // デフォルトステータス
-            created_at: item.created_at || new Date().toISOString(),
-            updated_at: item.updated_at || new Date().toISOString(),
-            executives: item.executives || [],
-          }))
+          // データは既にCompany型として返される
+          const transformedCompanies: Company[] = data.results
 
           // 重複を避けるため、IDでフィルタリング
           const existingIds = new Set(allCompanies.map((c) => c.id))

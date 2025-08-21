@@ -112,20 +112,15 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
               <Label htmlFor="client_id">クライアント *</Label>
               <Select value={formData.client_id} onValueChange={(value) => updateField("client_id", value)}>
                 <SelectTrigger className={errors.client_id ? "border-destructive" : ""}>
-                  <SelectValue placeholder="クライアントを選択" />
+                  <SelectValue placeholder={clientsLoading ? "読み込み中..." : "クライアントを選択"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {clientsLoading ? (
-                    <SelectItem value="" disabled>
-                      読み込み中...
-                    </SelectItem>
-                  ) : (
+                  {!clientsLoading &&
                     clients.map((client) => (
                       <SelectItem key={client.id} value={client.id.toString()}>
                         {client.name}
                       </SelectItem>
-                    ))
-                  )}
+                    ))}
                 </SelectContent>
               </Select>
               {errors.client_id && <p className="text-sm text-destructive mt-1">{errors.client_id}</p>}

@@ -6,7 +6,7 @@
 
 ## 画面フロー
 
-```
+\`\`\`
 /clients（クライアント一覧）※スタート画面
     ↓
 /clients/{id}（クライアント詳細）
@@ -19,7 +19,7 @@
     - NG企業は選択不可（グレーアウト）
             ↓
 /projects/{id}（案件詳細・営業進捗管理）
-```
+\`\`\`
 
 ## 1. クライアント一覧画面（/clients）
 
@@ -35,7 +35,7 @@
 | `/clients` | POST | 新規クライアント作成 |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /clients
 Query params: {
   search?: string
@@ -48,7 +48,7 @@ Response: {
   count: number
   results: Client[]
 }
-```
+\`\`\`
 
 ## 2. クライアント詳細画面（/clients/{id}）
 
@@ -102,7 +102,7 @@ Body: {
 ```
 
 ### NGリストタブ詳細
-```typescript
+\`\`\`typescript
 // GET /clients/{id}/ng-companies
 Response: {
   count: number
@@ -121,34 +121,15 @@ Response: {
   }>
 }
 
-// POST /clients/{id}/ng-companies
-Body: {
-  company_name: string
-  reason?: string
-}
-
 // POST /clients/{id}/ng-companies/import
-Body: FormData (CSV file) or JSON { csv_data: string }
+Body: FormData (CSV file)
 Response: {
   imported_count: number
   matched_count: number
   unmatched_count: number
   errors?: string[]
 }
-
-// GET /ng-companies/template
-Response: string (CSV template)
-
-// POST /ng-companies/match
-Body: {
-  client_id?: number
-  project_id?: number
-}
-Response: {
-  matched_count: number
-  updated_companies: Company[]
-}
-```
+\`\`\`
 
 ## 3. 企業選択画面（/clients/{id}/select-companies）
 
@@ -164,7 +145,7 @@ Response: {
 | `/projects/{project_id}/add-companies` | POST | 選択企業を案件に追加 |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /clients/{id}/available-companies
 Query params: {
   search?: string
@@ -202,7 +183,7 @@ Response: {
   added_count: number
   companies: ProjectCompany[]
 }
-```
+\`\`\`
 
 ## 4. 企業選択画面（/projects/{id}/add-companies）
 
@@ -218,7 +199,7 @@ Response: {
 | `/projects/{id}/add-companies` | POST | 選択企業を案件に追加 |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /projects/{id}/available-companies
 Query params: {
   search?: string
@@ -252,7 +233,7 @@ Response: {
   added_count: number
   companies: ProjectCompany[]
 }
-```
+\`\`\`
 
 ## 5. 案件詳細画面（/projects/{id}）
 
@@ -296,7 +277,7 @@ Response: {
 ```
 
 ### 営業進捗管理
-```typescript
+\`\`\`typescript
 // GET /projects/{id}/companies
 Response: {
   count: number
@@ -322,33 +303,13 @@ Body: {
   notes?: string
   staff_id?: number
 }
-
-// POST /projects/{id}/bulk_update_status
-Body: {
-  company_ids: number[]
-  status: string
-  contact_date?: string
-}
-Response: {
-  updated_count: number
-  message: string
-}
-
-// POST /projects/{project_id}/ng_companies
-Body: {
-  company_id: number
-  reason?: string
-}
-
-// GET /projects/{id}/export_csv
-Response: string (CSV data)
-```
+\`\`\`
 
 ## 6. 企業マスタ管理画面（/companies）※管理画面
 
 ### 画面仕様
 - **役割**: マスタデータのメンテナンス
-- **機能**: 企業情報の一括管理、CSVインポート/エクスポート、NG切替
+- **機能**: 企業情報の一括管理、CSVインポート/エクスポート
 
 ### 使用API
 
@@ -358,16 +319,12 @@ Response: string (CSV data)
 | `/companies` | POST | 新規企業登録 |
 | `/companies/{id}` | GET | 企業詳細取得 |
 | `/companies/{id}` | PUT | 企業情報更新 |
-| `/companies/{id}` | PATCH | 企業情報部分更新 |
 | `/companies/{id}` | DELETE | 企業削除 |
-| `/companies/{id}/toggle_ng` | POST | グローバルNG切替 |
-| `/companies/import_csv` | POST | CSVインポート |
-| `/companies/export_csv` | GET | CSVエクスポート |
-| `/companies/{company_id}/executives` | GET | 役員一覧取得 |
-| `/companies/{company_id}/executives` | POST | 役員登録 |
+| `/companies/import` | POST | CSVインポート |
+| `/companies/export` | GET | CSVエクスポート |
 
 ### リクエスト/レスポンス
-```typescript
+\`\`\`typescript
 // GET /companies
 Query params: {
   search?: string
@@ -385,61 +342,9 @@ Response: {
   count: number
   results: Company[]
 }
-```
+\`\`\`
 
-## 7. フィルタ保存機能
-
-### 画面仕様
-- **機能**: 検索条件の保存・再利用
-- **用途**: 企業一覧画面、企業選択画面での絞り込み条件保存
-
-### 使用API
-
-| エンドポイント | メソッド | 用途 |
-|-------------|---------|-----|
-| `/saved_filters` | GET | 保存済みフィルタ一覧 |
-| `/saved_filters` | POST | フィルタ保存 |
-| `/saved_filters/{id}` | DELETE | フィルタ削除 |
-
-### リクエスト/レスポンス
-```typescript
-// POST /saved_filters
-Body: {
-  name: string
-  filters?: object  // フィルタ条件（任意形式）
-  filter_conditions?: object  // 旧形式との互換性
-}
-
-// GET /saved_filters
-Response: {
-  results: Array<{
-    id: number
-    name: string
-    filter_conditions: object
-    created_at: string
-  }>
-}
-```
-
-## 8. 役員管理機能
-
-### 使用API
-
-| エンドポイント | メソッド | 用途 |
-|-------------|---------|-----|
-| `/executives/{id}` | PUT | 役員情報更新 |
-| `/executives/{id}` | PATCH | 役員情報部分更新 |
-| `/executives/{id}` | DELETE | 役員削除 |
-
-## 9. マスターデータAPI
-
-| エンドポイント | メソッド | 用途 |
-|-------------|---------|-----|
-| `/master/industries` | GET | 業種一覧 |
-| `/master/prefectures` | GET | 都道府県一覧 |
-| `/master/statuses` | GET | ステータス一覧 |
-
-## 10. 管理画面（/admin）※Phase 2
+## 7. 管理画面（/admin）
 
 ### 画面仕様
 - **機能**: システム設定、ユーザー管理、マスタデータ管理
@@ -465,7 +370,7 @@ Response: {
 | `/auth/me` | GET | 現在のユーザー情報 |
 
 ### 認証フロー
-```typescript
+\`\`\`typescript
 // POST /auth/login
 Body: {
   email: string
@@ -485,13 +390,13 @@ Response: {
   access_token: string
   refresh_token: string
 }
-```
+\`\`\`
 
 ## エラーレスポンス
 
 すべてのAPIは以下の形式でエラーを返す：
 
-```typescript
+\`\`\`typescript
 {
   error: {
     code: string
@@ -499,7 +404,7 @@ Response: {
     details?: any
   }
 }
-```
+\`\`\`
 
 ### HTTPステータスコード
 
@@ -519,7 +424,7 @@ Response: {
 
 リスト系APIは共通のページネーション形式を使用：
 
-```typescript
+\`\`\`typescript
 // Request
 Query params: {
   page?: number    // デフォルト: 1
@@ -533,13 +438,13 @@ Query params: {
   previous: string | null // 前ページURL
   results: T[]       // データ配列
 }
-```
+\`\`\`
 
 ## リアルタイム更新（将来実装）
 
 WebSocketを使用したリアルタイム更新：
 
-```typescript
+\`\`\`typescript
 // WebSocket接続
 ws://api.example.com/ws
 
@@ -548,4 +453,4 @@ ws://api.example.com/ws
   type: 'project.updated' | 'company.status_changed' | 'ng_list.imported'
   data: any
 }
-```
+\`\`\`

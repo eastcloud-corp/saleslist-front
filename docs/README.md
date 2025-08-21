@@ -1,38 +1,76 @@
 # 営業リスト管理システム - 設計書
 
-このディレクトリには営業リスト管理システムの設計書類が保存されています。
+## 📚 最新ドキュメント一覧（クライアント中心設計）
 
-## 設計書一覧
+このディレクトリには、Vercel v0での実装に必要な最新の設計書が含まれています。
 
-### 1. API仕様書 (api-endpoints.md)
-- 各画面で使用するAPIエンドポイントの詳細仕様
-- リクエスト・レスポンス形式
-- 認証方法とエラーハンドリング
+### 🎯 メインドキュメント（v0に提供）
+- **[v0_instruction.md](./v0_instruction.md)** - v0向け実装指示書（これを最初に読んでください）
 
-### 2. システム仕様書 (system-specification.md)  
-- Next.js 14での実装仕様
-- UI/UX設計ガイドライン
-- 技術スタックと開発方針
+### 📋 詳細設計書
+1. **[correct_business_flow.md](./correct_business_flow.md)** - 正しいビジネスフローと画面設計
+2. **[DB_design.md](./DB_design.md)** - データベース設計
+3. **[client_ng_management_spec.md](./client_ng_management_spec.md)** - クライアント・NG管理統合仕様
+4. **[screen_api_specification.md](./screen_api_specification.md)** - 画面・API統合仕様
+5. **[implementation_guide.md](./implementation_guide.md)** - 実装ガイド
 
-### 3. 画面一覧 (screen-list.md)
-- 5つの主要画面の詳細設計
-- 共通モーダルとコンポーネント仕様
-- 画面遷移とユーザーフロー
+### 📄 旧ドキュメント（参考）
+- **[old/api-endpoints.md](./old/api-endpoints.md)** - 旧API仕様書（GitHubで履歴管理）
 
-## 技術スタック
+## 🔑 重要な変更点
+
+### ビジネスフローの修正
+- **クライアント中心**の設計に変更
+- スタート画面は `/clients`（クライアント一覧）
+- 企業リストはマスタデータとして扱う
+- NGリスト管理機能を追加
+
+### 主要機能
+1. クライアント管理
+2. NGリスト管理（CSVインポート）
+3. 企業選択（NG企業の自動除外）
+4. 案件・営業進捗管理
+
+### API接続
+- モックAPI: https://saleslist-mock-api.onrender.com
+- 認証: JWT Bearer Token
+- テスト認証情報:
+  - Email: user@example.com
+  - Password: password123
+
+## 🚀 実装の進め方
+
+1. `v0_instruction.md`を読んで全体像を把握
+2. `correct_business_flow.md`でビジネスフローを理解
+3. `implementation_guide.md`のコンポーネント例を参照
+4. `screen_api_specification.md`で画面とAPIの対応を確認
+5. `client_ng_management_spec.md`でNGリスト機能の詳細を理解
+
+## 📌 注意事項
+
+- すべてのUIは**日本語**で実装
+- **クライアント中心**のフローを必ず守る
+- 企業リストは管理画面扱い
+- NGリスト管理機能は必須
+
+## 🛠 技術スタック
 
 - **フロントエンド**: Next.js 14 (App Router)
 - **スタイリング**: Tailwind CSS + shadcn/ui
 - **認証**: JWT Bearer Token
-- **状態管理**: React Query (TanStack Query)
-- **API**: Django DRF (将来移行予定)
+- **フォーム**: React Hook Form + Zod
+- **状態管理**: React Context API / Zustand（必要に応じて）
 
 ## 開発状況
 
-- ✅ ログイン画面
-- ✅ 企業リスト画面  
-- ✅ 企業詳細画面
-- ✅ 案件管理画面
-- ✅ 案件詳細画面
-- ✅ ダッシュボード画面
-- ✅ 新規企業作成画面
+### 実装済み
+- ✅ 基本的なフロントエンド構造
+- ✅ APIクライアント（トークン管理含む）
+- ✅ 認証フロー
+
+### 要実装（優先度順）
+- 🔲 クライアント一覧・詳細画面
+- 🔲 NGリスト管理機能（CSVインポート）
+- 🔲 企業選択画面（NG企業グレーアウト）
+- 🔲 案件詳細・営業進捗管理
+- 🔲 企業マスタ管理（管理画面）

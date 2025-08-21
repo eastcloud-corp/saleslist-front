@@ -44,7 +44,7 @@ export function useClients(options: UseClientsOptions = {}) {
         ...Object.fromEntries(Object.entries(filters).filter(([_, value]) => value !== undefined && value !== "")),
       })
 
-      const response = await apiClient.get(`/clients/?${params}`)
+      const response = await apiClient.get(`/clients?${params}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -118,7 +118,7 @@ export function useClients(options: UseClientsOptions = {}) {
     try {
       console.log("[v0] クライアント作成中...", clientData)
 
-      const response = await apiClient.post("/clients/", clientData)
+      const response = await apiClient.post("/clients", clientData)
 
       if (response.ok) {
         const newClient = await response.json()
@@ -138,7 +138,7 @@ export function useClients(options: UseClientsOptions = {}) {
     try {
       console.log("[v0] クライアント更新中...", { id, clientData })
 
-      const response = await apiClient.put(`/clients/${id}/`, clientData)
+      const response = await apiClient.put(`/clients/${id}`, clientData)
 
       if (response.ok) {
         const updatedClient = await response.json()
@@ -177,7 +177,7 @@ export function useClient(id: number) {
 
       console.log("[v0] クライアント詳細を取得中...", { id })
 
-      const response = await apiClient.get(`/clients/${id}/`)
+      const response = await apiClient.get(`/clients/${id}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -227,7 +227,7 @@ export function useClientStats(id: number) {
 
       console.log("[v0] クライアント統計情報を取得中...", { id })
 
-      const response = await apiClient.get(`/clients/${id}/stats/`)
+      const response = await apiClient.get(`/clients/${id}/stats`)
 
       if (response.ok) {
         const data = await response.json()
@@ -280,7 +280,7 @@ export function useClientProjects(id: number) {
 
       console.log("[v0] クライアント関連案件を取得中...", { id })
 
-      const response = await apiClient.get(`/clients/${id}/projects/`)
+      const response = await apiClient.get(`/clients/${id}/projects`)
 
       if (response.ok) {
         const data = await response.json()

@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Search, Filter } from "lucide-react"
+import { Plus, Search, Filter, TrendingUp, Users, FolderOpen } from "lucide-react"
 import { MainLayout } from "@/components/layout/main-layout"
 
 export default function ClientsPage() {
   const router = useRouter()
   const [filters, setFilters] = useState({
     search: "",
-    industry: "all", // Updated default value to 'all'
+    industry: "all",
     is_active: undefined as boolean | undefined,
   })
 
@@ -32,22 +32,48 @@ export default function ClientsPage() {
   const clearFilters = () => {
     setFilters({
       search: "",
-      industry: "all", // Updated default value to 'all'
+      industry: "all",
       is_active: undefined,
     })
   }
 
+  const activeClients = clients.filter((client) => client.is_active).length
+  const totalProjects = clients.reduce((sum, client) => sum + (client.project_count || 0), 0)
+  const activeProjects = clients.reduce((sum, client) => sum + (client.active_project_count || 0), 0)
+
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">クライアント管理</h1>
-            <p className="text-gray-600">営業代行を依頼するクライアント企業を管理します</p>
+            <h1 className="text-3xl font-bold">営業管理システム</h1>
+            <p className="text-gray-600 mt-1">クライアント企業の営業代行業務を効率的に管理</p>
+
+            {/* Quick Stats */}
+            <div className="flex items-center gap-6 mt-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <span className="text-sm text-gray-600">
+                  アクティブクライアント: <span className="font-medium text-gray-900">{activeClients}社</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-gray-600">
+                  進行中案件: <span className="font-medium text-gray-900">{activeProjects}件</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-purple-600" />
+                <span className="text-sm text-gray-600">
+                  総案件数: <span className="font-medium text-gray-900">{totalProjects}件</span>
+                </span>
+              </div>
+            </div>
           </div>
-          <Button onClick={() => router.push("/clients/new")}>
+          <Button onClick={() => router.push("/clients/new")} size="lg">
             <Plus className="mr-2 h-4 w-4" />
-            クライアント追加
+            新規クライアント登録
           </Button>
         </div>
 
@@ -92,7 +118,7 @@ export default function ClientsPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">ステータス</label>
                 <Select
-                  value={filters.is_active?.toString() || "all"} // Updated default value to 'all'
+                  value={filters.is_active?.toString() || "all"}
                   onValueChange={(value) =>
                     handleFilterChange("is_active", value === "all" ? undefined : value === "true")
                   }

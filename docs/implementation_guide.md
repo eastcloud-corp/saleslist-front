@@ -25,7 +25,7 @@ Vercel v0やその他のフロントエンド開発者向けの詳細な実装�
 
 ## プロジェクト構造
 
-```
+\`\`\`
 saleslist-front/
 ├── app/
 │   ├── (auth)/
@@ -76,14 +76,14 @@ saleslist-front/
     ├── use-ng-list.tsx                 # NGリスト管理フック
     └── use-companies.tsx
 
-```
+\`\`\`
 
 ## 実装する必要があるファイル
 
 ### 1. 基本設定ファイル
 
 #### `/lib/types.ts` - 型定義
-```typescript
+\`\`\`typescript
 export interface Client {
   id: number
   name: string
@@ -175,10 +175,10 @@ export interface ProjectCompany {
   created_at: string
   updated_at: string
 }
-```
+\`\`\`
 
 #### `/lib/api-client.ts` - APIクライアント
-```typescript
+\`\`\`typescript
 class ApiClient {
   private baseURL: string
   private token: string | null = null
@@ -331,12 +331,12 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
-```
+\`\`\`
 
 ### 2. コンポーネント実装
 
 #### `/components/clients/ng-list-tab.tsx` - NGリスト管理タブ
-```typescript
+\`\`\`typescript
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -534,12 +534,12 @@ export function NGListTab({ clientId }: { clientId: number }) {
     </div>
   )
 }
-```
+\`\`\`
 
 ### 3. フック実装
 
 #### `/hooks/use-ng-list.tsx` - NGリスト管理フック
-```typescript
+\`\`\`typescript
 import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/api-client'
 import { ClientNGCompany } from '@/lib/types'
@@ -607,7 +607,7 @@ export function useNGList(clientId: number) {
     refetch: fetchNGList
   }
 }
-```
+\`\`\`
 
 ## Vercel v0への提供ファイル
 
@@ -620,7 +620,7 @@ export function useNGList(clientId: number) {
 6. 本ファイル（implementation_guide.md）
 
 ### v0への指示テンプレート
-```
+\`\`\`
 営業リスト管理システムのフロントエンドを実装してください。
 
 ## 重要な設計方針
@@ -657,21 +657,21 @@ Password: password123
 
 添付ファイルの仕様書に基づいて実装してください。
 特にimplementation_guide.mdのコンポーネント例を参考にしてください。
-```
+\`\`\`
 
 ## 環境変数設定
 
 ### `.env.local`
-```
+\`\`\`
 NEXT_PUBLIC_API_URL=https://saleslist-mock-api.onrender.com
 NEXT_PUBLIC_APP_NAME=営業リスト管理システム
 NEXT_PUBLIC_APP_VERSION=1.0.0
-```
+\`\`\`
 
 ### `.env.development`
-```
+\`\`\`
 NEXT_PUBLIC_API_URL=http://localhost:4010
-```
+\`\`\`
 
 ## テストシナリオ
 

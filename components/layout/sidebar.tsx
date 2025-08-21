@@ -10,14 +10,9 @@ import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings, Users } fr
 
 const navigation = [
   {
-    name: "ダッシュボード",
-    href: "/dashboard",
-    icon: BarChart3,
-  },
-  {
-    name: "企業",
-    href: "/companies",
-    icon: Building2,
+    name: "クライアント",
+    href: "/clients",
+    icon: Users,
   },
   {
     name: "案件",
@@ -25,9 +20,14 @@ const navigation = [
     icon: FolderOpen,
   },
   {
-    name: "クライアント",
-    href: "/clients",
-    icon: Users,
+    name: "企業管理",
+    href: "/companies",
+    icon: Building2,
+  },
+  {
+    name: "ダッシュボード",
+    href: "/dashboard",
+    icon: BarChart3,
   },
   {
     name: "設定",

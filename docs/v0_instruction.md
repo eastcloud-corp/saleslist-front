@@ -32,6 +32,11 @@
     - NG企業は選択不可（グレーアウト）
             ↓
 /projects/{id}（案件詳細・営業進捗管理）
+    - 「企業を追加」ボタン
+            ↓
+/projects/{id}/add-companies（企業選択画面）
+    - NG企業は選択不可（赤背景）
+    - 追加済み企業も選択不可（グレー背景）
 ```
 
 ## 必要なファイル一覧
@@ -66,13 +71,19 @@
    - NG理由のツールチップ
    - 複数選択機能
 
+5. **企業選択画面（/projects/{id}/add-companies）**
+   - NG企業は赤背景で選択不可
+   - 追加済み企業はグレー背景で選択不可
+   - NG理由とステータスのツールチップ
+
 ### Phase 2（推奨）
-5. **案件詳細画面（/projects/{id}）**
+6. **案件詳細画面（/projects/{id}）**
    - 営業進捗管理
    - ステータス更新
    - 活動履歴
+   - 企業追加ボタン
 
-6. **企業マスタ管理（/companies）**
+7. **企業マスタ管理（/companies）**
    - 管理画面扱い
    - 一括インポート/エクスポート
 
@@ -106,6 +117,10 @@ Password: password123
 
 ### 企業選択（クライアント用）
 - `GET /clients/{id}/available-companies` - NG判定付き企業一覧
+- `POST /projects/{id}/add-companies` - 選択企業を案件に追加
+
+### 企業選択（案件用）
+- `GET /projects/{id}/available-companies` - 案件に追加可能な企業一覧
 - `POST /projects/{id}/add-companies` - 選択企業を案件に追加
 
 ### 案件管理
@@ -154,7 +169,8 @@ function CompanyRow({ company, clientId }: Props) {
 - エラーメッセージの詳細表示
 
 ### 企業選択
-- NG企業は赤色背景でハイライト
+- **クライアント用（/clients/{id}/select-companies）**: NG企業はグレーアウト表示
+- **案件用（/projects/{id}/add-companies）**: NG企業は赤背景、追加済み企業はグレー背景
 - NGバッジとツールチップで理由表示
 - フィルタリング機能（業界、地域、規模）
 - ページネーション（20件/ページ）
@@ -188,6 +204,8 @@ function CompanyRow({ company, clientId }: Props) {
 - ローディング状態の表示必須
 - エラー時は具体的なメッセージ表示
 - CSVは UTF-8、10MB以下
+- **企業追加は案件詳細画面からの流れを重視**（プロジェクト中心）
+- **企業マスタ（/companies）は純粋なマスタデータとして保持**
 
 ## 実装の進め方
 1. まずimplementation_guide.mdのコンポーネント例を参照
@@ -195,4 +213,4 @@ function CompanyRow({ company, clientId }: Props) {
 3. client_ng_management_spec.mdでNGリスト機能の詳細を理解
 4. correct_business_flow.mdで全体のフローを把握
 
-実装時は特にクライアント中心のフローを意識し、企業リストはあくまでマスタデータとして扱うことを忘れないでください。
+実装時は特にプロジェクト中心のフローを意識し、企業追加は案件詳細画面から行い、企業リストはあくまでマスタデータとして扱うことを忘れないでください。

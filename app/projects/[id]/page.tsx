@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { use, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
@@ -14,12 +14,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, Edit, Trash2, Calendar, FolderOpen, Loader2 } from "lucide-react"
 
 interface ProjectDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const resolvedParams = use(params)
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
@@ -32,7 +33,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     updateCompanyStatus,
     addCompanyToProject,
     removeCompanyFromProject,
-  } = useProject(params.id)
+  } = useProject(resolvedParams.id)
 
   const handleSave = async (data: any) => {
     try {
@@ -60,7 +61,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   const handleAddCompany = () => {
     if (project?.client_id) {
-      router.push(`/clients/${project.client_id}/select-companies?project=${params.id}`)
+      router.push(`/clients/${project.client_id}/select-companies?project=${resolvedParams.id}`)
     }
   }
 
@@ -183,7 +184,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 )}
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">企業数</h4>
-                  <p>{project.companies.length} 社</p>
+                  <p>{project.companies?.length || 0} 社</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">作成日</h4>
@@ -205,7 +206,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
         {/* Project Companies */}
         <ProjectCompanies
-          companies={project.companies}
+          companies={project.companies || []}
           onUpdateStatus={updateCompanyStatus}
           onRemoveCompany={removeCompanyFromProject}
           onAddCompany={handleAddCompany}

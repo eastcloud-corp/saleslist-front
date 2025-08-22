@@ -53,12 +53,10 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
-    console.log("[v0] Building URL:", `${API_CONFIG.BASE_URL}${endpoint}`)
     return `${API_CONFIG.BASE_URL}${endpoint}`
   }
 
   async get(endpoint: string, options?: RequestInit): Promise<Response> {
-    console.log("[v0] GET request to:", endpoint)
     const response = await fetch(this.buildUrl(endpoint), {
       method: "GET",
       headers: {
@@ -68,12 +66,10 @@ class ApiClient {
       },
       ...options,
     })
-    console.log("[v0] GET response status:", response.status)
     return response
   }
 
   async post(endpoint: string, data?: any, options?: RequestInit): Promise<Response> {
-    console.log("[v0] POST request to:", endpoint, "with data:", data)
     const response = await fetch(this.buildUrl(endpoint), {
       method: "POST",
       headers: {
@@ -84,7 +80,6 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
-    console.log("[v0] POST response status:", response.status)
     return response
   }
 

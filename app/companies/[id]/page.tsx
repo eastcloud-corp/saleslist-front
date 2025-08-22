@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { use, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
@@ -14,17 +14,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ArrowLeft, Edit, Trash2, ExternalLink, Building2, Calendar, Loader2 } from "lucide-react"
 
 interface CompanyDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
+  const resolvedParams = use(params)
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
-  const { company, isLoading, error, updateCompany, deleteCompany } = useCompany(params.id)
+  const { company, isLoading, error, updateCompany, deleteCompany } = useCompany(resolvedParams.id)
 
   const handleSave = async (data: any) => {
     try {

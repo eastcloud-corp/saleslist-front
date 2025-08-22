@@ -86,17 +86,23 @@ export interface Executive {
 
 // Project Types
 export interface Project {
-  id: number
-  client_id?: number // クライアントID（新規追加）
+  id: number | string
+  client_id?: number // クライアントID
   client?: Client // クライアント情報（リレーション）
   name: string
-  client_company: string
-  description: string
-  status: "planning" | "in_progress" | "completed" | "cancelled"
+  client_company?: string
+  description?: string
+  status: "active" | "planning" | "in_progress" | "completed" | "cancelled" | "進行中" | "完了" | "中止"
+  start_date?: string
+  end_date?: string
   assigned_user?: string
   created_at: string
   updated_at: string
+  created_by?: string
   company_count?: number
+  contacted_count?: number
+  success_count?: number
+  companies?: ProjectCompany[]
 }
 
 export interface ProjectCompany {

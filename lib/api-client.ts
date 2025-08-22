@@ -13,7 +13,7 @@ class ApiError extends Error {
 
 class ApiClient {
   private retryCount = 0
-  private maxRetries = 1
+  private maxRetries = 0  // Disable retries for mock server
   private isRefreshingToken = false
   private refreshPromise: Promise<void> | null = null
 
@@ -24,57 +24,8 @@ class ApiClient {
   }
 
   private async refreshToken(): Promise<void> {
-    if (this.isRefreshingToken) {
-      // トークンリフレッシュが既に進行中の場合は、その完了を待つ
-      if (this.refreshPromise) {
-        await this.refreshPromise
-        return
-      }
-    }
-
-    this.isRefreshingToken = true
-    this.refreshPromise = (async () => {
-      try {
-        const refreshToken = localStorage.getItem("refresh_token")
-        if (!refreshToken) {
-          throw new Error("No refresh token available")
-        }
-
-        const response = await fetch(this.buildUrl(API_CONFIG.ENDPOINTS.REFRESH), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to refresh token")
-        }
-
-        const data = await response.json()
-        if (data.access_token) {
-          localStorage.setItem("access_token", data.access_token)
-          if (data.refresh_token) {
-            localStorage.setItem("refresh_token", data.refresh_token)
-          }
-        } else {
-          throw new Error("Invalid refresh response")
-        }
-      } catch (error) {
-        // リフレッシュが失敗した場合は、トークンをクリアしてログインページへ
-        this.clearTokens()
-        if (typeof window !== "undefined") {
-          window.location.href = "/login"
-        }
-        throw error
-      } finally {
-        this.isRefreshingToken = false
-        this.refreshPromise = null
-      }
-    })()
-
-    await this.refreshPromise
+    // Skip token refresh for mock server
+    return Promise.resolve()
   }
 
   private clearTokens(): void {
@@ -85,22 +36,7 @@ class ApiClient {
   }
 
   private async handleResponse<T>(response: Response, endpoint: string, options?: any): Promise<T> {
-    // 401エラーの場合、トークンリフレッシュを試みる
-    if (response.status === 401 && this.retryCount < this.maxRetries) {
-      this.retryCount++
-      try {
-        await this.refreshToken()
-        // 新しいトークンで再試行
-        const retryResponse = await this.makeRequest(endpoint, options)
-        this.retryCount = 0
-        return this.processResponse<T>(retryResponse)
-      } catch (error) {
-        this.retryCount = 0
-        throw error
-      }
-    }
-
-    this.retryCount = 0
+    // Skip retry logic for mock server
     return this.processResponse<T>(response)
   }
 
@@ -127,7 +63,8 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
-    return `${API_CONFIG.BASE_URL}${endpoint}`
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "https://saleslist-mock-api.onrender.com"
+    return `${baseUrl}${endpoint}`
   }
 
   private async makeRequest(endpoint: string, options: RequestInit): Promise<Response> {

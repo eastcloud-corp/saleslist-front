@@ -20,14 +20,20 @@ export function useProject(projectId: string) {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to fetch project")
+        throw new Error(`Failed to fetch project: ${response.status}`)
       }
 
-      const data: ApiResponse<Project> = await response.json()
-      setProject(data.data)
+      const data = await response.json()
+      console.log("[useProject] Fetched project data:", data)
+      
+      // Handle both wrapped and unwrapped responses
+      const projectData = data.data || data
+      setProject(projectData)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
-      // Mock data for development
+      console.error("[useProject] Error fetching project:", err)
+      
+      // Mock data for development only if API fails
       setProject({
         id: projectId,
         name: "Q1 2024 Enterprise Outreach",

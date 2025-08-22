@@ -102,6 +102,33 @@ Email: user@example.com
 Password: password123
 \`\`\`
 
+### APIクライアントの使い方（重要）
+**apiClient（/lib/api-config.ts）はResponseオブジェクトを返します。必ず.json()でパースしてください：**
+
+\`\`\`typescript
+// ❌ 間違い - response.dataは存在しません
+const response = await apiClient.get('/api/endpoint')
+const data = response.data  // これは動作しません！
+
+// ✅ 正しい使い方
+const response = await apiClient.get('/api/endpoint')
+const data = await response.json()  // Responseオブジェクトをパース
+
+// ✅ エラーチェック付きの完全な例
+const response = await apiClient.get('/api/endpoint')
+if (!response.ok) {
+  throw new Error('API request failed')
+}
+const data = await response.json()
+\`\`\`
+
+### handleResponseメソッドを使う場合
+\`\`\`typescript
+// apiClient.handleResponseを使う場合
+const response = await apiClient.get('/api/endpoint')
+const data = await apiClient.handleResponse(response)
+\`\`\`
+
 ## 主要APIエンドポイント
 
 ### クライアント管理
@@ -134,6 +161,22 @@ Password: password123
 ### NGリストタブ（implementation_guide.md参照）
 \`\`\`typescript
 export function NGListTab({ clientId }: { clientId: number }) {
+  const [ngList, setNgList] = useState([])
+  
+  const fetchNGList = async () => {
+    try {
+      const response = await apiClient.get(\`/clients/\${clientId}/ng-companies\`)
+      const data = await response.json()  // 重要: .json()でパース
+      setNgList(data.results || [])
+    } catch (error) {
+      console.error('NG list fetch error:', error)
+    }
+  }
+  
+  useEffect(() => {
+    fetchNGList()
+  }, [clientId])
+  
   // CSVインポート機能
   // NGリスト表示
   // マッチ状態の可視化
@@ -141,9 +184,55 @@ export function NGListTab({ clientId }: { clientId: number }) {
 }
 \`\`\`
 
-### 企業選択時のNG表示
+### 企業選択時のNG表示とAPI呼び出し
 \`\`\`typescript
-function CompanyRow({ company, clientId }: Props) {
+function CompanySelectionPage({ clientId }: Props) {
+  const [companies, setCompanies] = useState([])
+  const [filters, setFilters] = useState({ page: 1, exclude_ng: true })
+  
+  const fetchCompanies = async () => {
+    try {
+      // URLパラメータを構築
+      const params = new URLSearchParams(filters)
+      const response = await apiClient.get(\`/clients/\${clientId}/available-companies?\${params}\`)
+      const data = await response.json()  // 重要: 必ず.json()でパース！
+      
+      setCompanies(data.results || [])
+    } catch (error) {
+      console.error('Failed to fetch companies:', error)
+    }
+  }
+  
+  // 案件に企業を追加
+  const handleAddToProject = async (projectId: number, companyIds: number[]) => {
+    try {
+      const response = await apiClient.post(
+        \`/projects/\${projectId}/add-companies\`,
+        { company_ids: companyIds }
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to add companies')
+      }
+      
+      const result = await response.json()
+      return result
+    } catch (error) {
+      console.error('Failed to add companies:', error)
+      throw error
+    }
+  }
+  
+  return (
+    <Table>
+      {companies.map(company => (
+        <CompanyRow key={company.id} company={company} />
+      ))}
+    </Table>
+  )
+}
+
+function CompanyRow({ company }: { company: Company }) {
   const ngStatus = company.ng_status
   
   return (

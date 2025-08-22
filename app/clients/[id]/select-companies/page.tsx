@@ -41,13 +41,19 @@ export default function CompanySelectionPage() {
   const fetchCompanies = async () => {
     setIsLoading(true)
     try {
-      const response = await apiClient.get(`/clients/${clientId}/available-companies`, {
-        params: filters,
+      const queryParams = new URLSearchParams()
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value))
+        }
       })
+      
+      const response = await apiClient.get(`/clients/${clientId}/available-companies?${queryParams.toString()}`)
+      const data = await response.json()
 
-      if (response.data?.results) {
-        setCompanies(response.data.results)
-        setTotalCount(response.data.count || 0)
+      if (data?.results) {
+        setCompanies(data.results)
+        setTotalCount(data.count || 0)
       }
     } catch (error) {
       console.error("企業データの取得に失敗しました:", error)
@@ -64,16 +70,19 @@ export default function CompanySelectionPage() {
   const fetchProjects = async () => {
     try {
       const response = await apiClient.get(`/clients/${clientId}/projects`)
-      setProjects(response.data?.results || [])
+      const data = await response.json()
+      setProjects(data?.results || [])
     } catch (error) {
       console.error("案件データの取得に失敗しました:", error)
     }
   }
 
   useEffect(() => {
-    fetchCompanies()
-    fetchProjects()
-  }, [filters, clientId])
+    if (clientId) {
+      fetchCompanies()
+      fetchProjects()
+    }
+  }, [clientId, filters.page, filters.page_size, filters.search, filters.industry, filters.exclude_ng])
 
   const handleCompanySelect = (companyId: number, isSelected: boolean) => {
     const company = companies.find((c) => c.id === companyId)
@@ -116,9 +125,14 @@ export default function CompanySelectionPage() {
 
     setIsAddingToProject(true)
     try {
-      await apiClient.post(`/projects/${selectedProjectId}/add-companies`, {
-        company_ids: Array.from(selectedCompanies),
-      })
+      const response = await apiClient.post(
+        `/projects/${selectedProjectId}/add-companies`,
+        { company_ids: Array.from(selectedCompanies) }
+      )
+      
+      if (!response.ok) {
+        throw new Error("Failed to add companies")
+      }
 
       toast({
         title: "成功",

@@ -116,3 +116,144 @@ export function useProjects(page = 1, limit = 20) {
     refetch: fetchProjects,
   }
 }
+
+export function useProject(id: string | number) {
+  const [project, setProject] = useState<Project | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchProject = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`)
+      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`, {
+        headers: authService.getAuthHeaders(),
+      })
+
+      console.log("[v0] Project detail API response status:", response.status)
+
+      if (!response.ok) {
+        throw new Error("案件詳細の取得に失敗しました")
+      }
+
+      const data = await response.json()
+      console.log("[v0] Project detail API response data:", data)
+
+      if (data && typeof data === "object") {
+        setProject(data)
+      } else {
+        throw new Error("無効なレスポンス形式です")
+      }
+    } catch (err) {
+      console.error("[v0] Project detail API error:", err)
+      setError(err instanceof Error ? err.message : "エラーが発生しました")
+      setProject(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateProject = async (projectData: Partial<Project>) => {
+    try {
+      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`, projectData, {
+        headers: authService.getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error("案件の更新に失敗しました")
+      }
+
+      await fetchProject() // Refresh the project data
+      return true
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("エラーが発生しました")
+    }
+  }
+
+  const updateCompanyStatus = async (
+    companyId: number,
+    statusData: {
+      status?: string
+      contact_date?: string
+      next_action?: string
+      notes?: string
+      staff_id?: number
+    },
+  ) => {
+    try {
+      const response = await apiClient.patch(
+        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}`,
+        statusData,
+        {
+          headers: authService.getAuthHeaders(),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error("ステータスの更新に失敗しました")
+      }
+
+      await fetchProject() // Refresh the project data
+      return true
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("エラーが発生しました")
+    }
+  }
+
+  const addCompanies = async (companyIds: number[]) => {
+    try {
+      const response = await apiClient.post(
+        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/add-companies`,
+        { company_ids: companyIds },
+        {
+          headers: authService.getAuthHeaders(),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error("企業の追加に失敗しました")
+      }
+
+      await fetchProject() // Refresh the project data
+      return true
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("エラーが発生しました")
+    }
+  }
+
+  const removeCompany = async (companyId: number) => {
+    try {
+      const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}`, {
+        headers: authService.getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        throw new Error("企業の削除に失敗しました")
+      }
+
+      await fetchProject() // Refresh the project data
+      return true
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("エラーが発生しました")
+    }
+  }
+
+  useEffect(() => {
+    if (id) {
+      fetchProject()
+    }
+  }, [id])
+
+  return {
+    project,
+    isLoading,
+    error,
+    updateProject,
+    updateCompanyStatus,
+    addCompanies,
+    removeCompany,
+    refetch: fetchProject,
+  }
+}

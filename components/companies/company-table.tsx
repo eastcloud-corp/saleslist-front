@@ -1,17 +1,19 @@
 "use client"
 
 import Link from "next/link"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Company } from "@/lib/types"
-import { ExternalLink, Building2, Info } from "lucide-react"
+import { ExternalLink, Building2, Info } from 'lucide-react'
 
 interface CompanyTableProps {
   companies: Company[]
   isLoading: boolean
+  onRefresh?: () => void
 }
 
 const formatCurrency = (amount: number) => {
@@ -46,7 +48,7 @@ const getStatusBadge = (status: string) => {
   )
 }
 
-export function CompanyTable({ companies, isLoading }: CompanyTableProps) {
+export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTableProps) {
   if (isLoading) {
     return (
       <Card>
@@ -147,7 +149,9 @@ export function CompanyTable({ companies, isLoading }: CompanyTableProps) {
                                         <p className="text-sm font-medium text-amber-800">
                                           クライアントNG: {ngStatus.reasons.client.name}
                                         </p>
-                                        <p className="text-xs text-amber-600">理由: {ngStatus.reasons.client.reason}</p>
+                                        <p className="text-xs text-amber-600">
+                                          理由: {ngStatus.reasons.client.reason}
+                                        </p>
                                         <p className="text-xs text-muted-foreground mt-1">
                                           ※他のクライアントの案件には追加可能
                                         </p>
@@ -158,7 +162,9 @@ export function CompanyTable({ companies, isLoading }: CompanyTableProps) {
                                         <p className="text-sm font-medium text-blue-800">
                                           案件NG: {ngStatus.reasons.project.name}
                                         </p>
-                                        <p className="text-xs text-blue-600">理由: {ngStatus.reasons.project.reason}</p>
+                                        <p className="text-xs text-blue-600">
+                                          理由: {ngStatus.reasons.project.reason}
+                                        </p>
                                         <p className="text-xs text-muted-foreground mt-1">※他の案件には追加可能</p>
                                       </div>
                                     )}

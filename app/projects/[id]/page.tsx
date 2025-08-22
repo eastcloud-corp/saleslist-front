@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
@@ -19,21 +19,19 @@ interface ProjectDetailPageProps {
   }>
 }
 
-export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-  const resolvedParams = use(params)
+export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const resolvedParams = await params
+
+  return <ProjectDetailClient projectId={resolvedParams.id} />
+}
+
+function ProjectDetailClient({ projectId }: { projectId: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
 
-  const {
-    project,
-    isLoading,
-    error,
-    updateProject,
-    updateCompanyStatus,
-    addCompanyToProject,
-    removeCompanyFromProject,
-  } = useProject(resolvedParams.id)
+  const { project, isLoading, error, updateProject, updateCompanyStatus, removeCompanyFromProject } =
+    useProject(projectId)
 
   const handleSave = async (data: any) => {
     try {
@@ -60,9 +58,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   }
 
   const handleAddCompany = () => {
-    if (project?.client_id) {
-      router.push(`/clients/${project.client_id}/select-companies?project=${resolvedParams.id}`)
-    }
+    router.push(`/projects/${projectId}/add-companies`)
   }
 
   const formatDate = (dateString: string) => {

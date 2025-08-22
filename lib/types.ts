@@ -93,16 +93,16 @@ export interface Project {
   client_company?: string
   description?: string
   status: "active" | "planning" | "in_progress" | "completed" | "cancelled" | "進行中" | "完了" | "中止"
-  start_date?: string
-  end_date?: string
+  start_date?: string // 開始日
+  end_date?: string // 終了日
   assigned_user?: string
   created_at: string
   updated_at: string
   created_by?: string
-  company_count?: number
-  contacted_count?: number
-  success_count?: number
-  companies?: ProjectCompany[]
+  company_count?: number // 登録企業数
+  contacted_count?: number // 接触済み企業数
+  success_count?: number // 成約数
+  companies?: ProjectCompany[] // 案件に紐づく企業リスト
 }
 
 export interface ProjectCompany {
@@ -110,9 +110,12 @@ export interface ProjectCompany {
   project_id: number
   company_id: number
   company: Company
-  status: string
+  status: "未接触" | "DM送信済み" | "返信あり" | "アポ獲得" | "成約" | "NG" | string
   contact_date?: string
+  next_action?: string
   notes?: string
+  staff_id?: number
+  staff_name?: string
   added_at: string
   updated_at: string
 }

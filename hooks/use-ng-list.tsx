@@ -21,42 +21,20 @@ export function useNGList(clientId: number) {
 
     try {
       const response = await apiClient.get(`/clients/${clientId}/ng-companies`)
-      console.log("[v0] NG list response:", response)
+      const data = await apiClient.handleResponse(response)
+      console.log("[v0] NG list response:", data)
 
-      setNgList(response.results || [])
+      setNgList(data.results || [])
       setStats({
-        count: response.count || 0,
-        matched_count: response.matched_count || 0,
-        unmatched_count: response.unmatched_count || 0,
+        count: data.count || 0,
+        matched_count: data.matched_count || 0,
+        unmatched_count: data.unmatched_count || 0,
       })
     } catch (err) {
       console.error("[v0] NG list fetch error:", err)
       setError("NGリストの取得に失敗しました")
-      // モックデータで代替
-      setNgList([
-        {
-          id: 1,
-          client_id: clientId,
-          company_name: "株式会社競合A",
-          company_id: 123,
-          matched: true,
-          reason: "競合他社",
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          client_id: clientId,
-          company_name: "○○商事",
-          matched: false,
-          reason: "既存取引先",
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ])
-      setStats({ count: 2, matched_count: 1, unmatched_count: 1 })
+      setNgList([])
+      setStats({ count: 0, matched_count: 0, unmatched_count: 0 })
     } finally {
       setIsLoading(false)
     }
@@ -72,20 +50,13 @@ export function useNGList(clientId: number) {
       const response = await apiClient.post(`/clients/${clientId}/ng-companies/import`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
+      const data = await apiClient.handleResponse(response)
 
       await fetchNGList() // リスト再取得
-      return response
+      return data
     } catch (err) {
       console.error("[v0] CSV import error:", err)
-      // モック結果を返す
-      const mockResult: NGImportResult = {
-        imported_count: 5,
-        matched_count: 3,
-        unmatched_count: 2,
-        errors: [],
-      }
-      await fetchNGList()
-      return mockResult
+      throw new Error("CSVインポートに失敗しました")
     }
   }
 
@@ -93,12 +64,12 @@ export function useNGList(clientId: number) {
     console.log("[v0] Deleting NG company:", ngId)
 
     try {
-      await apiClient.delete(`/clients/${clientId}/ng-companies/${ngId}`)
+      const response = await apiClient.delete(`/clients/${clientId}/ng-companies/${ngId}`)
+      await apiClient.handleResponse(response)
       await fetchNGList()
     } catch (err) {
       console.error("[v0] NG delete error:", err)
-      // モックとして削除を実行
-      setNgList((prev) => prev.filter((ng) => ng.id !== ngId))
+      throw new Error("NG企業の削除に失敗しました")
     }
   }
 

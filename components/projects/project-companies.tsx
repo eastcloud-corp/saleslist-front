@@ -82,7 +82,7 @@ export function ProjectCompanies({
           </CardTitle>
           <Button onClick={onAddCompany} size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Add Company
+            企業を追加
           </Button>
         </div>
       </CardHeader>
@@ -90,8 +90,8 @@ export function ProjectCompanies({
         {companies.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No companies added to this project yet.</p>
-            <p className="text-sm">Add companies to start tracking your sales progress.</p>
+            <p>この案件にはまだ企業が追加されていません</p>
+            <p className="text-sm">企業を追加して営業進捗の管理を開始してください</p>
           </div>
         ) : (
           <div className="rounded-md border">

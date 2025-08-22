@@ -103,7 +103,7 @@ export default function CompaniesPage() {
         )}
 
         {/* Company Table */}
-        <CompanyTable companies={companies} isLoading={isLoading} />
+        <CompanyTable companies={companies} isLoading={isLoading} onRefresh={refetch} />
 
         {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
@@ -22,8 +22,8 @@ interface AddCompaniesPageProps {
   }>
 }
 
-export default async function AddCompaniesPage({ params }: AddCompaniesPageProps) {
-  const resolvedParams = await params
+export default function AddCompaniesPage({ params }: AddCompaniesPageProps) {
+  const resolvedParams = use(params)
   return <AddCompaniesClient projectId={resolvedParams.id} />
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
@@ -19,13 +19,9 @@ interface ProjectDetailPageProps {
   }>
 }
 
-export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-  const resolvedParams = await params
-
-  return <ProjectDetailClient projectId={resolvedParams.id} />
-}
-
-function ProjectDetailClient({ projectId }: { projectId: string }) {
+export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const resolvedParams = use(params)
+  const projectId = resolvedParams.id
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,7 +23,7 @@ export default function CompanySelectionPage() {
   const { toast } = useToast()
   const clientId = Number.parseInt(params.id as string)
 
-  const { client, isLoading: clientLoading } = useClient(clientId)
+  const { client, loading: clientLoading } = useClient(clientId)
 
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompanies, setSelectedCompanies] = useState<Set<number>>(new Set())
@@ -38,7 +38,7 @@ export default function CompanySelectionPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
   const [isAddingToProject, setIsAddingToProject] = useState(false)
 
-  const fetchCompanies = useCallback(async () => {
+  const fetchCompanies = async () => {
     if (!clientId) return
     
     setIsLoading(true)
@@ -67,9 +67,9 @@ export default function CompanySelectionPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [clientId, filters, toast])
+  }
 
-  const fetchProjects = useCallback(async () => {
+  const fetchProjects = async () => {
     if (!clientId) return
     
     try {
@@ -79,21 +79,22 @@ export default function CompanySelectionPage() {
     } catch (error) {
       console.error("案件データの取得に失敗しました:", error)
     }
-  }, [clientId])
+  }
 
   // 初回読み込み
   useEffect(() => {
     if (clientId) {
+      fetchCompanies()
       fetchProjects()
     }
-  }, [clientId, fetchProjects])
+  }, [clientId])
 
-  // フィルター変更時の再読み込み
+  // フィルター変更時の再読み込み（初回を除く）
   useEffect(() => {
     if (clientId) {
       fetchCompanies()
     }
-  }, [clientId, fetchCompanies])
+  }, [filters.page, filters.page_size, filters.search, filters.industry, filters.exclude_ng])
 
   const handleCompanySelect = (companyId: number, isSelected: boolean) => {
     const company = companies.find((c) => c.id === companyId)

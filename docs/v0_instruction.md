@@ -129,6 +129,38 @@ const response = await apiClient.get('/api/endpoint')
 const data = await apiClient.handleResponse(response)
 \`\`\`
 
+### Next.js 15のパラメータ処理（重要）
+**Next.js 15では、動的ルートのparamsがPromiseとして渡されます。クライアントコンポーネントではasync/awaitを使用できないため、React 19のuse()フックを使用します：**
+
+\`\`\`typescript
+// ❌ 間違い - クライアントコンポーネントでasyncは使えません
+"use client"
+export default async function Page({ params }) {
+  const id = params.id  // エラー：Promise型
+}
+
+// ❌ 間違い - useParams()は無限ループを引き起こす可能性があります
+"use client"
+import { useParams } from "next/navigation"
+export default function Page() {
+  const params = useParams()  // 無限レンダリングの原因
+}
+
+// ✅ 正しい使い方 - use()フックでPromiseを解決
+"use client"
+import { use } from "react"
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default function Page({ params }: PageProps) {
+  const resolvedParams = use(params)
+  const id = Number.parseInt(resolvedParams.id)
+  // ...
+}
+\`\`\`
+
 ## 主要APIエンドポイント
 
 ### クライアント管理

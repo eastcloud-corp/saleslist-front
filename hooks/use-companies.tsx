@@ -110,7 +110,7 @@ export function useCompanies(filters: CompanyFilter = {}, page = 1, limit = 100)
 
   useEffect(() => {
     fetchCompanies()
-  }, [filters, page, limit])
+  }, [JSON.stringify(filters), page, limit])
 
   return {
     companies,

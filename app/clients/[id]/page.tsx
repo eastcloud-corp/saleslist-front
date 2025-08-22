@@ -1,8 +1,7 @@
 "use client"
 
-import { useParams } from "next/navigation"
-import { useState } from "react"
-import { useClient, useClientStats, useClientProjects } from "@/hooks/use-clients"
+import { useState, use } from "react"
+import { useClient, useClientStats, useClientProjects, useClients } from "@/hooks/use-clients"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,14 +18,21 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
-export default function ClientDetailPage() {
-  const params = useParams()
-  const id = Number.parseInt(params.id as string)
+interface ClientDetailPageProps {
+  params: Promise<{
+    id: string
+  }>
+}
+
+export default function ClientDetailPage({ params }: ClientDetailPageProps) {
+  const resolvedParams = use(params)
+  const id = Number.parseInt(resolvedParams.id)
   const [isEditing, setIsEditing] = useState(false)
 
   const { client, loading: clientLoading, error: clientError } = useClient(id)
   const { stats, loading: statsLoading } = useClientStats(id)
   const { projects, loading: projectsLoading } = useClientProjects(id)
+  const { updateClient } = useClients()
 
   if (clientLoading) {
     return (
@@ -83,10 +89,21 @@ export default function ClientDetailPage() {
         {isEditing ? (
           <Card>
             <CardHeader>
-              <CardTitle>クライアント情報編集</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>クライアント情報編集</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                  キャンセル
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <ClientForm client={client} onSuccess={() => setIsEditing(false)} onCancel={() => setIsEditing(false)} />
+              <ClientForm 
+                client={client} 
+                onSubmit={async (data) => {
+                  await updateClient(id, data)
+                  setIsEditing(false)
+                }} 
+              />
             </CardContent>
           </Card>
         ) : (

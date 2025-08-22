@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,7 +38,9 @@ export default function CompanySelectionPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
   const [isAddingToProject, setIsAddingToProject] = useState(false)
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
+    if (!clientId) return
+    
     setIsLoading(true)
     try {
       const queryParams = new URLSearchParams()
@@ -65,9 +67,11 @@ export default function CompanySelectionPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [clientId, filters, toast])
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
+    if (!clientId) return
+    
     try {
       const response = await apiClient.get(`/clients/${clientId}/projects`)
       const data = await response.json()
@@ -75,14 +79,21 @@ export default function CompanySelectionPage() {
     } catch (error) {
       console.error("案件データの取得に失敗しました:", error)
     }
-  }
+  }, [clientId])
 
+  // 初回読み込み
+  useEffect(() => {
+    if (clientId) {
+      fetchProjects()
+    }
+  }, [clientId, fetchProjects])
+
+  // フィルター変更時の再読み込み
   useEffect(() => {
     if (clientId) {
       fetchCompanies()
-      fetchProjects()
     }
-  }, [clientId, filters.page, filters.page_size, filters.search, filters.industry, filters.exclude_ng])
+  }, [clientId, fetchCompanies])
 
   const handleCompanySelect = (companyId: number, isSelected: boolean) => {
     const company = companies.find((c) => c.id === companyId)

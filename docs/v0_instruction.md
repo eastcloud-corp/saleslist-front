@@ -1,7 +1,7 @@
 # Vercel v0向け実装指示書
 
 ## システム概要
-営業リスト管理システムのフロントエンドを実装してください。
+ソーシャルナビゲーターのフロントエンドを実装してください。
 クライアント企業からの営業代行依頼を管理し、NGリストによる企業フィルタリングを含む営業活動支援システムです。
 
 ## 重要な設計方針
@@ -92,7 +92,7 @@
 ### 環境変数（.env.local）
 \`\`\`
 NEXT_PUBLIC_API_URL=https://saleslist-mock-api.onrender.com
-NEXT_PUBLIC_APP_NAME=営業リスト管理システム
+NEXT_PUBLIC_APP_NAME=ソーシャルナビゲーター
 NEXT_PUBLIC_APP_VERSION=1.0.0
 \`\`\`
 

@@ -20,8 +20,8 @@ const openSans = Open_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "Sales Management System",
-  description: "Professional B2B sales list management platform",
+  title: "ソーシャルナビゲーター",
+  description: "プロフェッショナルなB2B営業支援プラットフォーム",
   generator: "v0.app",
 }
 

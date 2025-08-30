@@ -13,7 +13,7 @@ import type { Company } from "@/lib/types"
 import { Save, X } from "lucide-react"
 
 interface CompanyFormProps {
-  company: Company
+  company?: Company // Made company prop optional for new company creation
   onSave: (data: Partial<Company>) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
@@ -39,16 +39,16 @@ const statuses = [
 
 export function CompanyForm({ company, onSave, onCancel, isLoading = false }: CompanyFormProps) {
   const [formData, setFormData] = useState({
-    name: company.name,
-    industry: company.industry,
-    employee_count: company.employee_count,
-    revenue: company.revenue,
-    location: company.location,
-    website: company.website,
-    phone: company.phone,
-    email: company.email,
-    description: company.description,
-    status: company.status,
+    name: company?.name || "",
+    industry: company?.industry || "",
+    employee_count: company?.employee_count || 0,
+    revenue: company?.revenue || 0,
+    location: company?.location || "",
+    website: company?.website || "",
+    phone: company?.phone || "",
+    email: company?.email || "",
+    description: company?.description || "",
+    status: company?.status || "prospect",
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -108,7 +108,7 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
   return (
     <Card>
       <CardHeader>
-        <CardTitle>企業情報の編集</CardTitle>
+        <CardTitle>{company ? "企業情報の編集" : "新規企業登録"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

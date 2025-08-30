@@ -21,7 +21,7 @@ const openSans = Open_Sans({
 
 export const metadata: Metadata = {
   title: "ソーシャルナビゲーター",
-  description: "プロフェッショナルなB2B営業支援プラットフォーム",
+  description: "プロフェッショナルなB2B営業支援プラットフォーム - バジェットアドテクノロジー",
   generator: "v0.app",
 }
 

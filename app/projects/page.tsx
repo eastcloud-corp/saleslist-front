@@ -5,15 +5,38 @@ import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
 import { ProjectForm } from "@/components/projects/project-form"
 import { useProjects } from "@/hooks/use-projects"
+import { useClients } from "@/hooks/use-clients"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, FolderOpen, Calendar, Users } from "lucide-react"
+import { Plus, FolderOpen, Calendar, Users, Building2 } from "lucide-react"
 
 export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const { projects, isLoading, error, createProject } = useProjects()
+  const { clients } = useClients({ limit: 100 })
+
+  const getClientName = (project: any) => {
+    // If project has client_id, find the real client name
+    if (project.client_id && clients.length > 0) {
+      const client = clients.find((c) => c.id === project.client_id)
+      if (client) {
+        return client.name
+      }
+    }
+
+    // Handle client_company field from API response
+    if (project.client_company) {
+      // Check if it's placeholder/test data
+      if (project.client_company === "株式会社クライアント") {
+        return "テストデータ（要修正）"
+      }
+      return project.client_company
+    }
+
+    return "クライアント未設定"
+  }
 
   const handleCreateProject = async (data: any) => {
     try {
@@ -135,6 +158,10 @@ export default function ProjectsPage() {
                     <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
 
                     <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        <span className="font-medium">{getClientName(project)}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>開始: {formatDate(project.start_date)}</span>

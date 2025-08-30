@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, use } from "react"
+import { useState } from "react"
 import { useClient, useClientStats, useClientProjects, useClients } from "@/hooks/use-clients"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
@@ -24,9 +24,14 @@ interface ClientDetailPageProps {
   }>
 }
 
-export default function ClientDetailPage({ params }: ClientDetailPageProps) {
-  const resolvedParams = use(params)
+export default async function ClientDetailPage({ params }: ClientDetailPageProps) {
+  const resolvedParams = await params
   const id = Number.parseInt(resolvedParams.id)
+
+  return <ClientDetailContent id={id} />
+}
+
+function ClientDetailContent({ id }: { id: number }) {
   const [isEditing, setIsEditing] = useState(false)
 
   const { client, loading: clientLoading, error: clientError } = useClient(id)
@@ -97,12 +102,12 @@ export default function ClientDetailPage({ params }: ClientDetailPageProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <ClientForm 
-                client={client} 
+              <ClientForm
+                client={client}
                 onSubmit={async (data) => {
                   await updateClient(id, data)
                   setIsEditing(false)
-                }} 
+                }}
               />
             </CardContent>
           </Card>

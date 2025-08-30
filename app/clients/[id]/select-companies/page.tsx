@@ -40,7 +40,7 @@ export default function CompanySelectionPage() {
 
   const fetchCompanies = async () => {
     if (!clientId) return
-    
+
     setIsLoading(true)
     try {
       const queryParams = new URLSearchParams()
@@ -49,7 +49,7 @@ export default function CompanySelectionPage() {
           queryParams.append(key, String(value))
         }
       })
-      
+
       const response = await apiClient.get(`/clients/${clientId}/available-companies?${queryParams.toString()}`)
       const data = await response.json()
 
@@ -71,7 +71,7 @@ export default function CompanySelectionPage() {
 
   const fetchProjects = async () => {
     if (!clientId) return
-    
+
     try {
       const response = await apiClient.get(`/clients/${clientId}/projects`)
       const data = await response.json()
@@ -137,11 +137,10 @@ export default function CompanySelectionPage() {
 
     setIsAddingToProject(true)
     try {
-      const response = await apiClient.post(
-        `/projects/${selectedProjectId}/add-companies`,
-        { company_ids: Array.from(selectedCompanies) }
-      )
-      
+      const response = await apiClient.post(`/projects/${selectedProjectId}/add-companies`, {
+        company_ids: Array.from(selectedCompanies),
+      })
+
       if (!response.ok) {
         throw new Error("Failed to add companies")
       }
@@ -326,10 +325,10 @@ export default function CompanySelectionPage() {
                                 <TooltipContent>
                                   <div className="space-y-1">
                                     <p className="font-medium">NG企業</p>
-                                    {company.ng_status?.reasons.global && (
+                                    {company.ng_status?.reasons?.global && (
                                       <p className="text-sm">グローバルNG: {company.ng_status.reasons.global}</p>
                                     )}
-                                    {company.ng_status?.reasons.client && (
+                                    {company.ng_status?.reasons?.client && (
                                       <p className="text-sm">
                                         クライアントNG: {company.ng_status.reasons.client.reason}
                                       </p>

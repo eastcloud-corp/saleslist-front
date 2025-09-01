@@ -158,7 +158,7 @@ export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="user@example.com"
+                  placeholder="admin@your-company.com"
                   required
                 />
               </div>

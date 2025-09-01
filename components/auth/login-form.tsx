@@ -90,11 +90,6 @@ export function LoginForm() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>デモ認証情報:</p>
-            <p>メール: user@example.com</p>
-            <p>パスワード: password123</p>
-          </div>
         </CardContent>
       </Card>
     </div>

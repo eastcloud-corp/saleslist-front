@@ -1,0 +1,127 @@
+{
+  "timestamp": "2025-09-01T01:51:13.681482",
+  "total_pages": 14,
+  "total_apis": 47,
+  "success_pages": 14,
+  "success_apis": 47,
+  "page_success_rate": 100.0,
+  "api_success_rate": 100.0,
+  "url_api_mapping": [
+    {
+      "page": "/login",
+      "apis": []
+    },
+    {
+      "page": "/",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/dashboard/stats",
+        "/api/v1/dashboard/recent-projects",
+        "/api/v1/dashboard/recent-companies"
+      ]
+    },
+    {
+      "page": "/dashboard",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/dashboard/stats",
+        "/api/v1/dashboard/recent-projects",
+        "/api/v1/dashboard/recent-companies"
+      ]
+    },
+    {
+      "page": "/clients",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/clients/",
+        "/api/v1/master/industries/",
+        "/api/v1/master/statuses/"
+      ]
+    },
+    {
+      "page": "/clients/new",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/master/industries/",
+        "/api/v1/master/statuses/"
+      ]
+    },
+    {
+      "page": "/clients/1",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/clients/1/",
+        "/api/v1/clients/1/stats/",
+        "/api/v1/clients/1/ng-companies/",
+        "/api/v1/clients/1/projects/"
+      ]
+    },
+    {
+      "page": "/clients/1/select-companies",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/clients/1/",
+        "/api/v1/companies/",
+        "/api/v1/master/industries/"
+      ]
+    },
+    {
+      "page": "/companies",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/companies/",
+        "/api/v1/master/industries/",
+        "/api/v1/master/statuses/"
+      ]
+    },
+    {
+      "page": "/companies/new",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/master/industries/",
+        "/api/v1/master/prefectures/"
+      ]
+    },
+    {
+      "page": "/companies/5",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/companies/5/",
+        "/api/v1/companies/5/executives/"
+      ]
+    },
+    {
+      "page": "/projects",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/projects/",
+        "/api/v1/master/statuses/"
+      ]
+    },
+    {
+      "page": "/projects/1",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/projects/1/",
+        "/api/v1/projects/1/companies/",
+        "/api/v1/master/statuses/"
+      ]
+    },
+    {
+      "page": "/projects/1/add-companies",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/projects/1/",
+        "/api/v1/projects/1/available-companies/",
+        "/api/v1/master/industries/"
+      ]
+    },
+    {
+      "page": "/settings",
+      "apis": [
+        "/api/v1/auth/me",
+        "/api/v1/auth/users/"
+      ]
+    }
+  ]
+}

@@ -30,49 +30,19 @@ export function useUsers() {
       setError(null)
       console.log("[v0] Fetching users...")
 
-      const response = await apiClient.get("/users/")
+      const response = await apiClient.get("/auth/users/")
       console.log("[v0] Users API response:", response)
 
-      if (response.results) {
-        setUsers(response.results)
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.results || [])
       } else {
-        // モックデータ（APIが未実装の場合）
-        setUsers([
-          {
-            id: 1,
-            name: "管理者",
-            email: "admin@example.com",
-            role: "admin",
-            created_at: "2025-01-01T00:00:00Z",
-            last_login: "2025-01-20T10:00:00Z",
-            is_active: true,
-          },
-          {
-            id: 2,
-            name: "田中太郎",
-            email: "tanaka@example.com",
-            role: "user",
-            created_at: "2025-01-05T00:00:00Z",
-            last_login: "2025-01-19T15:30:00Z",
-            is_active: true,
-          },
-        ])
+        throw new Error("ユーザー一覧の取得に失敗しました")
       }
     } catch (err) {
       console.error("[v0] Users fetch error:", err)
       setError("ユーザー一覧の取得に失敗しました")
-      // エラー時もモックデータを表示
-      setUsers([
-        {
-          id: 1,
-          name: "管理者",
-          email: "admin@example.com",
-          role: "admin",
-          created_at: "2025-01-01T00:00:00Z",
-          last_login: "2025-01-20T10:00:00Z",
-          is_active: true,
-        },
-      ])
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -84,8 +54,13 @@ export function useUsers() {
       setError(null)
       console.log("[v0] Inviting user:", invitation)
 
-      const response = await apiClient.post("/users/invite/", invitation)
-      console.log("[v0] User invitation response:", response)
+      const response = await apiClient.post("/auth/users/create/", {
+        name: invitation.email.split('@')[0], // emailからデフォルト名
+        email: invitation.email,
+        role: invitation.role,
+        password: 'temp123' // 一時パスワード
+      })
+      console.log("[v0] User creation response:", response)
 
       // 成功時はユーザー一覧を再取得
       await fetchUsers()
@@ -106,7 +81,7 @@ export function useUsers() {
       setError(null)
       console.log("[v0] Updating user role:", { userId, role })
 
-      const response = await apiClient.patch(`/users/${userId}/`, { role })
+      const response = await apiClient.patch(`/auth/users/${userId}/`, { role })
       console.log("[v0] User role update response:", response)
 
       // 成功時はユーザー一覧を再取得
@@ -122,26 +97,30 @@ export function useUsers() {
     }
   }
 
-  const deactivateUser = async (userId: number) => {
+  const updateUserStatus = async (userId: number, isActive: boolean) => {
     try {
       setLoading(true)
       setError(null)
-      console.log("[v0] Deactivating user:", userId)
+      console.log("[v0] Updating user status:", { userId, isActive })
 
-      const response = await apiClient.patch(`/users/${userId}/`, { is_active: false })
-      console.log("[v0] User deactivation response:", response)
+      const response = await apiClient.patch(`/auth/users/${userId}/`, { is_active: isActive })
+      console.log("[v0] User status update response:", response)
 
       // 成功時はユーザー一覧を再取得
       await fetchUsers()
-      return { success: true, message: "ユーザーを無効化しました" }
+      return { success: true, message: `ユーザーを${isActive ? '有効化' : '無効化'}しました` }
     } catch (err) {
-      console.error("[v0] User deactivation error:", err)
-      const errorMessage = "ユーザーの無効化に失敗しました"
+      console.error("[v0] User status update error:", err)
+      const errorMessage = `ユーザーの${isActive ? '有効化' : '無効化'}に失敗しました`
       setError(errorMessage)
       return { success: false, message: errorMessage }
     } finally {
       setLoading(false)
     }
+  }
+
+  const deactivateUser = async (userId: number) => {
+    return await updateUserStatus(userId, false)
   }
 
   useEffect(() => {
@@ -153,8 +132,10 @@ export function useUsers() {
     loading,
     error,
     fetchUsers,
+    refetch: fetchUsers, // エイリアスを追加
     inviteUser,
     updateUserRole,
+    updateUserStatus,
     deactivateUser,
   }
 }

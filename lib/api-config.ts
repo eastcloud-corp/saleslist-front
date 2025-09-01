@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://saleslist-mock-api.onrender.com",
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1",
   ENDPOINTS: {
     // Authentication
     LOGIN: "/auth/login",
@@ -86,6 +86,20 @@ class ApiClient {
   async put(endpoint: string, data?: any, options?: RequestInit): Promise<Response> {
     const response = await fetch(this.buildUrl(endpoint), {
       method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.getAuthHeaders(),
+        ...options?.headers,
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    })
+    return response
+  }
+
+  async patch(endpoint: string, data?: any, options?: RequestInit): Promise<Response> {
+    const response = await fetch(this.buildUrl(endpoint), {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         ...this.getAuthHeaders(),

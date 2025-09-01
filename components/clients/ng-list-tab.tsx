@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Upload, Download, Trash2, AlertCircle, FileText } from "lucide-react"
+import { Upload, Download, Trash2, AlertCircle, FileText, Search, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useNGList } from "@/hooks/use-ng-list"
 import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
+import { CompanySearchDialog } from "./company-search-dialog"
 
 interface NGListTabProps {
   clientId: number
@@ -20,7 +21,8 @@ interface NGListTabProps {
 
 export function NGListTab({ clientId }: NGListTabProps) {
   const [isImporting, setIsImporting] = useState(false)
-  const { ngList, stats, isLoading, error, importCSV, deleteNG } = useNGList(clientId)
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false)
+  const { ngList, stats, isLoading, error, importCSV, deleteNG, addCompanyToNG } = useNGList(clientId)
   const { toast } = useToast()
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,6 +99,10 @@ export function NGListTab({ clientId }: NGListTabProps) {
     }
   }
 
+  const handleAddCompanyToNG = async (company: any, reason: string) => {
+    await addCompanyToNG(company.id, company.name, reason)
+  }
+
   if (isLoading) {
     return <LoadingSpinner />
   }
@@ -107,40 +113,24 @@ export function NGListTab({ clientId }: NGListTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* インポートセクション */}
+      {/* 企業追加セクション */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            NGリストインポート
+            <Search className="h-5 w-5" />
+            企業検索からNG企業追加
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                disabled={isImporting}
-                className="cursor-pointer"
-              />
-            </div>
-            <Button variant="outline" onClick={downloadTemplate} disabled={isImporting}>
-              <Download className="mr-2 h-4 w-4" />
-              テンプレート
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              企業管理データから企業を検索してNGリストに追加できます
+            </p>
+            <Button onClick={() => setIsSearchDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              企業検索
             </Button>
           </div>
-          <div className="mt-2 space-y-1">
-            <p className="text-sm text-muted-foreground">CSV形式で企業名とNG理由を一括登録できます</p>
-            <p className="text-xs text-muted-foreground">ファイルサイズ上限: 10MB | 対応形式: CSV (UTF-8)</p>
-          </div>
-          {isImporting && (
-            <div className="mt-4 flex items-center gap-2">
-              <LoadingSpinner size="sm" />
-              <span className="text-sm">インポート中...</span>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -148,13 +138,51 @@ export function NGListTab({ clientId }: NGListTabProps) {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              登録済みNGリスト ({stats.count}件)
-            </CardTitle>
-            <div className="flex gap-2">
-              <Badge variant="default">マッチ済: {stats.matched_count}</Badge>
-              <Badge variant="secondary">未マッチ: {stats.unmatched_count}</Badge>
+            <div className="flex items-center gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                登録済みNGリスト ({stats.count}件)
+              </CardTitle>
+              <div className="flex gap-2">
+                <Badge variant="default">マッチ済: {stats.matched_count}</Badge>
+                <Badge variant="secondary">未マッチ: {stats.unmatched_count}</Badge>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={downloadTemplate} disabled={isImporting} size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                CSVテンプレート
+              </Button>
+              <div className="relative">
+                <Input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  disabled={isImporting}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  id="csv-import"
+                />
+                <Button 
+                  variant="default" 
+                  disabled={isImporting}
+                  size="sm"
+                  asChild
+                >
+                  <label htmlFor="csv-import" className="cursor-pointer">
+                    {isImporting ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-2" />
+                        インポート中...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        CSVインポート
+                      </>
+                    )}
+                  </label>
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -164,7 +192,7 @@ export function NGListTab({ clientId }: NGListTabProps) {
               <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-2 text-sm font-semibold">NGリストが登録されていません</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                CSVファイルをインポートしてNGリストを登録してください
+                企業検索またはCSVインポートでNGリストを登録してください
               </p>
             </div>
           ) : (
@@ -203,6 +231,14 @@ export function NGListTab({ clientId }: NGListTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Company Search Dialog */}
+      <CompanySearchDialog
+        open={isSearchDialogOpen}
+        onOpenChange={setIsSearchDialogOpen}
+        onAddToNGList={handleAddCompanyToNG}
+        clientId={clientId}
+      />
     </div>
   )
 }

@@ -3,28 +3,13 @@
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LoadingSpinner } from "@/components/common/loading-spinner"
+import { ErrorAlert } from "@/components/common/error-alert"
 import { Building2, FolderOpen, TrendingUp, Users } from "lucide-react"
+import { useDashboard } from "@/hooks/use-dashboard"
 
 export default function DashboardPage() {
-  // Mock data - in real app, this would come from API
-  const stats = {
-    totalCompanies: 25000,
-    activeProjects: 12,
-    prospectCompanies: 1250,
-    completedDeals: 45,
-  }
-
-  const recentProjects = [
-    { id: 1, name: "Q1 新規開拓キャンペーン", status: "active", companies: 150 },
-    { id: 2, name: "製造業向けソリューション", status: "active", companies: 89 },
-    { id: 3, name: "IT企業向けプロモーション", status: "paused", companies: 67 },
-  ]
-
-  const recentCompanies = [
-    { id: 1, name: "株式会社テクノロジー", industry: "IT・ソフトウェア", status: "prospect" },
-    { id: 2, name: "製造株式会社", industry: "製造業", status: "active" },
-    { id: 3, name: "商事株式会社", industry: "商社・卸売", status: "prospect" },
-  ]
+  const { stats, recentProjects, recentCompanies, loading, error } = useDashboard()
 
   const getStatusBadge = (status: string) => {
     const variants = {

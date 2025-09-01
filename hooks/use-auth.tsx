@@ -23,16 +23,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         if (authService.isAuthenticated()) {
-          // In a real app, you'd validate the token and get user info
-          // For now, we'll just set a mock user if token exists
-          setUser({
-            id: "1",
-            email: "user@example.com",
-            name: "Demo User",
-            role: "admin",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+          // Django API でユーザー情報取得
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${authService.getAccessToken()}`
+            }
           })
+          
+          if (response.ok) {
+            const userData = await response.json()
+            setUser({
+              id: userData.id.toString(),
+              email: userData.email,
+              name: userData.name,
+              role: userData.role,
+              created_at: userData.created_at,
+              updated_at: userData.updated_at,
+            })
+          } else {
+            // トークンが無効な場合はログアウト
+            await authService.logout()
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error)

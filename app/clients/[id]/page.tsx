@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { useClient, useClientStats, useClientProjects, useClients } from "@/hooks/use-clients"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
@@ -24,8 +24,8 @@ interface ClientDetailPageProps {
   }>
 }
 
-export default async function ClientDetailPage({ params }: ClientDetailPageProps) {
-  const resolvedParams = await params
+export default function ClientDetailPage({ params }: ClientDetailPageProps) {
+  const resolvedParams = use(params)
   const id = Number.parseInt(resolvedParams.id)
 
   return <ClientDetailContent id={id} />

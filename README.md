@@ -1,30 +1,143 @@
-# budget sales
+# ソーシャルナビゲーター フロントエンド
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Next.js + React による BtoB営業支援プラットフォームのフロントエンドアプリケーション
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/kokikuchi-9805s-projects/v0-budget-sales)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/9QzEWSyjaBZ)
+## 🚀 起動手順
 
-## Overview
+### **1. 依存関係のインストール**
+```bash
+npm install
+```
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+### **2. 環境変数の設定**
+```bash
+# .env.local ファイルを作成（初回のみ）
+cp .env.development .env.local
 
-## Deployment
+# 環境変数の内容
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+```
 
-Your project is live at:
+### **3. 開発サーバーの起動**
+```bash
+# 開発サーバー起動
+npm run dev
 
-**[https://vercel.com/kokikuchi-9805s-projects/v0-budget-sales](https://vercel.com/kokikuchi-9805s-projects/v0-budget-sales)**
+# アプリケーションが http://localhost:3000 で起動
+```
 
-## Build your app
+### **4. Dockerを使用した起動**
+```bash
+# ルートディレクトリで全体起動
+cd ../
+docker-compose -f saleslist-backend/docker/docker-compose.yml up
 
-Continue building your app on:
+# フロントエンドは http://localhost:3002 で起動
+```
 
-**[https://v0.app/chat/projects/9QzEWSyjaBZ](https://v0.app/chat/projects/9QzEWSyjaBZ)**
+## 🔧 技術スタック
 
-## How It Works
+- **Next.js**: 15.2.4
+- **React**: 19
+- **TypeScript**: 5
+- **Tailwind CSS**: 4.1.9
+- **UI Components**: Radix UI
+- **Form管理**: React Hook Form + Zod
+- **アイコン**: Lucide React
+- **テーマ**: next-themes
+- **グラフ**: Recharts
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+## 🧪 テスト実行
+
+```bash
+# 単体テスト
+npm run test
+
+# 単体テスト（ウォッチモード）
+npm run test:watch
+
+# 統合テスト
+npm run test:integration
+
+# E2Eテスト
+npm run test:e2e
+
+# 全テスト実行
+npm run test:all
+```
+
+## 🛠️ 開発コマンド
+
+```bash
+# 開発サーバー起動
+npm run dev
+
+# 本番ビルド
+npm run build
+
+# 本番サーバー起動
+npm run start
+
+# Linting
+npm run lint
+```
+
+## 📱 主要機能
+
+### **認証・ユーザー管理**
+- ログイン・ログアウト
+- ユーザー一覧・作成・編集
+
+### **プロジェクト管理**
+- プロジェクト一覧・作成・編集
+- 企業割り当て・営業ステータス管理
+
+### **企業管理**
+- 企業検索・フィルタリング
+- 企業詳細情報表示・編集
+- NG企業管理
+
+### **ダッシュボード**
+- 営業統計・グラフ表示
+- 最近のアクティビティ
+- プロジェクト進捗状況
+
+## 🔗 API連携
+
+バックエンド（Django）との連携：
+- ベースURL: `http://localhost:8080/api/v1`
+- 認証: JWT トークン
+- CORS設定: 開発環境で `localhost:3000` 許可
+
+## 📁 ディレクトリ構成
+
+```
+saleslist-front/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # 認証関連ページ
+│   ├── dashboard/         # ダッシュボード
+│   ├── projects/          # プロジェクト管理
+│   ├── companies/         # 企業管理
+│   └── settings/          # 設定画面
+├── components/            # 再利用可能コンポーネント
+│   ├── ui/               # UIコンポーネント（Radix UI）
+│   └── forms/            # フォームコンポーネント
+├── lib/                  # ユーティリティ関数
+├── hooks/                # カスタムReact Hooks
+├── types/                # TypeScript型定義
+└── public/               # 静的ファイル
+```
+
+## 🌐 本番デプロイ
+
+```bash
+# 本番ビルド
+npm run build
+
+# Docker経由でのデプロイ
+# docker-compose.yml で設定済み
+```
+
+## 📞 サポート
+
+バックエンドAPI仕様については `../saleslist-backend/README.md` を参照

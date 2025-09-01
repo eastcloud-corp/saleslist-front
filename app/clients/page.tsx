@@ -15,7 +15,7 @@ export default function ClientsPage() {
   const router = useRouter()
   const [filters, setFilters] = useState({
     search: "",
-    industry: "all",
+    industry: undefined as string | undefined,
     is_active: undefined as boolean | undefined,
   })
 
@@ -32,7 +32,7 @@ export default function ClientsPage() {
   const clearFilters = () => {
     setFilters({
       search: "",
-      industry: "all",
+      industry: undefined,
       is_active: undefined,
     })
   }

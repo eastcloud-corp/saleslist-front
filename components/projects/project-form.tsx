@@ -55,11 +55,11 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
     }
 
     if (!formData.start_date) {
-      newErrors.start_date = "開始日は必須です"
+      newErrors.start_date = "契約開始日は必須です"
     }
 
     if (formData.end_date && formData.start_date && new Date(formData.end_date) < new Date(formData.start_date)) {
-      newErrors.end_date = "終了日は開始日より後である必要があります"
+      newErrors.end_date = "契約終了日は契約開始日より後である必要があります"
     }
 
     setErrors(newErrors)
@@ -178,7 +178,7 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
 
             {/* Start Date */}
             <div>
-              <Label htmlFor="start_date">開始日 *</Label>
+              <Label htmlFor="start_date">契約開始日 *</Label>
               <Input
                 id="start_date"
                 type="date"
@@ -192,7 +192,7 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
 
             {/* End Date */}
             <div>
-              <Label htmlFor="end_date">終了日</Label>
+              <Label htmlFor="end_date">契約終了日</Label>
               <Input
                 id="end_date"
                 type="date"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ProjectForm } from "@/components/projects/project-form"
 import { ProjectCompanies } from "@/components/projects/project-companies"
+import { SalesStatusManager } from "@/components/projects/sales-status-manager"
 import { useProject } from "@/hooks/use-projects"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,16 +34,21 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
   }
 
   const handleDelete = async () => {
-    if (!confirm("この案件を削除してもよろしいですか？この操作は取り消せません。")) {
+    if (!confirm("この案件を削除してもよろしいですか？（ステータスが'削除済み'に変更されます）")) {
       return
     }
 
     setIsDeleting(true)
     try {
-      // TODO: Implement delete project API call
+      console.log("[v0] プロジェクト削除（ステータス更新）:", projectId)
+      
+      // 物理削除ではなく、ステータス管理による論理削除
+      await updateProject({ status: '削除済み' })
+      
+      console.log("[v0] プロジェクトステータス更新成功: 削除済み")
       router.push("/projects")
     } catch (error) {
-      console.error("Failed to delete project:", error)
+      console.error("[v0] プロジェクト削除エラー:", error)
       setIsDeleting(false)
     }
   }
@@ -51,7 +57,28 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
     router.push(`/projects/${projectId}/add-companies`)
   }
 
+  const handleSalesStatusUpdate = async (companyId: string, status: string, notes?: string) => {
+    try {
+      await updateCompanyStatus(Number(companyId), { status, notes })
+      console.log(`[v0] 営業ステータス更新成功: ${companyId} -> ${status}`)
+    } catch (error) {
+      console.error(`[v0] 営業ステータス更新エラー:`, error)
+      throw error
+    }
+  }
+
+  const handleToggleActive = async (companyId: string, isActive: boolean) => {
+    try {
+      await updateCompanyStatus(Number(companyId), { is_active: isActive })
+      console.log(`[v0] 企業アクティブ状態更新成功: ${companyId} -> ${isActive}`)
+    } catch (error) {
+      console.error(`[v0] 企業アクティブ状態更新エラー:`, error)
+      throw error
+    }
+  }
+
   const formatDate = (dateString: string) => {
+    if (!dateString) return "未設定"
     return new Date(dateString).toLocaleDateString("ja-JP")
   }
 
@@ -148,21 +175,19 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
                 {getStatusBadge(project.status)}
               </div>
               <div>
-                <h4 className="font-medium text-sm text-muted-foreground mb-1">開始日</h4>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">契約開始日</h4>
                 <p className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {formatDate(project.start_date)}
+                  {formatDate(project.start_date || "")}
                 </p>
               </div>
-              {project.end_date && (
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-1">終了日</h4>
-                  <p className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(project.end_date)}
-                  </p>
-                </div>
-              )}
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">契約終了日</h4>
+                <p className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(project.end_date || "")}
+                </p>
+              </div>
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">企業数</h4>
                 <p>{project.companies?.length || 0} 社</p>
@@ -188,9 +213,11 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
       {/* Project Companies */}
       <ProjectCompanies
         companies={project.companies || []}
-        onUpdateStatus={updateCompanyStatus}
-        onRemoveCompany={removeCompany}
+        onUpdateStatus={handleSalesStatusUpdate}
+        onRemoveCompany={async (companyId: string) => { await removeCompany(Number(companyId)) }}
+        onToggleActive={handleToggleActive}
         onAddCompany={handleAddCompany}
+        projectId={projectId}
       />
     </div>
   )

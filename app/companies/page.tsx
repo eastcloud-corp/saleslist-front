@@ -9,7 +9,7 @@ import { useCompanies } from "@/hooks/use-companies"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
-import type { CompanyFilters as CompanyFiltersType } from "@/lib/types"
+import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
 import { Download, Plus, Upload, ArrowLeft, Database } from "lucide-react"
 import Link from "next/link"
 
@@ -59,12 +59,6 @@ export default function CompaniesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/clients">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                クライアント一覧へ
-              </Button>
-            </Link>
             <div>
               <div className="flex items-center gap-2">
                 <Database className="h-6 w-6 text-gray-600" />

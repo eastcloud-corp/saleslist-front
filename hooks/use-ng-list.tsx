@@ -21,7 +21,7 @@ export function useNGList(clientId: number) {
 
     try {
       const response = await apiClient.get(`/clients/${clientId}/ng-companies`)
-      const data = await apiClient.handleResponse(response)
+      const data = await apiClient.handleResponse(response) as any
       console.log("[v0] NG list response:", data)
 
       setNgList(data.results || [])
@@ -50,7 +50,7 @@ export function useNGList(clientId: number) {
       const response = await apiClient.post(`/clients/${clientId}/ng-companies/import`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
-      const data = await apiClient.handleResponse(response)
+      const data = await apiClient.handleResponse(response) as NGImportResult
 
       await fetchNGList() // リスト再取得
       return data
@@ -73,6 +73,23 @@ export function useNGList(clientId: number) {
     }
   }
 
+  const addCompanyToNG = async (companyId: number, companyName: string, reason: string) => {
+    console.log("[v0] Adding company to NG list:", { companyId, companyName, reason })
+
+    try {
+      const response = await apiClient.post(`/clients/${clientId}/ng-companies/add/`, {
+        company_id: companyId,
+        company_name: companyName,
+        reason: reason,
+      })
+      await apiClient.handleResponse(response)
+      await fetchNGList()
+    } catch (err) {
+      console.error("[v0] NG company add error:", err)
+      throw new Error("NG企業の追加に失敗しました")
+    }
+  }
+
   useEffect(() => {
     if (clientId) {
       fetchNGList()
@@ -86,6 +103,7 @@ export function useNGList(clientId: number) {
     error,
     importCSV,
     deleteNG,
+    addCompanyToNG,
     refetch: fetchNGList,
   }
 }

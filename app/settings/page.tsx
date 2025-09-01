@@ -1,5 +1,6 @@
 "use client"
 
+import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserInviteDialog } from "@/components/settings/user-invite-dialog"
@@ -10,10 +11,11 @@ import { ErrorAlert } from "@/components/common/error-alert"
 import { Users, Shield, SettingsIcon } from "lucide-react"
 
 export default function SettingsPage() {
-  const { users, loading, error } = useUsers()
+  const { users, loading, error, refetch } = useUsers()
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <MainLayout>
+      <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">設定</h1>
@@ -45,7 +47,7 @@ export default function SettingsPage() {
                   <CardTitle>ユーザー管理</CardTitle>
                   <CardDescription>システムユーザーの招待、権限変更、無効化を行います</CardDescription>
                 </div>
-                <UserInviteDialog />
+                <UserInviteDialog onUserCreated={refetch} />
               </div>
             </CardHeader>
             <CardContent>
@@ -56,7 +58,7 @@ export default function SettingsPage() {
                 </div>
               )}
               {error && <ErrorAlert message={error} />}
-              {!loading && !error && <UserTable users={users} />}
+              {!loading && !error && <UserTable users={users} onUserUpdated={refetch} />}
             </CardContent>
           </Card>
         </TabsContent>
@@ -106,6 +108,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </MainLayout>
   )
 }

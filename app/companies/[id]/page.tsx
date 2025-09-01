@@ -64,9 +64,13 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
   }
 
   const getStatusBadge = (status: string) => {
+    if (!status) {
+      return <Badge variant="outline">不明</Badge>
+    }
+    
     const variants = {
       active: "default",
-      prospect: "secondary",
+      prospect: "secondary", 
       inactive: "outline",
     } as const
 
@@ -161,9 +165,37 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                   <p>{company.industry}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-1">ステータス</h4>
-                  {getStatusBadge(company.status)}
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">法人番号</h4>
+                  <p>{company.corporate_number || '未設定'}</p>
                 </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">事業形態</h4>
+                  <p>{company.tob_toc_type || '未設定'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">担当者</h4>
+                  <p>{company.contact_person_name || '未設定'} {company.contact_person_position && `(${company.contact_person_position})`}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">資本金</h4>
+                  <p>{company.capital ? `¥${company.capital.toLocaleString()}` : '未設定'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">ステータス</h4>
+                  {getStatusBadge(company.status || "prospect")}
+                </div>
+                <div className="col-span-full">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">事業内容</h4>
+                  <p className="text-sm">{company.business_description || '未設定'}</p>
+                </div>
+                {company.facebook_url && (
+                  <div>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-1">Facebook</h4>
+                    <a href={company.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                      {company.facebook_url}
+                    </a>
+                  </div>
+                )}
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">従業員数</h4>
                   <p>{new Intl.NumberFormat("ja-JP").format(company.employee_count)}</p>
@@ -231,7 +263,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
         )}
 
         {/* Executives */}
-        <ExecutiveList executives={company.executives} />
+        <ExecutiveList executives={company.executives || []} />
       </div>
     </MainLayout>
   )

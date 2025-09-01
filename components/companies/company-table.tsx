@@ -101,8 +101,8 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
               ) : (
                 companies.map((company) => {
                   const ngStatus = company.ng_status
-                  const hasClientNG = ngStatus?.types.includes("client")
-                  const hasProjectNG = ngStatus?.types.includes("project")
+                  const hasClientNG = ngStatus?.types?.includes("client")
+                  const hasProjectNG = ngStatus?.types?.includes("project")
                   const hasGlobalNG = company.is_global_ng
                   const hasAnyNG = hasClientNG || hasProjectNG || hasGlobalNG
 
@@ -131,7 +131,10 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
                                   <div className="flex items-center gap-1">
                                     <Info className="h-4 w-4 text-amber-600" />
                                     <Badge variant="outline" className="text-xs border-amber-200 text-amber-700">
-                                      NG情報あり
+                                      {hasGlobalNG && hasClientNG ? "複数NG" : 
+                                       hasGlobalNG ? "グローバルNG" :
+                                       hasClientNG ? "クライアントNG" : 
+                                       hasProjectNG ? "案件NG" : "NG"}
                                     </Badge>
                                   </div>
                                 </TooltipTrigger>
@@ -144,7 +147,7 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
                                         <p className="text-xs text-red-600">全案件で営業対象外</p>
                                       </div>
                                     )}
-                                    {hasClientNG && ngStatus?.reasons.client && (
+                                    {hasClientNG && ngStatus?.reasons?.client && (
                                       <div className="p-2 bg-amber-50 rounded border-l-2 border-amber-200">
                                         <p className="text-sm font-medium text-amber-800">
                                           クライアントNG: {ngStatus.reasons.client.name}
@@ -157,7 +160,7 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
                                         </p>
                                       </div>
                                     )}
-                                    {hasProjectNG && ngStatus?.reasons.project && (
+                                    {hasProjectNG && ngStatus?.reasons?.project && (
                                       <div className="p-2 bg-blue-50 rounded border-l-2 border-blue-200">
                                         <p className="text-sm font-medium text-blue-800">
                                           案件NG: {ngStatus.reasons.project.name}

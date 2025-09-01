@@ -46,16 +46,40 @@ export interface Client {
 export interface Company {
   id: number
   name: string
+  corporate_number?: string
   industry: string
+  
+  // 担当者情報
+  contact_person_name?: string
+  contact_person_position?: string
+  facebook_url?: string
+  
+  // 事業情報
+  tob_toc_type?: string
+  business_description?: string
+  description?: string
+  
+  // 規模情報
   employee_count: number
   revenue: number
+  capital?: number
+  established_year: number
+  
+  // 所在地情報
   prefecture: string
   city: string
-  established_year: number
+  location?: string
+  
+  // 連絡先情報
   website_url: string
+  website?: string
   contact_email: string
+  email?: string
   phone: string
+  
+  // システム管理
   notes: string
+  status?: "active" | "prospect" | "inactive"
   is_global_ng: boolean
   created_at: string
   updated_at: string
@@ -64,8 +88,8 @@ export interface Company {
   // NG判定情報（追加）
   ng_status?: {
     is_ng: boolean
-    types: Array<"global" | "client" | "project">
-    reasons: {
+    types?: Array<"global" | "client" | "project">
+    reasons?: {
       global?: string
       client?: { id: number; name: string; reason: string }
       project?: { id: number; name: string; reason: string }
@@ -79,6 +103,10 @@ export interface Executive {
   position: string
   facebook_url?: string
   other_sns_url?: string
+  linkedin_url?: string
+  twitter_url?: string
+  email?: string
+  phone?: string
   direct_email?: string
   notes?: string
   company_id?: number
@@ -92,9 +120,12 @@ export interface Project {
   name: string
   client_company?: string
   description?: string
-  status: "active" | "planning" | "in_progress" | "completed" | "cancelled" | "進行中" | "完了" | "中止"
-  start_date?: string // 開始日
-  end_date?: string // 終了日
+  manager?: string
+  target_industry?: string
+  target_company_size?: string
+  status: "active" | "planning" | "in_progress" | "completed" | "cancelled" | "進行中" | "完了" | "中止" | "削除済み"
+  start_date?: string // 契約開始日
+  end_date?: string // 契約終了日
   assigned_user?: string
   created_at: string
   updated_at: string
@@ -108,14 +139,18 @@ export interface Project {
 export interface ProjectCompany {
   id: number
   project_id: number
-  company_id: number
-  company: Company
+  company_id?: number
+  company?: Company
+  company_name?: string
+  company_industry?: string
   status: "未接触" | "DM送信済み" | "返信あり" | "アポ獲得" | "成約" | "NG" | string
   contact_date?: string
   next_action?: string
   notes?: string
   staff_id?: number
   staff_name?: string
+  follow_up_date?: string
+  is_active?: boolean
   added_at: string
   updated_at: string
 }
@@ -166,6 +201,7 @@ export interface CompanyFilter {
   project_id?: number
   page?: number
   page_size?: number
+  limit?: number
   random_seed?: string
 }
 

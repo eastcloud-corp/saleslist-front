@@ -41,7 +41,13 @@ export function useClients(options: UseClientsOptions = {}) {
       const params = new URLSearchParams({
         page: page.toString(),
         page_size: limit.toString(),
-        ...Object.fromEntries(Object.entries(filters).filter(([_, value]) => value !== undefined && value !== "")),
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([key, value]) => 
+            value !== undefined && 
+            value !== "" && 
+            !(key === 'industry' && value === 'all') // 'all'は除外
+          )
+        ),
       })
 
       const response = await apiClient.get(`/clients?${params}`)
@@ -80,7 +86,7 @@ export function useClients(options: UseClientsOptions = {}) {
     try {
       console.log("[v0] クライアント作成中...", clientData)
 
-      const response = await apiClient.post("/clients", clientData)
+      const response = await apiClient.post("/clients/", clientData)
 
       if (response.ok) {
         const newClient = await response.json()
@@ -100,7 +106,7 @@ export function useClients(options: UseClientsOptions = {}) {
     try {
       console.log("[v0] クライアント更新中...", { id, clientData })
 
-      const response = await apiClient.put(`/clients/${id}`, clientData)
+      const response = await apiClient.put(`/clients/${id}/`, clientData)
 
       if (response.ok) {
         const updatedClient = await response.json()

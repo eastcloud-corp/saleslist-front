@@ -6,7 +6,15 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:integration": "playwright test tests/integration",
+    "test:integration:ui": "playwright test tests/integration --ui",
+    "test:e2e": "playwright test tests/e2e",
+    "test:e2e:ui": "playwright test tests/e2e --ui",
+    "test:e2e:debug": "playwright test tests/e2e --debug",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -61,6 +69,7 @@
     "zod": "3.25.67"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
     "@types/react": "^19",

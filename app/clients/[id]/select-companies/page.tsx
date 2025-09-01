@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -37,6 +38,8 @@ export default function CompanySelectionPage() {
   const [projects, setProjects] = useState([])
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
   const [isAddingToProject, setIsAddingToProject] = useState(false)
+  const [isCreatingNewProject, setIsCreatingNewProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState("")
 
   const fetchCompanies = async () => {
     if (!clientId) return
@@ -137,7 +140,7 @@ export default function CompanySelectionPage() {
 
     setIsAddingToProject(true)
     try {
-      const response = await apiClient.post(`/projects/${selectedProjectId}/add-companies`, {
+      const response = await apiClient.post(`/projects/${selectedProjectId}/add-companies/`, {
         company_ids: Array.from(selectedCompanies),
       })
 
@@ -163,13 +166,77 @@ export default function CompanySelectionPage() {
     }
   }
 
+  const handleCreateNewProject = async () => {
+    if (selectedCompanies.size === 0) {
+      toast({
+        title: "エラー",
+        description: "企業を選択してください",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!newProjectName.trim()) {
+      toast({
+        title: "エラー",
+        description: "案件名を入力してください",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsAddingToProject(true)
+    try {
+      // 1. 新規案件を作成
+      const projectResponse = await apiClient.post('/projects/', {
+        name: newProjectName.trim(),
+        client_id: clientId,
+        status: 'active',
+        start_date: new Date().toISOString().split('T')[0], // 今日の日付
+      })
+
+      if (!projectResponse.ok) {
+        throw new Error("Failed to create project")
+      }
+
+      const projectData = await projectResponse.json()
+      const newProjectId = projectData.id
+
+      // 2. 新しい案件に企業を追加
+      const addResponse = await apiClient.post(`/projects/${newProjectId}/add-companies/`, {
+        company_ids: Array.from(selectedCompanies),
+      })
+
+      if (!addResponse.ok) {
+        throw new Error("Failed to add companies to project")
+      }
+
+      toast({
+        title: "成功",
+        description: `新規案件「${newProjectName}」を作成し、${selectedCompanies.size}社を追加しました`,
+      })
+
+      router.push(`/projects/${newProjectId}`)
+    } catch (error) {
+      console.error("新規案件作成に失敗しました:", error)
+      toast({
+        title: "エラー",
+        description: "新規案件作成に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingToProject(false)
+    }
+  }
+
   if (clientLoading) {
     return <div className="p-6">読み込み中...</div>
   }
 
   return (
-    <TooltipProvider>
-      <div className="p-6 space-y-6">
+    <MainLayout>
+      <TooltipProvider>
+        <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -183,28 +250,72 @@ export default function CompanySelectionPage() {
           </div>
           <div className="flex items-center space-x-2">
             <Badge variant="secondary">{selectedCompanies.size}社選択中</Badge>
-            <Select
-              value={selectedProjectId?.toString() || ""}
-              onValueChange={(value) => setSelectedProjectId(Number(value))}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="案件を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((project: any) => (
-                  <SelectItem key={project.id} value={project.id.toString()}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              disabled={selectedCompanies.size === 0 || !selectedProjectId || isAddingToProject}
-              onClick={handleAddToProject}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {isAddingToProject ? "追加中..." : "案件に追加"}
-            </Button>
+            
+            {/* 既存案件への追加 */}
+            {!isCreatingNewProject && (
+              <>
+                <Select
+                  value={selectedProjectId?.toString() || ""}
+                  onValueChange={(value) => setSelectedProjectId(Number(value))}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="既存案件を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project: any) => (
+                      <SelectItem key={project.id} value={project.id.toString()}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  disabled={selectedCompanies.size === 0 || !selectedProjectId || isAddingToProject}
+                  onClick={handleAddToProject}
+                  variant="default"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isAddingToProject ? "追加中..." : "既存案件に追加"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreatingNewProject(true)}
+                  disabled={selectedCompanies.size === 0}
+                >
+                  新規案件作成
+                </Button>
+              </>
+            )}
+            
+            {/* 新規案件作成 */}
+            {isCreatingNewProject && (
+              <>
+                <Input
+                  placeholder="新規案件名を入力"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-64"
+                />
+                <Button
+                  disabled={selectedCompanies.size === 0 || !newProjectName.trim() || isAddingToProject}
+                  onClick={handleCreateNewProject}
+                  variant="default"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isAddingToProject ? "作成中..." : "案件作成して追加"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreatingNewProject(false)
+                    setNewProjectName("")
+                  }}
+                  disabled={isAddingToProject}
+                >
+                  キャンセル
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -355,7 +466,8 @@ export default function CompanySelectionPage() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </TooltipProvider>
+        </div>
+      </TooltipProvider>
+    </MainLayout>
   )
 }

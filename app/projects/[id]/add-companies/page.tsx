@@ -1,3 +1,4 @@
+import { use } from "react"
 import { AddCompaniesClient } from "./add-companies-client"
 
 interface AddCompaniesPageProps {
@@ -6,7 +7,7 @@ interface AddCompaniesPageProps {
   }>
 }
 
-export default async function AddCompaniesPage({ params }: AddCompaniesPageProps) {
-  const resolvedParams = await params
+export default function AddCompaniesPage({ params }: AddCompaniesPageProps) {
+  const resolvedParams = use(params)
   return <AddCompaniesClient projectId={resolvedParams.id} />
 }

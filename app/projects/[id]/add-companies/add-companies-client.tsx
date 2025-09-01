@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useProject } from "@/hooks/use-projects"
 import { useCompanies } from "@/hooks/use-companies"
+import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ArrowLeft, Search, Plus, AlertTriangle, Building2, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 interface AddCompaniesClientProps {
   projectId: string
@@ -25,6 +27,7 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
   const [industryFilter, setIndustryFilter] = useState("all")
   const [isAdding, setIsAdding] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const { project, isLoading: projectLoading, addCompanies } = useProject(projectId)
   const {
@@ -38,7 +41,7 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
   })
 
   // Get existing company IDs to exclude them
-  const existingCompanyIds = project?.companies?.map((pc) => pc.company.id.toString()) || []
+  const existingCompanyIds = project?.companies?.map((pc) => pc.company?.id?.toString()).filter(Boolean) || []
 
   const handleCompanySelect = (companyId: string, checked: boolean) => {
     if (checked) {
@@ -66,30 +69,27 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
     try {
       const companyIds = selectedCompanyIds.map((id) => Number.parseInt(id))
       await addCompanies(companyIds)
+      
+      toast({
+        title: "成功",
+        description: `${selectedCompanyIds.length}社を案件に追加しました`,
+      })
+      
       router.push(`/projects/${projectId}`)
     } catch (error) {
       console.error("Failed to add companies:", error)
+      toast({
+        title: "エラー", 
+        description: "企業の追加に失敗しました",
+        variant: "destructive",
+      })
     } finally {
       setIsAdding(false)
     }
   }
 
-  const companyNGStatuses = useMemo(() => {
-    const statuses: Record<string, any> = {}
-    companies.forEach((company) => {
-      // For now, return no NG status since we don't have real API data
-      // In real implementation, this would come from the API response
-      statuses[company.id] = {
-        is_ng: false,
-        type: null,
-        reason: null,
-      }
-    })
-    return statuses
-  }, [companies])
-
   const getCompanyNGStatus = (company: any) => {
-    return companyNGStatuses[company.id] || { is_ng: false, type: null, reason: null }
+    return company.ng_status || { is_ng: false, types: [], reasons: {} }
   }
 
   const availableCompanies = companies.filter((company) => !existingCompanyIds.includes(company.id.toString()))
@@ -116,9 +116,11 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
   }
 
   return (
-    <div className="px-4 md:px-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <MainLayout>
+      <TooltipProvider>
+        <div className="p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="outline" asChild>
             <Link href={`/projects/${projectId}`}>
@@ -237,11 +239,19 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
                                 </Badge>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <div className="text-sm">
-                                  <p className="font-medium">
-                                    {ngStatus.type === "global" ? "グローバルNG" : "クライアントNG"}
-                                  </p>
-                                  <p>{ngStatus.reason}</p>
+                                <div className="text-sm space-y-1">
+                                  {ngStatus.types?.includes("global") && (
+                                    <div>
+                                      <p className="font-medium text-red-600">グローバルNG</p>
+                                      <p>{ngStatus.reasons?.global}</p>
+                                    </div>
+                                  )}
+                                  {ngStatus.types?.includes("client") && (
+                                    <div>
+                                      <p className="font-medium text-orange-600">クライアントNG</p>
+                                      <p>理由: {ngStatus.reasons?.client?.reason}</p>
+                                    </div>
+                                  )}
                                 </div>
                               </TooltipContent>
                             </Tooltip>
@@ -276,6 +286,8 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
           </CardContent>
         </Card>
       )}
-    </div>
+        </div>
+      </TooltipProvider>
+    </MainLayout>
   )
 }

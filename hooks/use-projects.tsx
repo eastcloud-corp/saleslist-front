@@ -27,9 +27,7 @@ export function useProjects(page = 1, limit = 20) {
       })
 
       console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`)
-      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`, {
-        headers: authService.getAuthHeaders(),
-      })
+      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`)
 
       console.log("[v0] Projects API response status:", response.status)
 
@@ -88,9 +86,7 @@ export function useProjects(page = 1, limit = 20) {
 
   const createProject = async (projectData: Omit<Project, "id" | "created_at" | "updated_at" | "companies">) => {
     try {
-      const response = await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData, {
-        headers: authService.getAuthHeaders(),
-      })
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData)
 
       if (!response.ok) {
         throw new Error("Failed to create project")
@@ -129,7 +125,6 @@ export function useProject(id: string | number) {
     try {
       console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`)
       const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`, {
-        headers: authService.getAuthHeaders(),
       })
 
       console.log("[v0] Project detail API response status:", response.status)
@@ -158,7 +153,6 @@ export function useProject(id: string | number) {
   const updateProject = async (projectData: Partial<Project>) => {
     try {
       const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`, projectData, {
-        headers: authService.getAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -184,11 +178,10 @@ export function useProject(id: string | number) {
   ) => {
     try {
       const response = await apiClient.patch(
-        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}`,
+        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}/`,
         statusData,
         {
-          headers: authService.getAuthHeaders(),
-        },
+          },
       )
 
       if (!response.ok) {
@@ -205,11 +198,10 @@ export function useProject(id: string | number) {
   const addCompanies = async (companyIds: number[]) => {
     try {
       const response = await apiClient.post(
-        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/add-companies`,
+        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/add-companies/`,
         { company_ids: companyIds },
         {
-          headers: authService.getAuthHeaders(),
-        },
+          },
       )
 
       if (!response.ok) {
@@ -225,8 +217,7 @@ export function useProject(id: string | number) {
 
   const removeCompany = async (companyId: number) => {
     try {
-      const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}`, {
-        headers: authService.getAuthHeaders(),
+      const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}/`, {
       })
 
       if (!response.ok) {

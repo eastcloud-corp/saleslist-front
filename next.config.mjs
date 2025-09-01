@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -10,15 +11,7 @@ const nextConfig = {
     unoptimized: true,
   },
   async rewrites() {
-    // 開発環境でのCORS回避用プロキシ設定
-    if (process.env.NODE_ENV === 'development') {
-      return [
-        {
-          source: '/api/proxy/:path*',
-          destination: 'https://saleslist-mock-api.onrender.com/:path*',
-        },
-      ]
-    }
+    // Django API用プロキシ（不要だが念のため保持）
     return []
   },
   async headers() {

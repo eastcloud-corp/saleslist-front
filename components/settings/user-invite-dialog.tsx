@@ -22,7 +22,11 @@ import { useUsers, type UserInvitation } from "@/hooks/use-users"
 import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
 
-export function UserInviteDialog() {
+interface UserInviteDialogProps {
+  onUserCreated?: () => void
+}
+
+export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -77,6 +81,10 @@ export function UserInviteDialog() {
 
     if (result.success) {
       setCreatedUser({ email, password })
+      // 親コンポーネントのユーザー一覧を更新
+      if (onUserCreated) {
+        onUserCreated()
+      }
     } else {
       setLocalError(result.message)
     }

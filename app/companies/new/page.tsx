@@ -6,19 +6,39 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { CompanyForm } from "@/components/companies/company-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
+import { apiClient } from "@/lib/api-config"
+import { useToast } from "@/hooks/use-toast"
 
 export default function NewCompanyPage() {
   const router = useRouter()
+  const { toast } = useToast()
 
   const handleSave = async (data: any) => {
     try {
-      // TODO: Implement create company API call
-      console.log("Creating company:", data)
-
-      // For now, redirect to companies list
-      router.push("/companies")
+      console.log("[v0] 企業作成開始:", data)
+      
+      const response = await apiClient.post("/companies/", data)
+      
+      if (response.ok) {
+        const newCompany = await response.json()
+        console.log("[v0] 企業作成成功:", newCompany)
+        
+        toast({
+          title: "企業作成成功",
+          description: `企業「${newCompany.name}」を作成しました`,
+        })
+        
+        router.push("/companies")
+      } else {
+        throw new Error("企業の作成に失敗しました")
+      }
     } catch (error) {
-      console.error("Failed to create company:", error)
+      console.error("[v0] 企業作成エラー:", error)
+      toast({
+        title: "企業作成失敗", 
+        description: "企業の作成に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      })
     }
   }
 

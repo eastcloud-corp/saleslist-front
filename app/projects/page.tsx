@@ -51,6 +51,7 @@ export default function ProjectsPage() {
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return "未設定"
     return new Date(dateString).toLocaleDateString("ja-JP")
   }
 
@@ -146,16 +147,16 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
-              <Card key={project.id} className="hover:shadow-md transition-shadow">
+              <Card key={project.id} className="hover:shadow-md transition-shadow flex flex-col h-80">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
                     {getStatusBadge(project.status)}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="flex-1 space-y-4">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{project.description || "説明なし"}</p>
 
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
@@ -164,25 +165,23 @@ export default function ProjectsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>開始: {formatDate(project.start_date)}</span>
+                        <span>契約開始: {formatDate(project.start_date || "")}</span>
                       </div>
-                      {project.end_date && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>終了: {formatDate(project.end_date)}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>契約終了: {formatDate(project.end_date || "")}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
                         <span>{project.companies?.length || 0} 社</span>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="pt-4 border-t">
-                      <Button asChild className="w-full">
-                        <Link href={`/projects/${project.id}`}>詳細を見る</Link>
-                      </Button>
-                    </div>
+                  <div className="pt-4 border-t mt-auto">
+                    <Button asChild className="w-full">
+                      <Link href={`/projects/${project.id}`}>詳細を見る</Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

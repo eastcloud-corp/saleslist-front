@@ -1,3 +1,4 @@
+import { use } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { ProjectDetailClient } from "./project-detail-client"
 
@@ -7,8 +8,8 @@ interface ProjectDetailPageProps {
   }>
 }
 
-export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-  const resolvedParams = await params
+export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const resolvedParams = use(params)
   const projectId = resolvedParams.id
 
   return (

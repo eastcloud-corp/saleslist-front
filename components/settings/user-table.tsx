@@ -5,18 +5,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, UserX } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { MoreHorizontal, UserX, UserCheck } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useUsers, type User } from "@/hooks/use-users"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 interface UserTableProps {
   users: User[]
+  onUserUpdated?: () => void
 }
 
-export function UserTable({ users }: UserTableProps) {
-  const { updateUserRole, deactivateUser, loading } = useUsers()
+export function UserTable({ users, onUserUpdated }: UserTableProps) {
+  const { updateUserRole, updateUserStatus, loading } = useUsers()
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  const [actionType, setActionType] = useState<"deactivate" | "activate" | null>(null)
+  const { toast } = useToast()
 
   const getRoleBadge = (role: User["role"]) => {
     const variants = {
@@ -39,12 +44,61 @@ export function UserTable({ users }: UserTableProps) {
   }
 
   const handleRoleChange = async (userId: number, newRole: User["role"]) => {
-    await updateUserRole(userId, newRole)
+    try {
+      await updateUserRole(userId, newRole)
+      toast({
+        title: "成功",
+        description: "ユーザー権限を更新しました",
+      })
+      if (onUserUpdated) {
+        onUserUpdated()
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "権限の更新に失敗しました",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeactivateUser = async (userId: number) => {
-    await deactivateUser(userId)
-    setSelectedUserId(null)
+  const handleStatusToggle = async (userId: number, isActive: boolean) => {
+    setSelectedUserId(userId)
+    setActionType(isActive ? "activate" : "deactivate")
+  }
+
+  const handleConfirmStatusChange = async () => {
+    if (!selectedUserId) return
+
+    try {
+      const newActiveState = actionType === "activate"
+      const result = await updateUserStatus(selectedUserId, newActiveState)
+      
+      if (result.success) {
+        toast({
+          title: "成功",
+          description: result.message,
+        })
+        if (onUserUpdated) {
+          onUserUpdated()
+        }
+      } else {
+        toast({
+          title: "エラー",
+          description: result.message,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: `ユーザーの${actionType === 'activate' ? '有効化' : '無効化'}に失敗しました`,
+        variant: "destructive",
+      })
+    } finally {
+      setSelectedUserId(null)
+      setActionType(null)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -92,27 +146,22 @@ export function UserTable({ users }: UserTableProps) {
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell>{getStatusBadge(user.is_active)}</TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={user.is_active}
+                    onCheckedChange={() => handleStatusToggle(user.id, !user.is_active)}
+                    disabled={loading}
+                  />
+                  <span className="text-sm">{user.is_active ? "有効" : "無効"}</span>
+                </div>
+              </TableCell>
               <TableCell>{user.last_login ? formatDate(user.last_login) : "未ログイン"}</TableCell>
               <TableCell>{formatDate(user.created_at)}</TableCell>
               <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setSelectedUserId(user.id)}
-                      className="text-destructive"
-                      disabled={!user.is_active}
-                    >
-                      <UserX className="mr-2 h-4 w-4" />
-                      ユーザー無効化
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Badge variant={user.is_active ? "default" : "outline"}>
+                  {user.is_active ? "アクティブ" : "非アクティブ"}
+                </Badge>
               </TableCell>
             </TableRow>
           ))}
@@ -122,10 +171,14 @@ export function UserTable({ users }: UserTableProps) {
       <ConfirmDialog
         open={selectedUserId !== null}
         onOpenChange={(open) => !open && setSelectedUserId(null)}
-        title="ユーザー無効化の確認"
-        description="このユーザーを無効化しますか？無効化されたユーザーはシステムにログインできなくなります。"
-        onConfirm={() => selectedUserId && handleDeactivateUser(selectedUserId)}
-        confirmText="無効化"
+        title={actionType === "activate" ? "ユーザー有効化の確認" : "ユーザー無効化の確認"}
+        description={
+          actionType === "activate" 
+            ? "このユーザーを有効化しますか？有効化されたユーザーはシステムにログインできるようになります。"
+            : "このユーザーを無効化しますか？無効化されたユーザーはシステムにログインできなくなります。"
+        }
+        onConfirm={handleConfirmStatusChange}
+        confirmText={actionType === "activate" ? "有効化" : "無効化"}
         cancelText="キャンセル"
       />
     </>

@@ -45,21 +45,21 @@ export function useDashboard() {
       setError(null)
 
       // 統計データ取得
-      const statsResponse = await apiClient.get("/dashboard/stats")
+      const statsResponse = await apiClient.get("/dashboard/stats/")
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
         setStats(statsData)
       }
 
       // 最近のプロジェクト取得
-      const projectsResponse = await apiClient.get("/dashboard/recent-projects")
+      const projectsResponse = await apiClient.get("/dashboard/recent-projects/")
       if (projectsResponse.ok) {
         const projectsData = await projectsResponse.json()
         setRecentProjects(projectsData.results || [])
       }
 
       // 最近の企業取得
-      const companiesResponse = await apiClient.get("/dashboard/recent-companies")
+      const companiesResponse = await apiClient.get("/dashboard/recent-companies/")
       if (companiesResponse.ok) {
         const companiesData = await companiesResponse.json()
         setRecentCompanies(companiesData.results || [])

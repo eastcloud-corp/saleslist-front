@@ -2,9 +2,15 @@ export const API_CONFIG = {
   BASE_URL: (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/v1",
   ENDPOINTS: {
     // Authentication
-    LOGIN: "/auth/login",
-    LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh",
+    LOGIN: "/auth/login/",
+    LOGOUT: "/auth/logout/",
+    REFRESH: "/auth/refresh/",
+    ME: "/auth/me/",
+    REGISTER: "/auth/register/",
+
+    // Clients
+    CLIENTS: "/clients/",
+    CLIENT_DETAIL: (id: string) => `/clients/${id}/`,
 
     // Companies
     COMPANIES: "/companies/",
@@ -31,6 +37,16 @@ export const API_CONFIG = {
     // Filters
     SAVED_FILTERS: "/saved-filters/",
     FILTER_DETAIL: (id: string) => `/saved-filters/${id}/`,
+
+    // Dashboard
+    DASHBOARD_STATS: "/dashboard/stats/",
+    DASHBOARD_RECENT_PROJECTS: "/dashboard/recent-projects/",
+    DASHBOARD_RECENT_COMPANIES: "/dashboard/recent-companies/",
+
+    // Masters
+    MASTER_INDUSTRIES: "/master/industries/",
+    MASTER_STATUSES: "/master/statuses/",
+    MASTER_PREFECTURES: "/master/prefectures/",
   },
 } as const
 

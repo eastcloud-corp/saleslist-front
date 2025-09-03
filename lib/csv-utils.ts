@@ -272,3 +272,23 @@ export function convertCSVToCompanyData(
     status: (row.status?.toLowerCase() as "active" | "prospect" | "inactive") || "prospect",
   }))
 }
+
+export function convertCompaniesArrayToCSV(companies: any[]): string {
+  const headers = "name,industry,employee_count,revenue,prefecture,city,website_url,contact_email,phone,business_description"
+  const rows = companies.map(company => {
+    return [
+      company.name || '',
+      company.industry || '',
+      company.employee_count || '',
+      company.revenue || '', 
+      company.prefecture || '',
+      company.city || '',
+      company.website_url || '',
+      company.contact_email || '',
+      company.phone || '',
+      company.business_description || ''
+    ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+  })
+  
+  return [headers, ...rows].join('\n')
+}

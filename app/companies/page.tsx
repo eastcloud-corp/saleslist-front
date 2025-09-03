@@ -8,7 +8,7 @@ import { CSVImportDialog } from "@/components/companies/csv-import-dialog"
 import { useCompanies } from "@/hooks/use-companies"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
+import { exportCompaniesToCSV, downloadCSV, convertCompaniesArrayToCSV } from "@/lib/csv-utils"
 import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
 import { Download, Plus, Upload, ArrowLeft, Database } from "lucide-react"
 import Link from "next/link"
@@ -47,6 +47,15 @@ export default function CompaniesPage() {
   const handleImport = async (importedCompanies: any[]) => {
     try {
       console.log("Importing companies:", importedCompanies)
+      
+      // Use individual company creation API
+      for (const company of importedCompanies) {
+        const response = await apiClient.post(API_CONFIG.ENDPOINTS.COMPANIES, company)
+        if (!response.ok) {
+          throw new Error(`Failed to import: ${company.name}`)
+        }
+      }
+      
       await refetch()
     } catch (error) {
       console.error("Import failed:", error)

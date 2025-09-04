@@ -29,6 +29,8 @@ export const API_CONFIG = {
     NG_COMPANIES: "/ng-companies/",
     NG_COMPANY_GLOBAL: "/ng-companies/global/",
     NG_COMPANY_PROJECT: (projectId: string) => `/ng-companies/project/${projectId}/`,
+    NG_COMPANY_IMPORT: (clientId: string) => `/clients/${clientId}/ng-companies/import`,
+    NG_COMPANY_TEMPLATE: "/ng-companies/template/",
 
     // Executives
     EXECUTIVES: "/executives/",

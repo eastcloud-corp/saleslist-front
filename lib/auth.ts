@@ -64,9 +64,10 @@ class AuthService {
 
   async logout(): Promise<void> {
     try {
+      const refreshToken = this.getRefreshToken()
       await apiClient.post(
         API_CONFIG.ENDPOINTS.LOGOUT,
-        {},
+        { refresh_token: refreshToken },
         {
           headers: this.getAuthHeaders(),
         },

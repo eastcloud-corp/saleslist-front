@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { parseCSV, validateCSVData } from "@/lib/csv-utils"
-import { apiClient, API_CONFIG } from "@/lib/api-config"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
 import { Upload, CheckCircle } from "lucide-react"
 
 interface ExecutiveCSVImportDialogProps {

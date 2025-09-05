@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { apiClient } from "@/lib/api-config"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
 import type { ClientNGCompany, NGImportResult } from "@/lib/types"
 
 export function useNGList(clientId: number) {

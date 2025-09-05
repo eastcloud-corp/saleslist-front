@@ -44,13 +44,9 @@ export function useNGList(clientId: number) {
     console.log("[v0] Importing NG list CSV:", file.name)
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-
-      const response = await apiClient.post(`/clients/${clientId}/ng-companies/import`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
-      const data = await apiClient.handleResponse(response) as NGImportResult
+      // Use uploadFile method (same as working CSV implementation)
+      const response = await apiClient.uploadFile(API_CONFIG.ENDPOINTS.NG_COMPANY_IMPORT(clientId), file)
+      const data = await apiClient.handleResponse<NGImportResult>(response)
 
       await fetchNGList() // リスト再取得
       return data

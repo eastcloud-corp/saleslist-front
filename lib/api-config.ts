@@ -24,6 +24,8 @@ export const API_CONFIG = {
     PROJECTS: "/projects/",
     PROJECT_DETAIL: (id: string) => `/projects/${id}/`,
     PROJECT_COMPANIES: (id: string) => `/projects/${id}/companies/`,
+    PROJECT_IMPORT: "/projects/import_csv/",
+    PROJECT_EXPORT: (id: string) => `/projects/${id}/export_csv/`,
 
     // NG Companies
     NG_COMPANIES: "/ng-companies/",
@@ -35,6 +37,8 @@ export const API_CONFIG = {
     // Executives
     EXECUTIVES: "/executives/",
     EXECUTIVE_DETAIL: (id: string) => `/executives/${id}/`,
+    EXECUTIVE_IMPORT: "/executives/import_csv/",
+    EXECUTIVE_EXPORT: "/executives/export_csv/",
 
     // Filters
     SAVED_FILTERS: "/saved-filters/",

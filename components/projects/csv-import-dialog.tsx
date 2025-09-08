@@ -93,7 +93,6 @@ export function ProjectCSVImportDialog({ open, onOpenChange, onImport }: Project
                         const file = e.target.files?.[0]
                         if (file) {
                           setFile(file)
-                          handleFileSelect(file)
                         }
                       }}
                     />

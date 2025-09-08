@@ -59,13 +59,11 @@ function ClientDetailContent({ id }: { id: number }) {
         client_id: client?.id || null
       }
       
-      const response = await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData)
-      if (response.ok) {
-        await refetchProjects()
-        setNewProjectName("")
-        setNewProjectDescription("")
-        setNewProjectManager("")
-      }
+      await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData)
+      await refetchProjects()
+      setNewProjectName("")
+      setNewProjectDescription("")
+      setNewProjectManager("")
     } catch (error) {
       console.error("Project creation failed:", error)
     } finally {

@@ -111,10 +111,10 @@ class AuthService {
 
     if (data.access_token) {
       this.accessToken = data.access_token
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && this.accessToken) {
         localStorage.setItem("access_token", this.accessToken)
       }
-      return this.accessToken
+      return this.accessToken || ""
     }
 
     throw new Error("トークンの更新に失敗しました")

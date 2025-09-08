@@ -91,7 +91,7 @@ class ApiClient {
     return this.handleResponse<T>(response, endpoint, requestOptions)
   }
 
-  async post<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
     const requestOptions: RequestInit = {
       method: "POST",
       headers: {
@@ -106,7 +106,7 @@ class ApiClient {
     return this.handleResponse<T>(response, endpoint, requestOptions)
   }
 
-  async put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
     const requestOptions: RequestInit = {
       method: "PUT",
       headers: {
@@ -121,7 +121,7 @@ class ApiClient {
     return this.handleResponse<T>(response, endpoint, requestOptions)
   }
 
-  async patch<T>(endpoint: string, data?: any, options?: RequestInit): Promise<T> {
+  async patch<T>(endpoint: string, data?: unknown, options?: RequestInit): Promise<T> {
     const requestOptions: RequestInit = {
       method: "PATCH",
       headers: {
@@ -190,4 +190,4 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
-export { ApiError }
+export { ApiClient, ApiError }

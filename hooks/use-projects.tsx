@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { apiClient, API_CONFIG } from "@/lib/api-config"  
-import type { Project } from "@/lib/types"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"  
+import type { Project, Company } from "@/lib/types"
 import { authService } from "@/lib/auth"
 
 export function useProjects(page = 1, limit = 20) {
@@ -35,40 +36,20 @@ export function useProjects(page = 1, limit = 20) {
       })
 
       console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`)
-      const response = await apiClient.get(`/projects?${params.toString()}`)
-      const data = await apiClient.handleResponse(response)
+      const data = await apiClient.get<{results: Project[], count: number}>(`/projects?${params.toString()}`)
       console.log("[v0] Projects API response data:", data)
 
-      if (data && typeof data === "object") {
-        // Check if it's the expected API format with results array
-        if (Array.isArray(data.results)) {
-          setProjects(data.results)
+      // 型安全になったので直接アクセス可能
+      setProjects(data.results || [])
 
-          // Calculate pagination from API response
-          const totalPages = Math.ceil((data.count || 0) / limit)
-          setPagination({
-            page: page,
-            limit: limit,
-            total: data.count || 0,
-            total_pages: totalPages,
-          })
-        } else if (Array.isArray(data.data)) {
-          // Fallback for different response format
-          setProjects(data.data)
-          setPagination(
-            data.pagination || {
-              page: 1,
-              limit: 20,
-              total: data.data.length,
-              total_pages: 1,
-            },
-          )
-        } else {
-          throw new Error("無効なレスポンス形式です")
-        }
-      } else {
-        throw new Error("無効なレスポンス形式です")
-      }
+      // Calculate pagination from API response
+      const totalPages = Math.ceil((data.count || 0) / limit)
+      setPagination({
+        page: page,
+        limit: limit,
+        total: data.count || 0,
+        total_pages: totalPages,
+      })
     } catch (err) {
       console.error("[v0] Projects API error:", err)
       setError(err instanceof Error ? err.message : "エラーが発生しました")
@@ -87,12 +68,7 @@ export function useProjects(page = 1, limit = 20) {
 
   const createProject = async (projectData: Omit<Project, "id" | "created_at" | "updated_at" | "companies">) => {
     try {
-      const response = await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData)
-
-      if (!response.ok) {
-        throw new Error("Failed to create project")
-      }
-
+      await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData)
       await fetchProjects() // Refresh the list
       return true
     } catch (err) {
@@ -118,7 +94,7 @@ export function useProject(id: string | number) {
   const [project, setProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [availableCompanies, setAvailableCompanies] = useState<any[]>([])
+  const [availableCompanies, setAvailableCompanies] = useState<Company[]>([])
   const [isLoadingAvailableCompanies, setIsLoadingAvailableCompanies] = useState(false)
 
   const fetchProject = async () => {
@@ -128,22 +104,10 @@ export function useProject(id: string | number) {
 
     try {
       console.log("[v0] GET request to:", `/projects/${id}/?management_mode=true`)
-      const response = await apiClient.get(`/projects/${id}/?management_mode=true`)
-
-      console.log("[v0] Project detail API response status:", response.status)
-
-      if (!response.ok) {
-        throw new Error("案件詳細の取得に失敗しました")
-      }
-
-      const data = await response.json()
+      const data = await apiClient.get<Project>(`/projects/${id}/?management_mode=true`)
       console.log("[v0] Project detail API response data:", data)
-
-      if (data && typeof data === "object") {
-        setProject(data)
-      } else {
-        throw new Error("無効なレスポンス形式です")
-      }
+      
+      setProject(data)
     } catch (err) {
       console.error("[v0] Project detail API error:", err)
       setError(err instanceof Error ? err.message : "エラーが発生しました")
@@ -155,13 +119,7 @@ export function useProject(id: string | number) {
 
   const updateProject = async (projectData: Partial<Project>) => {
     try {
-      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.PROJECTS}${id}/`, projectData, {
-      })
-
-      if (!response.ok) {
-        throw new Error("案件の更新に失敗しました")
-      }
-
+      await apiClient.put(`${API_CONFIG.ENDPOINTS.PROJECTS}${id}/`, projectData)
       await fetchProject() // Refresh the project data
       return true
     } catch (err) {
@@ -177,20 +135,14 @@ export function useProject(id: string | number) {
       next_action?: string
       notes?: string
       staff_id?: number
+      is_active?: boolean
     },
   ) => {
     try {
-      const response = await apiClient.patch(
+      await apiClient.patch(
         `${API_CONFIG.ENDPOINTS.PROJECTS}${id}/companies/${companyId}/`,
-        statusData,
-        {
-          },
+        statusData
       )
-
-      if (!response.ok) {
-        throw new Error("ステータスの更新に失敗しました")
-      }
-
       await fetchProject() // Refresh the project data
       return true
     } catch (err) {
@@ -200,17 +152,10 @@ export function useProject(id: string | number) {
 
   const addCompanies = async (companyIds: number[]) => {
     try {
-      const response = await apiClient.post(
+      await apiClient.post(
         `${API_CONFIG.ENDPOINTS.PROJECTS}${id}/add-companies/`,
-        { company_ids: companyIds },
-        {
-          },
+        { company_ids: companyIds }
       )
-
-      if (!response.ok) {
-        throw new Error("企業の追加に失敗しました")
-      }
-
       await fetchProject() // Refresh the project data
       return true
     } catch (err) {
@@ -223,11 +168,8 @@ export function useProject(id: string | number) {
     setIsLoadingAvailableCompanies(true)
     
     try {
-      const response = await apiClient.get(`/projects/${id}/available-companies/`)
-      if (response.ok) {
-        const data = await response.json()
-        setAvailableCompanies(data.results || [])
-      }
+      const data = await apiClient.get<{results: Company[]}>(`/projects/${id}/available-companies/`)
+      setAvailableCompanies(data.results || [])
     } catch (error) {
       console.error('利用可能企業取得エラー:', error)
     } finally {
@@ -237,13 +179,7 @@ export function useProject(id: string | number) {
 
   const removeCompany = async (companyId: number) => {
     try {
-      const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}${id}/companies/${companyId}/`, {
-      })
-
-      if (!response.ok) {
-        throw new Error("企業の削除に失敗しました")
-      }
-
+      await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}${id}/companies/${companyId}/`)
       await fetchProject() // Refresh the project data
       return true
     } catch (err) {

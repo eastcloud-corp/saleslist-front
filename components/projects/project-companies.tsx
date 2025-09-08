@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { ProjectCompany } from "@/lib/types"
 import { Building2, Plus, ExternalLink, Calendar } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useMasterData } from "@/hooks/use-master-data"
 
 interface ProjectCompaniesProps {
   companies: ProjectCompany[]
@@ -24,8 +25,6 @@ interface ProjectCompaniesProps {
   isLoading?: boolean
 }
 
-import { useMasterData } from "@/hooks/use-master-data"
-
 export function ProjectCompanies({
   companies,
   onUpdateStatus,
@@ -36,6 +35,26 @@ export function ProjectCompanies({
   isLoading = false,
 }: ProjectCompaniesProps) {
   const { toast } = useToast()
+  const { statuses } = useMasterData()
+  
+  // Missing state variables
+  const [editingCompany, setEditingCompany] = useState<ProjectCompany | null>(null)
+  const [newStatus, setNewStatus] = useState("")
+  const [newNotes, setNewNotes] = useState("")
+  
+  // 営業ステータス用のマスターデータ（フォールバック付き）
+  const statusOptions = statuses.length > 0 ? statuses.map(status => ({
+    value: status.name,
+    label: status.name,
+    variant: status.name === "NG" ? "destructive" as const : "default" as const
+  })) : [
+    { value: "未接触", label: "未接触", variant: "outline" as const },
+    { value: "DM送信済み", label: "DM送信済み", variant: "secondary" as const },
+    { value: "返信あり", label: "返信あり", variant: "default" as const },
+    { value: "アポ獲得", label: "アポ獲得", variant: "default" as const },
+    { value: "成約", label: "成約", variant: "default" as const },
+    { value: "NG", label: "NG", variant: "destructive" as const },
+  ]
 
   const handleToggleActive = async (company: ProjectCompany, isActive: boolean) => {
     try {
@@ -71,7 +90,7 @@ export function ProjectCompanies({
     if (!editingCompany || !newStatus) return
 
     try {
-      await onUpdateStatus(editingCompany.company_id, newStatus, newNotes)
+      await onUpdateStatus(editingCompany.company_id?.toString() || "", newStatus, newNotes)
       setEditingCompany(null)
       setNewStatus("")
       setNewNotes("")

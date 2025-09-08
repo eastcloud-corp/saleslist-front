@@ -73,7 +73,6 @@ export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
 
     const invitation: UserInvitation & { password: string } = {
       email,
-      username,
       password,
       role,
       message: message || undefined,

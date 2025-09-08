@@ -7,11 +7,14 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { CompanyForm } from "@/components/companies/company-form"
 import { ExecutiveList } from "@/components/companies/executive-list"
 import { useCompany } from "@/hooks/use-company"
+import { apiClient } from "@/lib/api-config"
+import { useToast } from "@/hooks/use-toast"
+import type { Company } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Edit, Trash2, ExternalLink, Building2, Calendar, Loader2 } from "lucide-react"
+import { ArrowLeft, Edit, Trash2, ExternalLink, Building2, Calendar, Loader2, Shield, ShieldOff } from "lucide-react"
 
 interface CompanyDetailPageProps {
   params: Promise<{
@@ -24,10 +27,12 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const { company, isLoading, error, updateCompany, deleteCompany } = useCompany(resolvedParams.id)
+  const [isTogglingNG, setIsTogglingNG] = useState(false)
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: Partial<Company>) => {
     try {
       await updateCompany(data)
       setIsEditing(false)
@@ -48,6 +53,43 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
     } catch (error) {
       console.error("Failed to delete company:", error)
       setIsDeleting(false)
+    }
+  }
+
+  const handleToggleNG = async () => {
+    if (!company) return
+
+    const action = company.is_global_ng ? "解除" : "設定"
+    if (!confirm(`企業「${company.name}」のグローバルNG状態を${action}しますか？`)) {
+      return
+    }
+
+    setIsTogglingNG(true)
+    try {
+      const response = await apiClient.post(`/companies/${company.id}/toggle_ng/`, {
+        reason: company.is_global_ng ? "" : "管理者による手動設定"
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast({
+          title: "成功",
+          description: result.message
+        })
+        // 企業データを更新するため再取得
+        window.location.reload()
+      } else {
+        throw new Error("API エラー")
+      }
+    } catch (error) {
+      console.error("Failed to toggle NG status:", error)
+      toast({
+        title: "エラー",
+        description: "グローバルNG状態の更新に失敗しました",
+        variant: "destructive"
+      })
+    } finally {
+      setIsTogglingNG(false)
     }
   }
 
@@ -137,6 +179,18 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
           <div className="flex items-center gap-2">
             {!isEditing && (
               <>
+                <Button 
+                  variant={company?.is_global_ng ? "outline" : "destructive"} 
+                  onClick={handleToggleNG} 
+                  disabled={isTogglingNG}
+                >
+                  {company?.is_global_ng ? (
+                    <><ShieldOff className="h-4 w-4 mr-2" />NG解除</>
+                  ) : (
+                    <><Shield className="h-4 w-4 mr-2" />NG設定</>
+                  )}
+                  {isTogglingNG && "中..."}
+                </Button>
                 <Button variant="outline" onClick={() => setIsEditing(true)}>
                   <Edit className="h-4 w-4 mr-2" />
                   編集

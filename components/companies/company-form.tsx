@@ -60,6 +60,7 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
     contact_email: company?.contact_email || "",
     email: company?.email || "",
     phone: company?.phone || "",
+    notes: company?.notes || "",
     status: company?.status || "prospect",
   })
 
@@ -218,18 +219,20 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
             {/* Industry */}
             <div>
               <Label htmlFor="industry">業界 *</Label>
-              <Select value={formData.industry} onValueChange={(value) => updateField("industry", value)}>
-                <SelectTrigger className={errors.industry ? "border-destructive" : ""}>
-                  <SelectValue placeholder="業界を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {industries.map((industry) => (
-                    <SelectItem key={industry} value={industry}>
-                      {industry}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="industry"
+                value={formData.industry}
+                onChange={(e) => updateField("industry", e.target.value)}
+                placeholder="業界を入力してください"
+                disabled={isLoading}
+                className={errors.industry ? "border-destructive" : ""}
+                list="industry-suggestions"
+              />
+              <datalist id="industry-suggestions">
+                {industries.map((industry) => (
+                  <option key={industry} value={industry} />
+                ))}
+              </datalist>
               {errors.industry && <p className="text-sm text-destructive mt-1">{errors.industry}</p>}
             </div>
 
@@ -294,14 +297,39 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
               />
             </div>
 
+            {/* Prefecture */}
+            <div>
+              <Label htmlFor="prefecture">都道府県</Label>
+              <Input
+                id="prefecture"
+                value={formData.prefecture}
+                onChange={(e) => updateField("prefecture", e.target.value)}
+                disabled={isLoading}
+                placeholder="東京都"
+              />
+            </div>
+
+            {/* City */}
+            <div>
+              <Label htmlFor="city">市区町村</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => updateField("city", e.target.value)}
+                disabled={isLoading}
+                placeholder="渋谷区"
+              />
+            </div>
+
             {/* Location */}
             <div>
-              <Label htmlFor="location">所在地</Label>
+              <Label htmlFor="location">詳細住所</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={(e) => updateField("location", e.target.value)}
                 disabled={isLoading}
+                placeholder="番地・建物名など"
               />
             </div>
 
@@ -353,6 +381,19 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
                 value={formData.description}
                 onChange={(e) => updateField("description", e.target.value)}
                 disabled={isLoading}
+              />
+            </div>
+
+            {/* Notes (企業管理メモ) */}
+            <div className="md:col-span-2">
+              <Label htmlFor="notes">企業管理メモ</Label>
+              <Textarea
+                id="notes"
+                rows={3}
+                value={formData.notes}
+                onChange={(e) => updateField("notes", e.target.value)}
+                disabled={isLoading}
+                placeholder="内部管理用のメモを記載してください"
               />
             </div>
           </div>

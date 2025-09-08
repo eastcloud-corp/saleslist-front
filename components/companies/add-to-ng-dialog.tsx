@@ -23,19 +23,15 @@ export function AddToNGDialog({ open, onOpenChange, company, onSuccess }: AddToN
   const [reason, setReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { clients, isLoading: clientsLoading } = useClients({}, 1, 100)
-  const { addNGCompany } = useNGList(selectedClientId ? Number.parseInt(selectedClientId) : 0)
+  const { clients, loading: clientsLoading } = useClients({})
+  const { addCompanyToNG } = useNGList(selectedClientId ? Number.parseInt(selectedClientId) : 0)
 
   const handleSubmit = async () => {
     if (!company || !selectedClientId || !reason.trim()) return
 
     setIsSubmitting(true)
     try {
-      await addNGCompany({
-        company_name: company.name,
-        reason: reason.trim(),
-        company_id: company.id,
-      })
+      await addCompanyToNG(company.id, company.name, reason.trim())
 
       onSuccess?.()
       onOpenChange(false)

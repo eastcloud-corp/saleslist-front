@@ -1,0 +1,313 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - heading "営業管理" [level=1] [ref=e6]
+      - navigation [ref=e7]:
+        - link "ダッシュボード" [ref=e8] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e9] [cursor=pointer]
+          - text: ダッシュボード
+        - link "クライアント" [ref=e11] [cursor=pointer]:
+          - /url: /clients
+          - img [ref=e12] [cursor=pointer]
+          - text: クライアント
+        - link "案件" [ref=e17] [cursor=pointer]:
+          - /url: /projects
+          - img [ref=e18] [cursor=pointer]
+          - text: 案件
+        - link "企業管理" [ref=e20] [cursor=pointer]:
+          - /url: /companies
+          - img [ref=e21] [cursor=pointer]
+          - text: 企業管理
+        - link "設定" [ref=e25] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e26] [cursor=pointer]
+          - text: 設定
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e33]: T
+          - generic [ref=e34]:
+            - paragraph [ref=e35]: Test User
+            - paragraph [ref=e36]: user@example.com
+        - button [ref=e37]:
+          - img
+    - main [ref=e38]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - heading "案件管理" [level=1] [ref=e43]
+            - paragraph [ref=e44]: 営業キャンペーンを管理し、進捗を追跡
+          - generic [ref=e45]:
+            - button "編集モード (ON)" [ref=e46]:
+              - img
+              - text: 編集モード
+              - generic [ref=e47]: (ON)
+            - button "新規案件" [ref=e48]:
+              - img
+              - text: 新規案件
+        - generic [ref=e50]:
+          - table [ref=e52]:
+            - rowgroup [ref=e53]:
+              - row "案件名 クライアント" [ref=e54]:
+                - cell "案件名" [ref=e55]
+                - cell "クライアント" [ref=e56]
+            - rowgroup [ref=e57]:
+              - row "コンサルティング案件E テストクライアント" [ref=e58]:
+                - cell "コンサルティング案件E" [ref=e59]:
+                  - link "コンサルティング案件E" [ref=e60] [cursor=pointer]:
+                    - /url: /projects/6
+                    - generic [ref=e61] [cursor=pointer]: コンサルティング案件E
+                - cell "テストクライアント" [ref=e62]:
+                  - generic [ref=e63]: テストクライアント
+              - row "複合営業代行案件D テストクライアント" [ref=e64]:
+                - cell "複合営業代行案件D" [ref=e65]:
+                  - link "複合営業代行案件D" [ref=e66] [cursor=pointer]:
+                    - /url: /projects/5
+                    - generic [ref=e67] [cursor=pointer]: 複合営業代行案件D
+                - cell "テストクライアント" [ref=e68]:
+                  - generic [ref=e69]: テストクライアント
+              - row "メール営業代行案件C テストクライアント" [ref=e70]:
+                - cell "メール営業代行案件C" [ref=e71]:
+                  - link "メール営業代行案件C" [ref=e72] [cursor=pointer]:
+                    - /url: /projects/4
+                    - generic [ref=e73] [cursor=pointer]: メール営業代行案件C
+                - cell "テストクライアント" [ref=e74]:
+                  - generic [ref=e75]: テストクライアント
+              - row "LinkedIn営業代行案件B テストクライアント" [ref=e76]:
+                - cell "LinkedIn営業代行案件B" [ref=e77]:
+                  - link "LinkedIn営業代行案件B" [ref=e78] [cursor=pointer]:
+                    - /url: /projects/3
+                    - generic [ref=e79] [cursor=pointer]: LinkedIn営業代行案件B
+                - cell "テストクライアント" [ref=e80]:
+                  - generic [ref=e81]: テストクライアント
+              - row "Facebook営業代行案件A テストクライアント" [ref=e82]:
+                - cell "Facebook営業代行案件A" [ref=e83]:
+                  - link "Facebook営業代行案件A" [ref=e84] [cursor=pointer]:
+                    - /url: /projects/2
+                    - generic [ref=e85] [cursor=pointer]: Facebook営業代行案件A
+                - cell "テストクライアント" [ref=e86]:
+                  - generic [ref=e87]: テストクライアント
+              - row "APIテスト案件 テストクライアント" [ref=e88]:
+                - cell "APIテスト案件" [ref=e89]:
+                  - link "APIテスト案件" [ref=e90] [cursor=pointer]:
+                    - /url: /projects/1
+                    - generic [ref=e91] [cursor=pointer]: APIテスト案件
+                - cell "テストクライアント" [ref=e92]:
+                  - generic [ref=e93]: テストクライアント
+          - table [ref=e95]:
+            - rowgroup [ref=e96]:
+              - row "進行状況 アポ数 承認数 返信数 友達数 Dログイン可 運用者招待 状況 定例会実施日 リスト輸入先 記載日 進行タスク デイリータスク 返信チェック 備考 クレームor要望 ディレクター 運用者 営業マン 運用開始日 終了予定日 サービス 媒体 定例会ステータス リスト有無 リスト数" [ref=e97]:
+                - cell "進行状況" [ref=e98]
+                - cell "アポ数" [ref=e99]
+                - cell "承認数" [ref=e100]
+                - cell "返信数" [ref=e101]
+                - cell "友達数" [ref=e102]
+                - cell "Dログイン可" [ref=e103]
+                - cell "運用者招待" [ref=e104]
+                - cell "状況" [ref=e105]
+                - cell "定例会実施日" [ref=e106]
+                - cell "リスト輸入先" [ref=e107]
+                - cell "記載日" [ref=e108]
+                - cell "進行タスク" [ref=e109]
+                - cell "デイリータスク" [ref=e110]
+                - cell "返信チェック" [ref=e111]
+                - cell "備考" [ref=e112]
+                - cell "クレームor要望" [ref=e113]
+                - cell "ディレクター" [ref=e114]
+                - cell "運用者" [ref=e115]
+                - cell "営業マン" [ref=e116]
+                - cell "運用開始日" [ref=e117]
+                - cell "終了予定日" [ref=e118]
+                - cell "サービス" [ref=e119]
+                - cell "媒体" [ref=e120]
+                - cell "定例会ステータス" [ref=e121]
+                - cell "リスト有無" [ref=e122]
+                - cell "リスト数" [ref=e123]
+            - rowgroup [ref=e124]:
+              - row "表示モード 未着手 777 555 333 111 ✓ 自動テスト状況更新 2025/12/31 インフォボックス 2025/12/30 自動テスト進行タスク 自動テストデイリータスク 自動テスト返信チェック 自動テスト備考 自動テストクレーム要望 自動テストディレクター 自動テスト運用者 自動テスト営業マン 2025/1/1 2025/12/31 Facebook営業代行 Facebook 未 無 1" [ref=e125]:
+                - cell "表示モード 未着手" [ref=e126]:
+                  - generic [ref=e127]: 表示モード
+                  - text: 未着手
+                - cell "777" [ref=e128]
+                - cell "555" [ref=e129]
+                - cell "333" [ref=e130]
+                - cell "111" [ref=e131]
+                - cell "✓" [ref=e132]
+                - cell [ref=e133]
+                - cell "自動テスト状況更新" [ref=e134]
+                - cell "2025/12/31" [ref=e135]
+                - cell "インフォボックス" [ref=e136]
+                - cell "2025/12/30" [ref=e137]
+                - cell "自動テスト進行タスク" [ref=e138]
+                - cell "自動テストデイリータスク" [ref=e139]
+                - cell "自動テスト返信チェック" [ref=e140]
+                - cell "自動テスト備考" [ref=e141]
+                - cell "自動テストクレーム要望" [ref=e142]
+                - cell "自動テストディレクター" [ref=e143]
+                - cell "自動テスト運用者" [ref=e144]
+                - cell "自動テスト営業マン" [ref=e145]
+                - cell "2025/1/1" [ref=e146]
+                - cell "2025/12/31" [ref=e147]
+                - cell "Facebook営業代行" [ref=e148]
+                - cell "Facebook" [ref=e149]
+                - cell "未" [ref=e150]
+                - cell "無" [ref=e151]
+                - cell "1" [ref=e152]:
+                  - generic [ref=e153]: "1"
+              - row "表示モード DM作成・確認/アカウント構築 30 18 50 85 ✓ ✓ 目標達成済み 未設定 - 未設定 - - - - - - - - 未設定 未設定 - - - - 0" [ref=e154]:
+                - cell "表示モード DM作成・確認/アカウント構築" [ref=e155]:
+                  - generic [ref=e156]: 表示モード
+                  - text: DM作成・確認/アカウント構築
+                - cell "30" [ref=e157]
+                - cell "18" [ref=e158]
+                - cell "50" [ref=e159]
+                - cell "85" [ref=e160]
+                - cell "✓" [ref=e161]
+                - cell "✓" [ref=e162]
+                - cell "目標達成済み" [ref=e163]
+                - cell "未設定" [ref=e164]
+                - cell "-" [ref=e165]
+                - cell "未設定" [ref=e166]
+                - cell "-" [ref=e167]
+                - cell "-" [ref=e168]
+                - cell "-" [ref=e169]
+                - cell "-" [ref=e170]
+                - cell "-" [ref=e171]
+                - cell "-" [ref=e172]
+                - cell "-" [ref=e173]
+                - cell "-" [ref=e174]
+                - cell "未設定" [ref=e175]
+                - cell "未設定" [ref=e176]
+                - cell "-" [ref=e177]
+                - cell "-" [ref=e178]
+                - cell "-" [ref=e179]
+                - cell "-" [ref=e180]
+                - cell "0" [ref=e181]:
+                  - generic [ref=e182]: "0"
+              - row "表示モード キックオフMTG 8 3 12 20 ✓ ✓ 開始準備中 未設定 - 未設定 - - - - - - - - 未設定 未設定 - - - - 0" [ref=e183]:
+                - cell "表示モード キックオフMTG" [ref=e184]:
+                  - generic [ref=e185]: 表示モード
+                  - text: キックオフMTG
+                - cell "8" [ref=e186]
+                - cell "3" [ref=e187]
+                - cell "12" [ref=e188]
+                - cell "20" [ref=e189]
+                - cell "✓" [ref=e190]
+                - cell "✓" [ref=e191]
+                - cell "開始準備中" [ref=e192]
+                - cell "未設定" [ref=e193]
+                - cell "-" [ref=e194]
+                - cell "未設定" [ref=e195]
+                - cell "-" [ref=e196]
+                - cell "-" [ref=e197]
+                - cell "-" [ref=e198]
+                - cell "-" [ref=e199]
+                - cell "-" [ref=e200]
+                - cell "-" [ref=e201]
+                - cell "-" [ref=e202]
+                - cell "-" [ref=e203]
+                - cell "未設定" [ref=e204]
+                - cell "未設定" [ref=e205]
+                - cell "-" [ref=e206]
+                - cell "-" [ref=e207]
+                - cell "-" [ref=e208]
+                - cell "-" [ref=e209]
+                - cell "0" [ref=e210]:
+                  - generic [ref=e211]: "0"
+              - row "表示モード ヒアリングシート記入中 22 12 35 60 ✓ リード獲得好調 未設定 - 未設定 - - - - - - - - 未設定 未設定 - - - - 0" [ref=e212]:
+                - cell "表示モード ヒアリングシート記入中" [ref=e213]:
+                  - generic [ref=e214]: 表示モード
+                  - text: ヒアリングシート記入中
+                - cell "22" [ref=e215]
+                - cell "12" [ref=e216]
+                - cell "35" [ref=e217]
+                - cell "60" [ref=e218]
+                - cell [ref=e219]
+                - cell "✓" [ref=e220]
+                - cell "リード獲得好調" [ref=e221]
+                - cell "未設定" [ref=e222]
+                - cell "-" [ref=e223]
+                - cell "未設定" [ref=e224]
+                - cell "-" [ref=e225]
+                - cell "-" [ref=e226]
+                - cell "-" [ref=e227]
+                - cell "-" [ref=e228]
+                - cell "-" [ref=e229]
+                - cell "-" [ref=e230]
+                - cell "-" [ref=e231]
+                - cell "-" [ref=e232]
+                - cell "未設定" [ref=e233]
+                - cell "未設定" [ref=e234]
+                - cell "-" [ref=e235]
+                - cell "-" [ref=e236]
+                - cell "-" [ref=e237]
+                - cell "-" [ref=e238]
+                - cell "0" [ref=e239]:
+                  - generic [ref=e240]: "0"
+              - row "表示モード 未着手 15 8 25 45 ✓ 順調に進行中 未設定 - 未設定 - - - - - - - - 未設定 未設定 - - - - 0" [ref=e241]:
+                - cell "表示モード 未着手" [ref=e242]:
+                  - generic [ref=e243]: 表示モード
+                  - text: 未着手
+                - cell "15" [ref=e244]
+                - cell "8" [ref=e245]
+                - cell "25" [ref=e246]
+                - cell "45" [ref=e247]
+                - cell "✓" [ref=e248]
+                - cell [ref=e249]
+                - cell "順調に進行中" [ref=e250]
+                - cell "未設定" [ref=e251]
+                - cell "-" [ref=e252]
+                - cell "未設定" [ref=e253]
+                - cell "-" [ref=e254]
+                - cell "-" [ref=e255]
+                - cell "-" [ref=e256]
+                - cell "-" [ref=e257]
+                - cell "-" [ref=e258]
+                - cell "-" [ref=e259]
+                - cell "-" [ref=e260]
+                - cell "-" [ref=e261]
+                - cell "未設定" [ref=e262]
+                - cell "未設定" [ref=e263]
+                - cell "-" [ref=e264]
+                - cell "-" [ref=e265]
+                - cell "-" [ref=e266]
+                - cell "-" [ref=e267]
+                - cell "0" [ref=e268]:
+                  - generic [ref=e269]: "0"
+              - row "表示モード - -1 0 0 0 ✓ テストで更新 未設定 - 未設定 - - - - - - - - 未設定 未設定 - - - - 0" [ref=e270]:
+                - cell "表示モード -" [ref=e271]:
+                  - generic [ref=e272]: 表示モード
+                  - text: "-"
+                - cell "-1" [ref=e273]
+                - cell "0" [ref=e274]
+                - cell "0" [ref=e275]
+                - cell "0" [ref=e276]
+                - cell "✓" [ref=e277]
+                - cell [ref=e278]
+                - cell "テストで更新" [ref=e279]
+                - cell "未設定" [ref=e280]
+                - cell "-" [ref=e281]
+                - cell "未設定" [ref=e282]
+                - cell "-" [ref=e283]
+                - cell "-" [ref=e284]
+                - cell "-" [ref=e285]
+                - cell "-" [ref=e286]
+                - cell "-" [ref=e287]
+                - cell "-" [ref=e288]
+                - cell "-" [ref=e289]
+                - cell "-" [ref=e290]
+                - cell "未設定" [ref=e291]
+                - cell "未設定" [ref=e292]
+                - cell "-" [ref=e293]
+                - cell "-" [ref=e294]
+                - cell "-" [ref=e295]
+                - cell "-" [ref=e296]
+                - cell "0" [ref=e297]:
+                  - generic [ref=e298]: "0"
+  - button "Open Next.js Dev Tools" [ref=e304] [cursor=pointer]:
+    - img [ref=e305] [cursor=pointer]
+  - alert [ref=e308]
+```

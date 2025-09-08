@@ -7,6 +7,7 @@ import { ProjectForm } from "@/components/projects/project-form"
 import { useProjects } from "@/hooks/use-projects"
 import { useClients } from "@/hooks/use-clients"
 import { apiClient } from "@/lib/api-config"
+import type { Project } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -21,13 +22,13 @@ import { Plus, FolderOpen, Calendar, Users, Building2, Edit3 } from "lucide-reac
 export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
-  const [editData, setEditData] = useState<Record<number, any>>({})
-  const [progressStatuses, setProgressStatuses] = useState<any[]>([])
-  const [serviceTypes, setServiceTypes] = useState<any[]>([])
-  const [meetingStatuses, setMeetingStatuses] = useState<any[]>([])
-  const [mediaTypes, setMediaTypes] = useState<any[]>([])
-  const [listImportSources, setListImportSources] = useState<any[]>([])
-  const [listAvailabilities, setListAvailabilities] = useState<any[]>([])
+  const [editData, setEditData] = useState<Record<number, Partial<Project>>>({})
+  const [progressStatuses, setProgressStatuses] = useState<Array<{id: number, name: string}>>([])
+  const [serviceTypes, setServiceTypes] = useState<Array<{id: number, name: string}>>([])
+  const [meetingStatuses, setMeetingStatuses] = useState<Array<{id: number, name: string}>>([])
+  const [mediaTypes, setMediaTypes] = useState<Array<{id: number, name: string}>>([])
+  const [listImportSources, setListImportSources] = useState<Array<{id: number, name: string}>>([])
+  const [listAvailabilities, setListAvailabilities] = useState<Array<{id: number, name: string}>>([])
   const { projects, isLoading, error, createProject } = useProjects()
   // const { clients } = useClients({ limit: 100 })
 
@@ -349,10 +350,10 @@ export default function ProjectsPage() {
                           )}
                           {editMode ? (
                             <Select
-                              value={editData[project.id]?.progress_status_id?.toString() || project.progress_status || ''}
+                              value={editData[Number(project.id)]?.progress_status_id?.toString() || project.progress_status || ''}
                               onValueChange={(value) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], progress_status_id: parseInt(value) }
+                                [Number(project.id)]: { ...prev[Number(project.id)], progress_status_id: parseInt(value) }
                               }))}
                             >
                               <SelectTrigger className="h-8 text-xs">
@@ -377,10 +378,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="number"
-                              value={editData[project.id]?.appointment_count ?? project.appointment_count}
+                              value={editData[Number(project.id)]?.appointment_count ?? project.appointment_count}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], appointment_count: parseInt(e.target.value) || 0 }
+                                [Number(project.id)]: { ...prev[Number(project.id)], appointment_count: parseInt(e.target.value) || 0 }
                               }))}
                               className="w-12 h-8 text-xs text-center p-1"
                             />
@@ -392,10 +393,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="number"
-                              value={editData[project.id]?.approval_count ?? project.approval_count}
+                              value={editData[Number(project.id)]?.approval_count ?? project.approval_count}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], approval_count: parseInt(e.target.value) || 0 }
+                                [Number(project.id)]: { ...prev[Number(project.id)], approval_count: parseInt(e.target.value) || 0 }
                               }))}
                               className="w-12 h-8 text-xs text-center p-1"
                             />
@@ -407,10 +408,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="number"
-                              value={editData[project.id]?.reply_count ?? project.reply_count}
+                              value={editData[Number(project.id)]?.reply_count ?? project.reply_count}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], reply_count: parseInt(e.target.value) || 0 }
+                                [Number(project.id)]: { ...prev[Number(project.id)], reply_count: parseInt(e.target.value) || 0 }
                               }))}
                               className="w-12 h-8 text-xs text-center p-1"
                             />
@@ -422,10 +423,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="number"
-                              value={editData[project.id]?.friends_count ?? project.friends_count}
+                              value={editData[Number(project.id)]?.friends_count ?? project.friends_count}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], friends_count: parseInt(e.target.value) || 0 }
+                                [Number(project.id)]: { ...prev[Number(project.id)], friends_count: parseInt(e.target.value) || 0 }
                               }))}
                               className="w-12 h-8 text-xs text-center p-1"
                             />
@@ -436,11 +437,11 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
                           {editMode ? (
                             <Checkbox
-                              checked={editData[project.id]?.director_login_available ?? project.director_login_available}
+                              checked={editData[Number(project.id)]?.director_login_available ?? project.director_login_available}
                               onCheckedChange={(checked) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { 
-                                  ...prev[project.id], 
+                                [Number(project.id)]: { 
+                                  ...prev[Number(project.id)], 
                                   director_login_available: checked === true
                                 }
                               }))}
@@ -452,11 +453,11 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
                           {editMode ? (
                             <Checkbox
-                              checked={editData[project.id]?.operator_group_invited ?? project.operator_group_invited}
+                              checked={editData[Number(project.id)]?.operator_group_invited ?? project.operator_group_invited}
                               onCheckedChange={(checked) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { 
-                                  ...prev[project.id], 
+                                [Number(project.id)]: { 
+                                  ...prev[Number(project.id)], 
                                   operator_group_invited: checked === true
                                 }
                               }))}
@@ -468,10 +469,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
                           {editMode ? (
                             <Textarea
-                              value={editData[project.id]?.situation ?? (project.situation || '')}
+                              value={editData[Number(project.id)]?.situation ?? (project.situation || '')}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], situation: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], situation: e.target.value }
                               }))}
                               className="w-full h-12 text-xs p-1 resize-none"
                               rows={2}
@@ -484,10 +485,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="date"
-                              value={editData[project.id]?.regular_meeting_date || project.regular_meeting_date || ''}
+                              value={editData[Number(project.id)]?.regular_meeting_date || project.regular_meeting_date || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], regular_meeting_date: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], regular_meeting_date: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -498,10 +499,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[100px]">
                           {editMode ? (
                             <Select
-                              value={editData[project.id]?.list_import_source_id?.toString() || project.list_import_source_id?.toString() || ''}
+                              value={editData[Number(project.id)]?.list_import_source_id?.toString() || project.list_import_source_id?.toString() || ''}
                               onValueChange={(value) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], list_import_source_id: parseInt(value) }
+                                [Number(project.id)]: { ...prev[Number(project.id)], list_import_source_id: parseInt(value) }
                               }))}
                             >
                               <SelectTrigger className="h-8 text-xs">
@@ -523,10 +524,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="date"
-                              value={editData[project.id]?.entry_date_sales || project.entry_date_sales || ''}
+                              value={editData[Number(project.id)]?.entry_date_sales || project.entry_date_sales || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], entry_date_sales: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], entry_date_sales: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -537,10 +538,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
                           {editMode ? (
                             <Textarea
-                              value={editData[project.id]?.progress_tasks || project.progress_tasks || ''}
+                              value={editData[Number(project.id)]?.progress_tasks || project.progress_tasks || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], progress_tasks: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], progress_tasks: e.target.value }
                               }))}
                               className="w-full h-12 text-xs p-1 resize-none"
                               rows={2}
@@ -552,10 +553,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
                           {editMode ? (
                             <Textarea
-                              value={editData[project.id]?.daily_tasks || project.daily_tasks || ''}
+                              value={editData[Number(project.id)]?.daily_tasks || project.daily_tasks || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], daily_tasks: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], daily_tasks: e.target.value }
                               }))}
                               className="w-full h-12 text-xs p-1 resize-none"
                               rows={2}
@@ -567,10 +568,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
                           {editMode ? (
                             <Textarea
-                              value={editData[project.id]?.reply_check_notes || project.reply_check_notes || ''}
+                              value={editData[Number(project.id)]?.reply_check_notes || project.reply_check_notes || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], reply_check_notes: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], reply_check_notes: e.target.value }
                               }))}
                               className="w-full h-12 text-xs p-1 resize-none"
                               rows={2}
@@ -582,10 +583,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
                           {editMode ? (
                             <Textarea
-                              value={editData[project.id]?.remarks || project.remarks || ''}
+                              value={editData[Number(project.id)]?.remarks || project.remarks || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], remarks: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], remarks: e.target.value }
                               }))}
                               className="w-full h-12 text-xs p-1 resize-none"
                               rows={2}
@@ -597,10 +598,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
                           {editMode ? (
                             <Textarea
-                              value={editData[project.id]?.complaints_requests || project.complaints_requests || ''}
+                              value={editData[Number(project.id)]?.complaints_requests || project.complaints_requests || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], complaints_requests: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], complaints_requests: e.target.value }
                               }))}
                               className="w-full h-12 text-xs p-1 resize-none"
                               rows={2}
@@ -612,10 +613,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
                           {editMode ? (
                             <Input
-                              value={editData[project.id]?.director || project.director || ''}
+                              value={editData[Number(project.id)]?.director || project.director || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], director: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], director: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -626,10 +627,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
                           {editMode ? (
                             <Input
-                              value={editData[project.id]?.operator || project.operator || ''}
+                              value={editData[Number(project.id)]?.operator || project.operator || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], operator: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], operator: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -640,10 +641,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
                           {editMode ? (
                             <Input
-                              value={editData[project.id]?.sales_person || project.sales_person || ''}
+                              value={editData[Number(project.id)]?.sales_person || project.sales_person || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], sales_person: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], sales_person: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -655,10 +656,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="date"
-                              value={editData[project.id]?.operation_start_date || project.operation_start_date || ''}
+                              value={editData[Number(project.id)]?.operation_start_date || project.operation_start_date || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], operation_start_date: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], operation_start_date: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -670,10 +671,10 @@ export default function ProjectsPage() {
                           {editMode ? (
                             <Input
                               type="date"
-                              value={editData[project.id]?.expected_end_date || project.expected_end_date || ''}
+                              value={editData[Number(project.id)]?.expected_end_date || project.expected_end_date || ''}
                               onChange={(e) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], expected_end_date: e.target.value }
+                                [Number(project.id)]: { ...prev[Number(project.id)], expected_end_date: e.target.value }
                               }))}
                               className="h-8 text-xs"
                             />
@@ -684,10 +685,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[100px]">
                           {editMode ? (
                             <Select
-                              value={editData[project.id]?.service_type_id?.toString() || ''}
+                              value={editData[Number(project.id)]?.service_type_id?.toString() || ''}
                               onValueChange={(value) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], service_type_id: parseInt(value) }
+                                [Number(project.id)]: { ...prev[Number(project.id)], service_type_id: parseInt(value) }
                               }))}
                             >
                               <SelectTrigger className="h-8 text-xs">
@@ -708,10 +709,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
                           {editMode ? (
                             <Select
-                              value={editData[project.id]?.media_type_id?.toString() || project.media_type_id?.toString() || ''}
+                              value={editData[Number(project.id)]?.media_type_id?.toString() || project.media_type_id?.toString() || ''}
                               onValueChange={(value) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], media_type_id: parseInt(value) }
+                                [Number(project.id)]: { ...prev[Number(project.id)], media_type_id: parseInt(value) }
                               }))}
                             >
                               <SelectTrigger className="h-8 text-xs">
@@ -732,10 +733,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[100px]">
                           {editMode ? (
                             <Select
-                              value={editData[project.id]?.regular_meeting_status_id?.toString() || ''}
+                              value={editData[Number(project.id)]?.regular_meeting_status_id?.toString() || ''}
                               onValueChange={(value) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], regular_meeting_status_id: parseInt(value) }
+                                [Number(project.id)]: { ...prev[Number(project.id)], regular_meeting_status_id: parseInt(value) }
                               }))}
                             >
                               <SelectTrigger className="h-8 text-xs">
@@ -756,10 +757,10 @@ export default function ProjectsPage() {
                         <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
                           {editMode ? (
                             <Select
-                              value={editData[project.id]?.list_availability_id?.toString() || project.list_availability_id?.toString() || ''}
+                              value={editData[Number(project.id)]?.list_availability_id?.toString() || project.list_availability_id?.toString() || ''}
                               onValueChange={(value) => setEditData(prev => ({
                                 ...prev,
-                                [project.id]: { ...prev[project.id], list_availability_id: parseInt(value) }
+                                [Number(project.id)]: { ...prev[Number(project.id)], list_availability_id: parseInt(value) }
                               }))}
                             >
                               <SelectTrigger className="h-8 text-xs">

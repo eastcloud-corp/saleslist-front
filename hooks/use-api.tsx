@@ -1,4 +1,3 @@
-import { authService } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -32,8 +31,7 @@ export function useAPI<T>(
     setError(null)
 
     try {
-      const response = await apiClient.get(endpoint)
-      const result = await apiClient.handleResponse<T>(response)
+      const result = await apiClient.get<T>(endpoint)
       setData(result)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'APIエラーが発生しました'

@@ -42,18 +42,15 @@ export function useMasterData() {
         setError(null)
 
         // 業界マスター取得
-        const industriesResponse = await apiClient.get(API_CONFIG.ENDPOINTS.MASTER_INDUSTRIES)
-        const industriesData = await apiClient.handleResponse<{results: Industry[]}>(industriesResponse)
+        const industriesData = await apiClient.get<{results: Industry[]}>(API_CONFIG.ENDPOINTS.MASTER_INDUSTRIES)
         setIndustries(industriesData.results || [])
 
         // ステータスマスター取得
-        const statusesResponse = await apiClient.get(API_CONFIG.ENDPOINTS.MASTER_STATUSES)
-        const statusesData = await apiClient.handleResponse<{results: Status[]}>(statusesResponse)
+        const statusesData = await apiClient.get<{results: Status[]}>(API_CONFIG.ENDPOINTS.MASTER_STATUSES)
         setStatuses(statusesData.results || [])
 
         // 都道府県マスター取得
-        const prefecturesResponse = await apiClient.get(API_CONFIG.ENDPOINTS.MASTER_PREFECTURES)
-        const prefecturesData = await apiClient.handleResponse<{results: Prefecture[]}>(prefecturesResponse)
+        const prefecturesData = await apiClient.get<{results: Prefecture[]}>(API_CONFIG.ENDPOINTS.MASTER_PREFECTURES)
         setPrefectures(prefecturesData.results || [])
 
       } catch (err) {

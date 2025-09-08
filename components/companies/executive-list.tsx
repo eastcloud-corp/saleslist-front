@@ -56,8 +56,8 @@ export function ExecutiveList({ executives, onAdd, onEdit, onDelete, isLoading =
     setFormData({
       name: executive.name,
       position: executive.position,
-      email: executive.email,
-      phone: executive.phone,
+      email: executive.email || "",
+      phone: executive.phone || "",
       linkedin_url: executive.linkedin_url || "",
       facebook_url: executive.facebook_url || "",
       twitter_url: executive.twitter_url || "",
@@ -66,7 +66,7 @@ export function ExecutiveList({ executives, onAdd, onEdit, onDelete, isLoading =
 
   const handleSaveEdit = () => {
     if (onEdit && editingExecutive && formData.name && formData.position) {
-      onEdit(editingExecutive.id, formData)
+      onEdit(editingExecutive.id.toString(), formData)
       resetForm()
       setEditingExecutive(null)
     }
@@ -260,7 +260,7 @@ export function ExecutiveList({ executives, onAdd, onEdit, onDelete, isLoading =
                       <Edit className="h-3 w-3" />
                     </Button>
                     {onDelete && (
-                      <Button variant="outline" size="sm" onClick={() => onDelete(executive.id)}>
+                      <Button variant="outline" size="sm" onClick={() => onDelete(executive.id.toString())}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     )}

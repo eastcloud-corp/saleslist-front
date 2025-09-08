@@ -47,8 +47,7 @@ export function useNGList(clientId: number) {
 
     try {
       // Use uploadFile method (same as working CSV implementation)
-      const response = await apiClient.uploadFile(API_CONFIG.ENDPOINTS.NG_COMPANY_IMPORT(clientId), file)
-      const data = await apiClient.handleResponse<NGImportResult>(response)
+      const data = await apiClient.uploadFile<NGImportResult>(API_CONFIG.ENDPOINTS.NG_COMPANY_IMPORT(clientId.toString()), file)
 
       await fetchNGList() // リスト再取得
       return data

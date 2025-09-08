@@ -270,6 +270,15 @@ export function convertCSVToCompanyData(
     email: row.email?.trim() || "",
     description: row.description?.trim() || "",
     status: (row.status?.toLowerCase() as "active" | "prospect" | "inactive") || "prospect",
+    // Company型に必要な追加フィールド
+    established_year: new Date().getFullYear(),
+    prefecture: "",
+    city: "",
+    website_url: row.website?.trim() || "",
+    contact_email: row.email?.trim() || "",
+    notes: "",
+    is_global_ng: false,
+    capital: 0,
   }))
 }
 

@@ -1,0 +1,117 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8] [cursor=pointer]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - heading "営業管理" [level=1] [ref=e16]
+      - navigation [ref=e17]:
+        - link "ダッシュボード" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e19] [cursor=pointer]
+          - text: ダッシュボード
+        - link "クライアント" [ref=e21] [cursor=pointer]:
+          - /url: /clients
+          - img [ref=e22] [cursor=pointer]
+          - text: クライアント
+        - link "案件" [ref=e27] [cursor=pointer]:
+          - /url: /projects
+          - img [ref=e28] [cursor=pointer]
+          - text: 案件
+        - link "企業管理" [ref=e30] [cursor=pointer]:
+          - /url: /companies
+          - img [ref=e31] [cursor=pointer]
+          - text: 企業管理
+        - link "設定" [ref=e35] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e36] [cursor=pointer]
+          - text: 設定
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e43]: T
+          - generic [ref=e44]:
+            - paragraph [ref=e45]: Test User
+            - paragraph [ref=e46]: user@example.com
+        - button [ref=e47]:
+          - img
+    - main [ref=e48]:
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - img [ref=e55]
+              - heading "企業データベース管理" [level=1] [ref=e59]
+              - generic [ref=e60]: 管理画面
+            - paragraph [ref=e61]: 営業対象企業のマスターデータを管理・メンテナンス
+          - generic [ref=e62]:
+            - button "CSV インポート" [ref=e63]:
+              - img
+              - text: CSV インポート
+            - link "企業追加" [ref=e64] [cursor=pointer]:
+              - /url: /companies/new
+              - img
+              - text: 企業追加
+        - generic [ref=e65]:
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - img [ref=e69]
+              - text: 検索・フィルター
+            - button "フィルターを表示" [ref=e73]:
+              - img
+              - text: フィルターを表示
+          - generic [ref=e75]:
+            - generic [ref=e76]: 企業検索
+            - textbox "企業検索" [ref=e77]
+        - generic [ref=e78]:
+          - generic [ref=e80]:
+            - img [ref=e81]
+            - text: 企業 (2)
+          - table [ref=e88]:
+            - rowgroup [ref=e89]:
+              - row "企業名 業界 従業員数 売上 所在地 ステータス 操作" [ref=e90]:
+                - cell "企業名" [ref=e91]
+                - cell "業界" [ref=e92]
+                - cell "従業員数" [ref=e93]
+                - cell "売上" [ref=e94]
+                - cell "所在地" [ref=e95]
+                - cell "ステータス" [ref=e96]
+                - cell "操作" [ref=e97]
+            - rowgroup [ref=e98]:
+              - row "自動テスト企業名 auto-test.com 自動テスト業界 999 ￥1,000,000,000 東京都 アクティブ 詳細" [ref=e99]:
+                - cell "自動テスト企業名 auto-test.com" [ref=e100]:
+                  - generic [ref=e102]:
+                    - generic [ref=e103]: 自動テスト企業名
+                    - link "auto-test.com" [ref=e104] [cursor=pointer]:
+                      - /url: https://auto-test.com
+                      - text: auto-test.com
+                      - img [ref=e105] [cursor=pointer]
+                - cell "自動テスト業界" [ref=e109]
+                - cell "999" [ref=e110]
+                - cell "￥1,000,000,000" [ref=e111]
+                - cell "東京都" [ref=e112]
+                - cell "アクティブ" [ref=e113]:
+                  - generic [ref=e114]: アクティブ
+                - cell "詳細" [ref=e115]:
+                  - link "詳細" [ref=e116] [cursor=pointer]:
+                    - /url: /companies/2
+              - row "v0レポート解決確認企業 グローバルNG IT・ソフトウェア 150 ￥500,000,000 東京都 アクティブ 詳細" [ref=e117]:
+                - cell "v0レポート解決確認企業 グローバルNG" [ref=e118]:
+                  - generic [ref=e119]:
+                    - generic [ref=e121]: v0レポート解決確認企業
+                    - button "グローバルNG" [ref=e122]:
+                      - generic [ref=e123]:
+                        - img [ref=e124]
+                        - generic [ref=e126]: グローバルNG
+                - cell "IT・ソフトウェア" [ref=e127]
+                - cell "150" [ref=e128]
+                - cell "￥500,000,000" [ref=e129]
+                - cell "東京都" [ref=e130]
+                - cell "アクティブ" [ref=e131]:
+                  - generic [ref=e132]: アクティブ
+                - cell "詳細" [ref=e133]:
+                  - link "詳細" [ref=e134] [cursor=pointer]:
+                    - /url: /companies/1
+```

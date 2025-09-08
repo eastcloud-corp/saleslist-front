@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,14 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, X } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
 
 interface CompanyFiltersProps {
   filters: any
   onFiltersChange: (filters: any) => void
   onClearFilters: () => void
 }
-
-const industries = ["テクノロジー", "製造業", "金融", "ヘルスケア", "小売", "教育", "不動産", "コンサルティング"]
 
 const statuses = [
   { value: "active", label: "アクティブ" },
@@ -25,6 +24,23 @@ const statuses = [
 
 export function CompanyFilters({ filters, onFiltersChange, onClearFilters }: CompanyFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [industries, setIndustries] = useState<string[]>([])
+
+  useEffect(() => {
+    // 実際のデータから業界一覧を取得
+    const fetchIndustries = async () => {
+      try {
+        const data = await apiClient.get<{results: {industry: string}[]}>('/companies/')
+        const uniqueIndustries = [...new Set(data.results.map((company) => company.industry).filter(Boolean))] as string[]
+        setIndustries(uniqueIndustries.sort())
+      } catch (error) {
+        console.error('API接続エラー:', error)
+        // エラー状態のまま（空配列）でUI上でエラー表示
+      }
+    }
+    
+    fetchIndustries()
+  }, [])
 
   const updateFilter = (key: string, value: any) => {
     onFiltersChange({ ...filters, [key]: value })
@@ -102,7 +118,7 @@ export function CompanyFilters({ filters, onFiltersChange, onClearFilters }: Com
                 </SelectContent>
               </Select>
               <div className="flex flex-wrap gap-1 mt-2">
-                {filters.industry?.map((industry) => (
+                {filters.industry?.map((industry: string) => (
                   <Badge key={industry} variant="secondary" className="text-xs">
                     {industry}
                     <button
@@ -178,7 +194,7 @@ export function CompanyFilters({ filters, onFiltersChange, onClearFilters }: Com
                 </SelectContent>
               </Select>
               <div className="flex flex-wrap gap-1 mt-2">
-                {filters.status?.map((status) => (
+                {filters.status?.map((status: string) => (
                   <Badge key={status} variant="secondary" className="text-xs">
                     {statuses.find((s) => s.value === status)?.label || status}
                     <button onClick={() => removeArrayFilter("status", status)} className="ml-1 hover:text-destructive">

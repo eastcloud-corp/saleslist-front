@@ -9,7 +9,7 @@ export interface User {
 }
 
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   status: "success" | "error"
   data: T
   message?: string
@@ -21,6 +21,18 @@ export interface PaginatedResponse<T> {
   next: string | null
   previous: string | null
   results: T[]
+}
+
+// API レスポンス用の統一インターフェース
+export interface ApiListResponse<T> extends PaginatedResponse<T> {}
+
+export interface ApiDetailResponse<T> {
+  data: T
+}
+
+export interface ApiErrorResponse {
+  error: string
+  message?: string
 }
 
 // Client Types
@@ -167,7 +179,6 @@ export interface Project {
   regular_meeting_status_id?: number
   list_availability?: string // リスト有無
   list_availability_id?: number
-  list_import_source?: string // リスト輸入先
   list_import_source_id?: number
 }
 

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useClients } from "@/hooks/use-clients"
-import { apiClient } from "@/lib/api-config"
+import { apiClient } from "@/lib/api-client"
 import { ClientTable } from "@/components/clients/client-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +32,7 @@ export default function ClientsPage() {
   useEffect(() => {
     const fetchIndustries = async () => {
       try {
-        const data = await apiClient.get('/master/industries/')
+        const data = await apiClient.get<{results: string[]}>('/master/industries/')
         setIndustries(data.results || [])
       } catch (error) {
         console.error('Failed to fetch industries:', error)

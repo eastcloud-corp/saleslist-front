@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { apiClient, API_CONFIG } from "@/lib/api-config"
+import { apiClient, API_CONFIG } from "@/lib/api-config"  
 import type { Project } from "@/lib/types"
 import { authService } from "@/lib/auth"
 
@@ -17,6 +17,13 @@ export function useProjects(page = 1, limit = 20) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchProjects = async () => {
+    // 認証チェック
+    if (!authService.isAuthenticated()) {
+      setIsLoading(false)
+      return
+    }
+    
+    if (!authService.isAuthenticated()) { setIsLoading(false); return; }
     setIsLoading(true)
     setError(null)
 
@@ -24,18 +31,12 @@ export function useProjects(page = 1, limit = 20) {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
+        management_mode: 'true',
       })
 
       console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`)
-      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`)
-
-      console.log("[v0] Projects API response status:", response.status)
-
-      if (!response.ok) {
-        throw new Error("プロジェクトの取得に失敗しました")
-      }
-
-      const data = await response.json()
+      const response = await apiClient.get(`/projects?${params.toString()}`)
+      const data = await apiClient.handleResponse(response)
       console.log("[v0] Projects API response data:", data)
 
       if (data && typeof data === "object") {
@@ -117,15 +118,17 @@ export function useProject(id: string | number) {
   const [project, setProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [availableCompanies, setAvailableCompanies] = useState<any[]>([])
+  const [isLoadingAvailableCompanies, setIsLoadingAvailableCompanies] = useState(false)
 
   const fetchProject = async () => {
+    if (!authService.isAuthenticated()) { setIsLoading(false); return; }
     setIsLoading(true)
     setError(null)
 
     try {
-      console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`)
-      const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`, {
-      })
+      console.log("[v0] GET request to:", `/projects/${id}/?management_mode=true`)
+      const response = await apiClient.get(`/projects/${id}/?management_mode=true`)
 
       console.log("[v0] Project detail API response status:", response.status)
 
@@ -152,7 +155,7 @@ export function useProject(id: string | number) {
 
   const updateProject = async (projectData: Partial<Project>) => {
     try {
-      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}`, projectData, {
+      const response = await apiClient.put(`${API_CONFIG.ENDPOINTS.PROJECTS}${id}/`, projectData, {
       })
 
       if (!response.ok) {
@@ -178,7 +181,7 @@ export function useProject(id: string | number) {
   ) => {
     try {
       const response = await apiClient.patch(
-        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}/`,
+        `${API_CONFIG.ENDPOINTS.PROJECTS}${id}/companies/${companyId}/`,
         statusData,
         {
           },
@@ -198,7 +201,7 @@ export function useProject(id: string | number) {
   const addCompanies = async (companyIds: number[]) => {
     try {
       const response = await apiClient.post(
-        `${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/add-companies/`,
+        `${API_CONFIG.ENDPOINTS.PROJECTS}${id}/add-companies/`,
         { company_ids: companyIds },
         {
           },
@@ -214,10 +217,27 @@ export function useProject(id: string | number) {
       throw err instanceof Error ? err : new Error("エラーが発生しました")
     }
   }
+  
+  const fetchAvailableCompanies = async () => {
+    if (!authService.isAuthenticated()) return
+    setIsLoadingAvailableCompanies(true)
+    
+    try {
+      const response = await apiClient.get(`/projects/${id}/available-companies/`)
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableCompanies(data.results || [])
+      }
+    } catch (error) {
+      console.error('利用可能企業取得エラー:', error)
+    } finally {
+      setIsLoadingAvailableCompanies(false)
+    }
+  }
 
   const removeCompany = async (companyId: number) => {
     try {
-      const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}/${id}/companies/${companyId}/`, {
+      const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS}${id}/companies/${companyId}/`, {
       })
 
       if (!response.ok) {
@@ -234,6 +254,7 @@ export function useProject(id: string | number) {
   useEffect(() => {
     if (id) {
       fetchProject()
+      fetchAvailableCompanies()
     }
   }, [id])
 
@@ -245,6 +266,8 @@ export function useProject(id: string | number) {
     updateCompanyStatus,
     addCompanies,
     removeCompany,
+    availableCompanies,
+    isLoadingAvailableCompanies,
     refetch: fetchProject,
   }
 }

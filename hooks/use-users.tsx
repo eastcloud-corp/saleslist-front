@@ -1,3 +1,4 @@
+import { authService } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"

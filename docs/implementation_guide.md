@@ -123,7 +123,7 @@ export interface Company {
   department?: string
   position?: string
   is_global_ng: boolean
-  ng_reason?: string
+  reason?: string
   created_at: string
   updated_at: string
   // NG判定情報

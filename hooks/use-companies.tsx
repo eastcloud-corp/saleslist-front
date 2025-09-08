@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
+import { authService } from "@/lib/auth"
 import { API_CONFIG } from "@/lib/api-config"
 import type { Company, CompanyFilter, PaginatedResponse } from "@/lib/types"
 
@@ -17,6 +18,14 @@ export function useCompanies(filters: CompanyFilter = {}, page = 1, limit = 100)
   const [error, setError] = useState<string | null>(null)
 
   const fetchCompanies = async () => {
+    if (!authService.isAuthenticated()) { 
+      setIsLoading(false)
+      // 未認証の場合はログインページにリダイレクト
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
+      return
+    }
     setIsLoading(true)
     setError(null)
 

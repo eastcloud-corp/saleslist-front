@@ -20,13 +20,10 @@ interface ProjectFormProps {
   isLoading?: boolean
 }
 
-const statuses = [
-  { value: "active", label: "アクティブ" },
-  { value: "paused", label: "一時停止" },
-  { value: "completed", label: "完了" },
-]
+import { useMasterData } from "@/hooks/use-master-data"
 
 export function ProjectForm({ project, onSave, onCancel, isLoading = false }: ProjectFormProps) {
+  const { statuses } = useMasterData()
   const [formData, setFormData] = useState({
     name: project?.name || "",
     client_id: project?.client_id || "",
@@ -145,9 +142,9 @@ export function ProjectForm({ project, onSave, onCancel, isLoading = false }: Pr
                   <SelectValue placeholder="ステータスを選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
+                  {statuses.filter(s => s.category === 'project').map((status) => (
+                    <SelectItem key={status.name} value={status.name}>
+                      {status.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

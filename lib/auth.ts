@@ -37,7 +37,14 @@ class AuthService {
     console.log("[v0] Login attempt with credentials:", { email: credentials.email })
 
     try {
-      const response = await apiClient.post(API_CONFIG.ENDPOINTS.LOGIN, credentials)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      })
+
       console.log("[v0] Login response status:", response.status)
 
       if (!response.ok) {
@@ -65,13 +72,14 @@ class AuthService {
   async logout(): Promise<void> {
     try {
       const refreshToken = this.getRefreshToken()
-      await apiClient.post(
-        API_CONFIG.ENDPOINTS.LOGOUT,
-        { refresh_token: refreshToken },
-        {
-          headers: this.getAuthHeaders(),
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeaders(),
         },
-      )
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
     } catch (error) {
       console.error("Logout error:", error)
     } finally {
@@ -84,8 +92,14 @@ class AuthService {
       throw new Error("リフレッシュトークンが利用できません")
     }
 
-    const response = await apiClient.post(API_CONFIG.ENDPOINTS.REFRESH, {
-      refresh_token: this.refreshToken,
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        refresh_token: this.refreshToken,
+      }),
     })
 
     if (!response.ok) {
@@ -93,10 +107,10 @@ class AuthService {
       throw new Error("トークンの更新に失敗しました")
     }
 
-    const data: ApiResponse<{ access_token: string }> = await response.json()
+    const data: any = await response.json()
 
-    if (data.status === "success") {
-      this.accessToken = data.data.access_token
+    if (data.access_token) {
+      this.accessToken = data.access_token
       if (typeof window !== "undefined") {
         localStorage.setItem("access_token", this.accessToken)
       }
@@ -136,6 +150,10 @@ class AuthService {
 
   getAccessToken(): string | null {
     return this.accessToken
+  }
+
+  getRefreshToken(): string | null {
+    return this.refreshToken
   }
 }
 

@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
 
 interface ClientDetailPageProps {
   params: Promise<{
@@ -33,11 +35,43 @@ export default function ClientDetailPage({ params }: ClientDetailPageProps) {
 
 function ClientDetailContent({ id }: { id: number }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState("")
+  const [newProjectDescription, setNewProjectDescription] = useState("")
+  const [newProjectManager, setNewProjectManager] = useState("")
 
   const { client, loading: clientLoading, error: clientError } = useClient(id)
   const { stats, loading: statsLoading } = useClientStats(id)
-  const { projects, loading: projectsLoading } = useClientProjects(id)
+  const { projects, loading: projectsLoading, refetch: refetchProjects } = useClientProjects(id)
   const { updateClient } = useClients()
+  
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) return
+    
+    setIsCreatingProject(true)
+    try {
+      const projectData = {
+        name: newProjectName,
+        description: newProjectDescription,
+        manager_name: newProjectManager,
+        status: 'planning',
+        client_company: client?.name || '',
+        client_id: client?.id || null
+      }
+      
+      const response = await apiClient.post(API_CONFIG.ENDPOINTS.PROJECTS, projectData)
+      if (response.ok) {
+        await refetchProjects()
+        setNewProjectName("")
+        setNewProjectDescription("")
+        setNewProjectManager("")
+      }
+    } catch (error) {
+      console.error("Project creation failed:", error)
+    } finally {
+      setIsCreatingProject(false)
+    }
+  }
 
   if (clientLoading) {
     return (
@@ -197,19 +231,36 @@ function ClientDetailContent({ id }: { id: number }) {
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="project-name">案件名</Label>
-                            <Input id="project-name" placeholder="案件名を入力" />
+                            <Input 
+                              id="project-name" 
+                              placeholder="案件名を入力"
+                              value={newProjectName}
+                              onChange={(e) => setNewProjectName(e.target.value)}
+                            />
                           </div>
                           <div>
                             <Label htmlFor="project-description">概要</Label>
-                            <Textarea id="project-description" placeholder="案件の概要を入力" />
+                            <Textarea 
+                              id="project-description" 
+                              placeholder="案件の概要を入力"
+                              value={newProjectDescription}
+                              onChange={(e) => setNewProjectDescription(e.target.value)}
+                            />
                           </div>
                           <div>
                             <Label htmlFor="assigned-user">担当者</Label>
-                            <Input id="assigned-user" placeholder="担当者名を入力" />
+                            <Input 
+                              id="assigned-user" 
+                              placeholder="担当者名を入力"
+                              value={newProjectManager}
+                              onChange={(e) => setNewProjectManager(e.target.value)}
+                            />
                           </div>
                           <div className="flex justify-end space-x-2">
                             <Button variant="outline">キャンセル</Button>
-                            <Button>作成</Button>
+                            <Button onClick={handleCreateProject} disabled={isCreatingProject}>
+                              {isCreatingProject ? "作成中..." : "作成"}
+                            </Button>
                           </div>
                         </div>
                       </DialogContent>
@@ -274,19 +325,36 @@ function ClientDetailContent({ id }: { id: number }) {
                           <div className="space-y-4">
                             <div>
                               <Label htmlFor="project-name">案件名</Label>
-                              <Input id="project-name" placeholder="案件名を入力" />
+                              <Input 
+                                id="project-name" 
+                                placeholder="案件名を入力"
+                                value={newProjectName}
+                                onChange={(e) => setNewProjectName(e.target.value)}
+                              />
                             </div>
                             <div>
                               <Label htmlFor="project-description">概要</Label>
-                              <Textarea id="project-description" placeholder="案件の概要を入力" />
+                              <Textarea 
+                                id="project-description" 
+                                placeholder="案件の概要を入力"
+                                value={newProjectDescription}
+                                onChange={(e) => setNewProjectDescription(e.target.value)}
+                              />
                             </div>
                             <div>
                               <Label htmlFor="assigned-user">担当者</Label>
-                              <Input id="assigned-user" placeholder="担当者名を入力" />
+                              <Input 
+                                id="assigned-user" 
+                                placeholder="担当者名を入力"
+                                value={newProjectManager}
+                                onChange={(e) => setNewProjectManager(e.target.value)}
+                              />
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button variant="outline">キャンセル</Button>
-                              <Button>作成</Button>
+                              <Button onClick={handleCreateProject} disabled={isCreatingProject}>
+                                {isCreatingProject ? "作成中..." : "作成"}
+                              </Button>
                             </div>
                           </div>
                         </DialogContent>

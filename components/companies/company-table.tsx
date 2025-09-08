@@ -182,7 +182,7 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
                       <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>
                       <TableCell>{formatCurrency(company.revenue)}</TableCell>
                       <TableCell>{company.prefecture}</TableCell>
-                      <TableCell>{company.industry || "未設定"}</TableCell>
+                      <TableCell>{getStatusBadge(company.status || "active")}</TableCell>
                       <TableCell>
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/companies/${company.id}`}>詳細</Link>

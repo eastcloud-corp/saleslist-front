@@ -233,7 +233,7 @@ function isNGCompany(company, context) {
     return { 
       is_ng: true, 
       type: 'global', 
-      reason: company.ng_reason 
+      reason: company.reason 
     }
   }
   

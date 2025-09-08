@@ -8,8 +8,9 @@ import { CSVImportDialog } from "@/components/companies/csv-import-dialog"
 import { useCompanies } from "@/hooks/use-companies"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { exportCompaniesToCSV, downloadCSV, convertCompaniesArrayToCSV } from "@/lib/csv-utils"
+import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
 import { apiClient, API_CONFIG } from "@/lib/api-config"
+import { useAuth } from "@/hooks/use-auth"
 import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
 import { Download, Plus, Upload, ArrowLeft, Database } from "lucide-react"
 import Link from "next/link"
@@ -20,7 +21,10 @@ export default function CompaniesPage() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
+  const { user } = useAuth()
   const { companies, pagination, isLoading, error, refetch } = useCompanies(filters, currentPage, 100)
+  
+  const isAdmin = user?.role === 'admin'
 
   const handleFiltersChange = (newFilters: CompanyFiltersType) => {
     setFilters(newFilters)
@@ -79,10 +83,12 @@ export default function CompaniesPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExport} disabled={isExporting}>
-              <Download className="h-4 w-4 mr-2" />
-              {isExporting ? "エクスポート中..." : "CSV エクスポート"}
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "エクスポート中..." : "CSV エクスポート"}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               CSV インポート

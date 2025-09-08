@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
+import { authService } from "@/lib/auth"
 import type { ClientNGCompany, NGImportResult } from "@/lib/types"
 
 export function useNGList(clientId: number) {
@@ -17,12 +18,12 @@ export function useNGList(clientId: number) {
 
   const fetchNGList = async () => {
     console.log("[v0] Fetching NG list for client:", clientId)
+    if (!authService.isAuthenticated()) { setIsLoading(false); return; }
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await apiClient.get(`/clients/${clientId}/ng-companies`)
-      const data = await apiClient.handleResponse(response) as any
+      const data = await apiClient.get(`/clients/${clientId}/ng-companies`) as any
       console.log("[v0] NG list response:", data)
 
       setNgList(data.results || [])
@@ -61,8 +62,7 @@ export function useNGList(clientId: number) {
     console.log("[v0] Deleting NG company:", ngId)
 
     try {
-      const response = await apiClient.delete(`/clients/${clientId}/ng-companies/${ngId}`)
-      await apiClient.handleResponse(response)
+      await apiClient.delete(`/clients/${clientId}/ng-companies/${ngId}`)
       await fetchNGList()
     } catch (err) {
       console.error("[v0] NG delete error:", err)
@@ -74,12 +74,11 @@ export function useNGList(clientId: number) {
     console.log("[v0] Adding company to NG list:", { companyId, companyName, reason })
 
     try {
-      const response = await apiClient.post(`/clients/${clientId}/ng-companies/add/`, {
+      await apiClient.post(`/clients/${clientId}/ng-companies/add/`, {
         company_id: companyId,
         company_name: companyName,
         reason: reason,
       })
-      await apiClient.handleResponse(response)
       await fetchNGList()
     } catch (err) {
       console.error("[v0] NG company add error:", err)

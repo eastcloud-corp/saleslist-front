@@ -29,19 +29,17 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
   const router = useRouter()
   const { toast } = useToast()
 
-  const { project, isLoading: projectLoading, addCompanies } = useProject(projectId)
-  const {
-    companies,
-    isLoading: companiesLoading,
-    pagination,
-  } = useCompanies({
-    search: searchTerm,
-    industry: industryFilter === "all" ? undefined : industryFilter,
-    limit: 50,
+  const { project, isLoading: projectLoading, addCompanies, availableCompanies, isLoadingAvailableCompanies } = useProject(projectId)
+  
+  // フィルタリング処理をフロントエンドで実行
+  const filteredCompanies = (availableCompanies || []).filter(company => {
+    const matchesSearch = !searchTerm || company.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesIndustry = industryFilter === "all" || company.industry === industryFilter
+    return matchesSearch && matchesIndustry
   })
 
-  // Get existing company IDs to exclude them
-  const existingCompanyIds = project?.companies?.map((pc) => pc.company?.id?.toString()).filter(Boolean) || []
+  const companies = filteredCompanies
+  const companiesLoading = isLoadingAvailableCompanies
 
   const handleCompanySelect = (companyId: string, checked: boolean) => {
     if (checked) {
@@ -54,7 +52,7 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const availableCompanyIds = companies
-        .filter((company) => !existingCompanyIds.includes(company.id.toString()))
+        .filter((company) => !getCompanyNGStatus(company).is_ng)
         .map((company) => company.id.toString())
       setSelectedCompanyIds(availableCompanyIds)
     } else {
@@ -92,9 +90,7 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
     return company.ng_status || { is_ng: false, types: [], reasons: {} }
   }
 
-  const availableCompanies = companies.filter((company) => !existingCompanyIds.includes(company.id.toString()))
-
-  const isLoading = projectLoading || companiesLoading
+  const isLoading = projectLoading || isLoadingAvailableCompanies
 
   if (projectLoading) {
     return (
@@ -181,15 +177,18 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>利用可能な企業 ({availableCompanies.length}社)</CardTitle>
+            <CardTitle>利用可能な企業 ({filteredCompanies.length}社)</CardTitle>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="select-all"
-                checked={selectedCompanyIds.length === availableCompanies.length && availableCompanies.length > 0}
+                checked={
+                  selectedCompanyIds.length === filteredCompanies.filter(c => !getCompanyNGStatus(c).is_ng).length && 
+                  filteredCompanies.filter(c => !getCompanyNGStatus(c).is_ng).length > 0
+                }
                 onCheckedChange={handleSelectAll}
               />
               <label htmlFor="select-all" className="text-sm font-medium">
-                すべて選択
+                すべて選択（NG企業除く）
               </label>
             </div>
           </div>
@@ -202,11 +201,11 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
                 <span>企業データを読み込み中...</span>
               </div>
             </div>
-          ) : availableCompanies.length === 0 ? (
+          ) : filteredCompanies.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">追加可能な企業が見つかりません</div>
           ) : (
             <div className="space-y-2">
-              {availableCompanies.map((company) => {
+              {filteredCompanies.map((company) => {
                 const ngStatus = getCompanyNGStatus(company)
                 const isSelected = selectedCompanyIds.includes(company.id.toString())
                 const isDisabled = ngStatus.is_ng

@@ -20,3 +20,5 @@ export function MainLayout({ children }: MainLayoutProps) {
     </ProtectedRoute>
   )
 }
+
+export default MainLayout

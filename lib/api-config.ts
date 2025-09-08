@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/v1",
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL + "/api/v1",
   ENDPOINTS: {
     // Authentication
     LOGIN: "/auth/login",
@@ -75,7 +75,9 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
-    return `${API_CONFIG.BASE_URL}${endpoint}`
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`
+    // ダブルスラッシュを自動修正（プロトコル部分は除外）
+    return url.replace(/([^:]\/)\/+/g, '$1')
   }
 
   async get(endpoint: string, options?: RequestInit): Promise<Response> {

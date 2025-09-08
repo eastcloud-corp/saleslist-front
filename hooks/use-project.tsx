@@ -1,3 +1,4 @@
+import { authService } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -11,7 +12,8 @@ export function useProject(projectId: string) {
 
   const fetchProject = async () => {
     try {
-      setIsLoading(true)
+      if (!authService.isAuthenticated()) { setIsLoading(false); return; }
+    setIsLoading(true)
       setError(null)
 
       console.log("[useProject] Fetching project:", projectId)

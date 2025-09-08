@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { useClients } from "@/hooks/use-clients"
+import { apiClient } from "@/lib/api-config"
 import { ClientTable } from "@/components/clients/client-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +15,7 @@ import { MainLayout } from "@/components/layout/main-layout"
 
 export default function ClientsPage() {
   const router = useRouter()
+  const [industries, setIndustries] = useState<any[]>([])
   const [filters, setFilters] = useState({
     search: "",
     industry: undefined as string | undefined,
@@ -24,6 +27,19 @@ export default function ClientsPage() {
     limit: 100,
     filters,
   })
+
+  // 業界マスター取得
+  useEffect(() => {
+    const fetchIndustries = async () => {
+      try {
+        const data = await apiClient.get('/master/industries/')
+        setIndustries(data.results || [])
+      } catch (error) {
+        console.error('Failed to fetch industries:', error)
+      }
+    }
+    fetchIndustries()
+  }, [])
 
   const handleFilterChange = (key: string, value: string | boolean | undefined) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
@@ -107,10 +123,11 @@ export default function ClientsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">すべて</SelectItem>
-                    <SelectItem value="IT・ソフトウェア">IT・ソフトウェア</SelectItem>
-                    <SelectItem value="マーケティング・広告">マーケティング・広告</SelectItem>
-                    <SelectItem value="製造業">製造業</SelectItem>
-                    <SelectItem value="金融・保険">金融・保険</SelectItem>
+                    {industries.map((industry) => (
+                      <SelectItem key={industry.id} value={industry.name}>
+                        {industry.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

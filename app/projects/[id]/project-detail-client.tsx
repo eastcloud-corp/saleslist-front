@@ -83,6 +83,10 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
   }
 
   const getStatusBadge = (status: string) => {
+    if (!status) {
+      return <Badge variant="outline">未設定</Badge>
+    }
+    
     const variants = {
       active: "default",
       paused: "secondary",
@@ -190,7 +194,53 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
               </div>
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">企業数</h4>
-                <p>{project.companies?.length || 0} 社</p>
+                <p>{project.company_count || project.companies?.length || 0} 社</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">進行状況</h4>
+                <p>{project.progress_status || '未設定'}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">アポ数</h4>
+                <p className="font-medium text-blue-600">{project.appointment_count || 0}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">承認数</h4>
+                <p className="font-medium text-green-600">{project.approval_count || 0}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">返信数</h4>
+                <p className="font-medium text-orange-600">{project.reply_count || 0}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">友達数</h4>
+                <p className="font-medium text-purple-600">{project.friends_count || 0}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">ディレクター</h4>
+                <p>{project.director || '未設定'}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">運用者</h4>
+                <p>{project.operator || '未設定'}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">営業マン</h4>
+                <p>{project.sales_person || '未設定'}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">運用開始日</h4>
+                <p className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(project.operation_start_date || "")}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-1">終了予定日</h4>
+                <p className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(project.expected_end_date || "")}
+                </p>
               </div>
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">作成日</h4>

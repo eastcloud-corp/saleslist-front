@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         if (authService.isAuthenticated()) {
           // Django API でユーザー情報取得
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, {
             headers: {
               'Authorization': `Bearer ${authService.getAccessToken()}`
             }
@@ -72,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
+    if (!authService.isAuthenticated()) { setIsLoading(false); return; }
     setIsLoading(true)
     try {
       await authService.logout()

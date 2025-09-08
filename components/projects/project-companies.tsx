@@ -24,14 +24,7 @@ interface ProjectCompaniesProps {
   isLoading?: boolean
 }
 
-const statusOptions = [
-  { value: "未接触", label: "未接触", variant: "outline" as const },
-  { value: "DM送信済み", label: "DM送信済み", variant: "secondary" as const },
-  { value: "返信あり", label: "返信あり", variant: "default" as const },
-  { value: "アポ獲得", label: "アポ獲得", variant: "default" as const },
-  { value: "成約", label: "成約", variant: "default" as const },
-  { value: "NG", label: "NG", variant: "destructive" as const },
-]
+import { useMasterData } from "@/hooks/use-master-data"
 
 export function ProjectCompanies({
   companies,
@@ -159,7 +152,15 @@ export function ProjectCompanies({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusOptions.map((status) => (
+                          {[
+                            { value: "未接触", label: "未接触" },
+                            { value: "DM送信予定", label: "DM送信予定" },
+                            { value: "DM送信済み", label: "DM送信済み" },
+                            { value: "返信あり", label: "返信あり" },
+                            { value: "アポ獲得", label: "アポ獲得" },
+                            { value: "成約", label: "成約" },
+                            { value: "NG", label: "NG" },
+                          ].map((status) => (
                             <SelectItem key={status.value} value={status.value}>
                               {status.label}
                             </SelectItem>

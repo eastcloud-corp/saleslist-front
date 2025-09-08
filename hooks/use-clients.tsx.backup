@@ -51,43 +51,25 @@ export function useClients(options: UseClientsOptions = {}) {
         ),
       })
 
-      const response = await apiClient.get(`/clients?${params}`);
-      console.log("[v0] クライアント一覧レスポンス:", response);
-      
-      const data = await response.json();
-      console.log("[DEBUG] API Response structure:", data);
-      
-      if (data && typeof data === 'object') {
-        // Check multiple possible response formats
-        if (Array.isArray(data.results)) {
-          setClients(data.results);
-          setPagination({
-            page: page,
-            limit: limit,
-            total: data.count || 0,
-            total_pages: Math.ceil((data.count || 0) / limit),
-          });
-        } else if (Array.isArray(data)) {
-          // Direct array response
-          setClients(data);
-          setPagination({
-            page: page,
-            limit: limit,
-            total: data.length,
-            total_pages: Math.ceil(data.length / limit),
-          });
-        } else {
-          console.warn("Unexpected response format:", data);
-          setError("予期しないAPIレスポンス形式");
-        }
+      const data = await apiClient.get(`/clients?${params}`) as any
+      console.log("[v0] クライアント一覧取得成功:", data)
+
+      if (data && data.results) {
+        setClients(data.results)
+        setPagination({
+          page: page,
+          limit: limit,
+          total: data.count || 0,
+          total_pages: Math.ceil((data.count || 0) / limit),
+        })
       } else {
         setError("APIからデータを取得できませんでした");
       }
     } catch (err) {
-      console.error("[v0] クライアント一覧取得エラー:", err);
-      setError(err instanceof Error ? err.message : "クライアント一覧の取得に失敗しました");
+      console.error("[v0] クライアント一覧取得エラー:", err)
+      setError(err instanceof Error ? err.message : "クライアント一覧の取得に失敗しました")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 

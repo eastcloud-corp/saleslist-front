@@ -6,9 +6,14 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
-import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings, Users } from "lucide-react"
+import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings, Users, Edit3 } from "lucide-react"
 
 const navigation = [
+  {
+    name: "ダッシュボード",
+    href: "/dashboard",
+    icon: BarChart3,
+  },
   {
     name: "クライアント",
     href: "/clients",
@@ -23,11 +28,6 @@ const navigation = [
     name: "企業管理",
     href: "/companies",
     icon: Building2,
-  },
-  {
-    name: "ダッシュボード",
-    href: "/dashboard",
-    icon: BarChart3,
   },
   {
     name: "設定",

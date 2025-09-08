@@ -29,6 +29,7 @@ interface UserInviteDialogProps {
 export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<UserInvitation["role"]>("user")
   const [message, setMessage] = useState("")
@@ -72,6 +73,7 @@ export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
 
     const invitation: UserInvitation & { password: string } = {
       email,
+      username,
       password,
       role,
       message: message || undefined,
@@ -159,6 +161,17 @@ export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@your-company.com"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="username">ユーザー名 *</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ユーザー名を入力"
                   required
                 />
               </div>

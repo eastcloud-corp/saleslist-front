@@ -184,6 +184,15 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">ステータス</h4>
                   {getStatusBadge(company.status || "prospect")}
                 </div>
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">グローバルNG設定</h4>
+                  <Badge variant={company.is_global_ng ? "destructive" : "outline"}>
+                    {company.is_global_ng ? "NG設定済み" : "通常"}
+                  </Badge>
+                  {company.is_global_ng && (
+                    <p className="text-xs text-red-600 mt-1">※全案件で営業対象外</p>
+                  )}
+                </div>
                 <div className="col-span-full">
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">事業内容</h4>
                   <p className="text-sm">{company.business_description || '未設定'}</p>

@@ -119,6 +119,7 @@ export interface Project {
   client?: Client // クライアント情報（リレーション）
   name: string
   client_company?: string
+  client_name?: string
   description?: string
   manager?: string
   target_industry?: string
@@ -134,6 +135,40 @@ export interface Project {
   contacted_count?: number // 接触済み企業数
   success_count?: number // 成約数
   companies?: ProjectCompany[] // 案件に紐づく企業リスト
+  
+  // 案件管理で使用する追加フィールド
+  progress_status?: string // 進行状況
+  progress_status_id?: number
+  appointment_count?: number // アポ数
+  approval_count?: number // 承認数
+  reply_count?: number // 返信数
+  friends_count?: number // 友達数
+  director_login_available?: boolean // Dログイン可
+  operator_group_invited?: boolean // 運用者招待
+  situation?: string // 状況
+  regular_meeting_date?: string // 定例会実施日
+  list_import_source?: string // リスト輸入先
+  entry_date_sales?: string // 記載日
+  progress_tasks?: string // 進行タスク
+  daily_tasks?: string // デイリータスク
+  reply_check_notes?: string // 返信チェック
+  remarks?: string // 備考
+  complaints_requests?: string // クレームor要望
+  director?: string // ディレクター
+  operator?: string // 運用者
+  sales_person?: string // 営業マン
+  operation_start_date?: string // 運用開始日
+  expected_end_date?: string // 終了予定日
+  service_type?: string // サービス
+  service_type_id?: number
+  media_type?: string // 媒体
+  media_type_id?: number
+  regular_meeting_status?: string // 定例会ステータス
+  regular_meeting_status_id?: number
+  list_availability?: string // リスト有無
+  list_availability_id?: number
+  list_import_source?: string // リスト輸入先
+  list_import_source_id?: number
 }
 
 export interface ProjectCompany {

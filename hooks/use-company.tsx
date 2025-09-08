@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-config"
+import { authService } from "@/lib/auth"
 import type { Company, ApiResponse } from "@/lib/types"
 
 export function useCompany(companyId: string) {
@@ -12,7 +13,11 @@ export function useCompany(companyId: string) {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        setIsLoading(true)
+        if (!authService.isAuthenticated()) { 
+          setIsLoading(false) 
+          return 
+        }
+    setIsLoading(true)
         setError(null)
 
         console.log("[useCompany] Fetching company:", companyId)
@@ -39,7 +44,8 @@ export function useCompany(companyId: string) {
 
   const updateCompany = async (companyData: Partial<Company>) => {
     try {
-      setIsLoading(true)
+      if (!authService.isAuthenticated()) { setIsLoading(false); return; }
+    setIsLoading(true)
       setError(null)
 
       const response = await apiClient.put(`/companies/${companyId}/`, companyData)
@@ -62,7 +68,8 @@ export function useCompany(companyId: string) {
 
   const deleteCompany = async () => {
     try {
-      setIsLoading(true)
+      if (!authService.isAuthenticated()) { setIsLoading(false); return; }
+    setIsLoading(true)
       setError(null)
 
       const response = await apiClient.delete(`/companies/${companyId}/`)

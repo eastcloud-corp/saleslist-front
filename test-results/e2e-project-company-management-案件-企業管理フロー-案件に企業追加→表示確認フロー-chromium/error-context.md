@@ -28,10 +28,10 @@
           - text: 設定
       - generic [ref=e30]:
         - generic [ref=e31]:
-          - generic [ref=e33]: T
+          - generic [ref=e33]: 管
           - generic [ref=e34]:
-            - paragraph [ref=e35]: Test User
-            - paragraph [ref=e36]: user@example.com
+            - paragraph [ref=e35]: 管理者テストユーザー
+            - paragraph [ref=e36]: admin@test.com
         - button [ref=e37]:
           - img
     - main [ref=e38]:
@@ -127,7 +127,7 @@
                 - cell "リスト有無" [ref=e122]
                 - cell "リスト数" [ref=e123]
             - rowgroup [ref=e124]:
-              - row "表示モード 未着手 777 555 333 111 ✓ 自動テスト状況更新 2025/12/31 インフォボックス 2025/12/30 自動テスト進行タスク 自動テストデイリータスク 自動テスト返信チェック 自動テスト備考 自動テストクレーム要望 自動テストディレクター 自動テスト運用者 自動テスト営業マン 2025/1/1 2025/12/31 Facebook営業代行 Facebook 未 無 1" [ref=e125]:
+              - row "表示モード 未着手 777 555 333 111 ✓ 自動テスト状況更新 2025/12/31 インフォボックス 2025/12/30 自動テスト進行タスク 自動テストデイリータスク 自動テスト返信チェック 自動テスト備考 自動テストクレーム要望 自動テストディレクター 自動テスト運用者 自動テスト営業マン 2025/1/1 2025/12/31 Facebook営業代行 Facebook 済 無 1" [ref=e125]:
                 - cell "表示モード 未着手" [ref=e126]:
                   - generic [ref=e127]: 表示モード
                   - text: 未着手
@@ -153,11 +153,11 @@
                 - cell "2025/12/31" [ref=e147]
                 - cell "Facebook営業代行" [ref=e148]
                 - cell "Facebook" [ref=e149]
-                - cell "未" [ref=e150]
+                - cell "済" [ref=e150]
                 - cell "無" [ref=e151]
                 - cell "1" [ref=e152]:
                   - generic [ref=e153]: "1"
-              - row "表示モード DM作成・確認/アカウント構築 30 18 50 85 ✓ ✓ 目標達成済み 未設定 - 未設定 - - - - - - - - 未設定 未設定 - - - - 0" [ref=e154]:
+              - row "表示モード DM作成・確認/アカウント構築 30 18 50 85 ✓ ✓ 目標達成済み 未設定 - 未設定 - - - - - - - - 未設定 2025/9/1 - - - - 0" [ref=e154]:
                 - cell "表示モード DM作成・確認/アカウント構築" [ref=e155]:
                   - generic [ref=e156]: 表示モード
                   - text: DM作成・確認/アカウント構築
@@ -180,7 +180,7 @@
                 - cell "-" [ref=e173]
                 - cell "-" [ref=e174]
                 - cell "未設定" [ref=e175]
-                - cell "未設定" [ref=e176]
+                - cell "2025/9/1" [ref=e176]
                 - cell "-" [ref=e177]
                 - cell "-" [ref=e178]
                 - cell "-" [ref=e179]

@@ -5,18 +5,11 @@ const { test, expect } = require('@playwright/test');
 // ログイン用ヘルパー
 async function login(page, role = 'user') {
   await page.goto('/login');
-  
-  // 権限別ログイン  
-  if (role === 'admin') {
-    await page.fill('input[type="email"]', 'admin@test.com');
-    await page.fill('input[type="password"]', 'password123');
-  } else {
-    await page.fill('input[type="email"]', 'user@example.com');
-    await page.fill('input[type="password"]', 'password123');
-  }
-  
-  await page.click('button[type="submit"]');
-  await page.waitForLoadState('networkidle');
+
+  // デバッグ情報でログイン（現在は管理者と一般ユーザーの区別はなし）
+  await page.click('button:has-text("デバッグ情報を自動入力")');
+  await page.click('button:has-text("ログイン")');
+  await page.waitForURL(url => url.pathname !== '/login', { timeout: 10000 });
 }
 
 test.describe('顧客要件対応機能テスト', () => {

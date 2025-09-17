@@ -10,6 +10,14 @@ let consoleErrors = [];
 let networkErrors = [];
 let consoleWarnings = [];
 
+// ログイン関数
+async function login(page) {
+  await page.goto('/login');
+  await page.click('button:has-text("デバッグ情報を自動入力")');
+  await page.click('button:has-text("ログイン")');
+  await page.waitForURL(url => url.pathname !== '/login', { timeout: 10000 });
+}
+
 test.describe('Console Error Detection', () => {
   
   test.beforeEach(async ({ page }) => {
@@ -62,7 +70,8 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Dashboard - Console Error Detection', async ({ page }) => {
-    await page.goto('http://localhost:3007/dashboard');
+    await login(page);
+    await page.goto('/dashboard');
     await page.waitForLoadState('networkidle', { timeout: 10000 });
     
     // エラー検証
@@ -71,7 +80,8 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Projects List - Console Error Detection', async ({ page }) => {
-    await page.goto('http://localhost:3007/projects');
+    await login(page);
+    await page.goto('/projects');
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     // プロジェクト一覧が表示されるまで待機
@@ -86,7 +96,8 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Companies List - Console Error Detection', async ({ page }) => {
-    await page.goto('http://localhost:3007/companies');
+    await login(page);
+    await page.goto('/companies');
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     expect(consoleErrors.length, `Console errors found: ${JSON.stringify(consoleErrors, null, 2)}`).toBe(0);
@@ -94,7 +105,7 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Login Page - Console Error Detection', async ({ page }) => {
-    await page.goto('http://localhost:3007/login');
+    await page.goto('/login');
     await page.waitForLoadState('networkidle', { timeout: 10000 });
     
     expect(consoleErrors.length, `Console errors found: ${JSON.stringify(consoleErrors, null, 2)}`).toBe(0);
@@ -102,8 +113,9 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Project Detail - Console Error Detection', async ({ page }) => {
+    await login(page);
     // まずプロジェクト一覧でIDを取得
-    await page.goto('http://localhost:3007/projects');
+    await page.goto('/projects');
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     // 最初のプロジェクトリンクを探してクリック
@@ -114,7 +126,7 @@ test.describe('Console Error Detection', () => {
         await page.waitForLoadState('networkidle', { timeout: 15000 });
       } else {
         // プロジェクト詳細を直接アクセス（プロジェクトID 6を仮定）
-        await page.goto('http://localhost:3007/projects/6');
+        await page.goto('/projects/6');
         await page.waitForLoadState('networkidle', { timeout: 15000 });
       }
     } catch (e) {
@@ -126,7 +138,8 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Add Companies Page - Console Error Detection', async ({ page }) => {
-    await page.goto('http://localhost:3007/projects/6/add-companies');
+    await login(page);
+    await page.goto('/projects/6/add-companies');
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     expect(consoleErrors.length, `Console errors found: ${JSON.stringify(consoleErrors, null, 2)}`).toBe(0);
@@ -134,7 +147,8 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Company Detail - Console Error Detection', async ({ page }) => {
-    await page.goto('http://localhost:3007/companies/2');
+    await login(page);
+    await page.goto('/companies/2');
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     expect(consoleErrors.length, `Console errors found: ${JSON.stringify(consoleErrors, null, 2)}`).toBe(0);
@@ -142,13 +156,13 @@ test.describe('Console Error Detection', () => {
   });
 
   test('Navigation Test - Console Error Detection', async ({ page }) => {
+    await login(page);
     // ナビゲーション全体のテスト
     const pages = [
-      'http://localhost:3007/dashboard',
-      'http://localhost:3007/projects',
-      'http://localhost:3007/companies',
-      'http://localhost:3007/clients',
-      'http://localhost:3007/login'
+      '/dashboard',
+      '/projects',
+      '/companies',
+      '/clients'
     ];
     
     for (const pageUrl of pages) {
@@ -163,6 +177,17 @@ test.describe('Console Error Detection', () => {
       expect(pageErrors.length, `Console errors on ${pageUrl}: ${JSON.stringify(pageErrors, null, 2)}`).toBe(0);
       expect(pageNetworkErrors.length, `Network errors on ${pageUrl}: ${JSON.stringify(pageNetworkErrors, null, 2)}`).toBe(0);
     }
+
+    // ログインページは別途テスト
+    console.log('Testing navigation to: /login');
+    await page.goto('/login');
+    await page.waitForLoadState('networkidle', { timeout: 10000 });
+
+    const loginPageErrors = consoleErrors.filter(e => e.timestamp > new Date(Date.now() - 5000).toISOString());
+    const loginNetworkErrors = networkErrors.filter(e => e.timestamp > new Date(Date.now() - 5000).toISOString() && e.status >= 500);
+
+    expect(loginPageErrors.length, `Console errors on login page: ${JSON.stringify(loginPageErrors, null, 2)}`).toBe(0);
+    expect(loginNetworkErrors.length, `Network errors on login page: ${JSON.stringify(loginNetworkErrors, null, 2)}`).toBe(0);
   });
 
   test.afterEach(async ({ page }) => {

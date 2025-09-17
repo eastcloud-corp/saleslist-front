@@ -5,10 +5,9 @@ const { test, expect } = require('@playwright/test');
 // ログインヘルパー
 async function login(page) {
   await page.goto('/login');
-  await page.fill('input[type="email"]', 'user@example.com');
-  await page.fill('input[type="password"]', 'password123');
-  await page.click('button[type="submit"]');
-  await page.waitForURL('/');
+  await page.click('button:has-text("デバッグ情報を自動入力")');
+  await page.click('button:has-text("ログイン")');
+  await page.waitForURL(url => url.pathname !== '/login', { timeout: 10000 });
 }
 
 test.describe('フロントエンド→Django API完全検証', () => {
@@ -19,7 +18,7 @@ test.describe('フロントエンド→Django API完全検証', () => {
     
     // Django API監視
     page.on('response', response => {
-      if (response.url().includes('localhost:8080/api/v1/')) {
+      if (response.url().includes('localhost:8002/api/v1/')) {
         const apiRequest = {
           url: response.url(),
           status: response.status(),
@@ -95,7 +94,7 @@ test.describe('フロントエンド→Django API完全検証', () => {
     const apiErrors = [];
     
     page.on('response', response => {
-      if (response.url().includes('localhost:8080/api/v1/') && response.status() >= 400) {
+      if (response.url().includes('localhost:8002/api/v1/') && response.status() >= 400) {
         apiErrors.push({
           url: response.url(),
           status: response.status(),
@@ -138,7 +137,7 @@ test.describe('フロントエンド→Django API完全検証', () => {
     const apiErrors = [];
     
     page.on('response', response => {
-      if (response.url().includes('localhost:8080/api/v1/') && response.status() >= 400) {
+      if (response.url().includes('localhost:8002/api/v1/') && response.status() >= 400) {
         apiErrors.push({
           url: response.url(),
           status: response.status(),

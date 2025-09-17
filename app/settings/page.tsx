@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserInviteDialog } from "@/components/settings/user-invite-dialog"
 import { UserTable } from "@/components/settings/user-table"
+import { CompanySettings } from "@/components/settings/company-settings"
 import { useUsers } from "@/hooks/use-users"
 import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
@@ -33,7 +34,7 @@ export default function SettingsPage() {
             <Shield className="mr-2 h-4 w-4" />
             権限設定
           </TabsTrigger>
-          <TabsTrigger value="system">
+          <TabsTrigger value="system" data-testid="system-tab">
             <SettingsIcon className="mr-2 h-4 w-4" />
             システム設定
           </TabsTrigger>
@@ -95,17 +96,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>システム設定</CardTitle>
-              <CardDescription>システム全体の設定を管理します</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-muted-foreground">システム設定機能は今後のアップデートで追加予定です。</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CompanySettings />
         </TabsContent>
       </Tabs>
       </div>

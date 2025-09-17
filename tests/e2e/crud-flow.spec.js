@@ -5,10 +5,9 @@ const { test, expect } = require('@playwright/test');
 // ログインヘルパー
 async function login(page) {
   await page.goto('/login');
-  await page.fill('input[type="email"]', 'user@example.com');
-  await page.fill('input[type="password"]', 'password123');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL('/');
+  await page.click('button:has-text("デバッグ情報を自動入力")');
+  await page.click('button:has-text("ログイン")');
+  await page.waitForURL(url => url.pathname !== '/login', { timeout: 10000 });
 }
 
 test.describe('CRUD操作フロー E2Eテスト', () => {
@@ -22,7 +21,7 @@ test.describe('CRUD操作フロー E2Eテスト', () => {
     
     // Django APIリクエスト監視
     page.on('request', request => {
-      if (request.url().includes('localhost:8080/api/v1/companies')) {
+      if (request.url().includes('localhost:8002/api/v1/companies')) {
         djangoApiRequests.push({
           url: request.url(),
           method: request.method(),
@@ -79,7 +78,7 @@ test.describe('CRUD操作フロー E2Eテスト', () => {
     const djangoApiRequests = [];
     
     page.on('request', request => {
-      if (request.url().includes('localhost:8080/api/v1/projects')) {
+      if (request.url().includes('localhost:8002/api/v1/projects')) {
         djangoApiRequests.push({
           url: request.url(),
           method: request.method(),

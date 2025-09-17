@@ -7,20 +7,31 @@
 import { test, expect } from '@playwright/test'
 
 // Test configuration
-const BASE_URL = 'http://localhost:3007'
-const BACKEND_URL = 'http://localhost:8006'
+const BASE_URL = 'http://localhost:3002'
+const BACKEND_URL = 'http://localhost:8002'
+
+// ログイン関数
+async function login(page: any) {
+  await page.goto(`${BASE_URL}/login`)
+  await page.click('button:has-text("デバッグ情報を自動入力")')
+  await page.click('button:has-text("ログイン")')
+  await page.waitForURL((url: any) => url.pathname !== '/login', { timeout: 10000 })
+}
 
 test.describe('Critical User Flows', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to application
-    await page.goto(BASE_URL)
+    // ログイン処理
+    await login(page)
   })
 
   test.describe('Application Access', () => {
     test('should load homepage without errors', async ({ page }) => {
+      // ログイン後のページ（ダッシュボードまたは企業一覧）に移動
+      await page.goto(`${BASE_URL}/dashboard`)
+
       // Check that page loads
       await expect(page).toHaveTitle(/Sales Navigator|案件管理|ダッシュボード/)
-      
+
       // Check for no console errors
       const errors: string[] = []
       page.on('console', (msg) => {
@@ -28,12 +39,12 @@ test.describe('Critical User Flows', () => {
           errors.push(msg.text())
         }
       })
-      
+
       await page.waitForLoadState('domcontentloaded')
-      
+
       // Verify no critical errors
-      const criticalErrors = errors.filter(error => 
-        !error.includes('_next/static') && 
+      const criticalErrors = errors.filter(error =>
+        !error.includes('_next/static') &&
         !error.includes('404')
       )
       expect(criticalErrors.length).toBe(0)
@@ -123,7 +134,7 @@ test.describe('Critical User Flows', () => {
       const apiRequests: string[] = []
       
       page.on('request', (request) => {
-        if (request.url().includes('localhost:8006') || request.url().includes('/api/')) {
+        if (request.url().includes('localhost:8002') || request.url().includes('/api/')) {
           apiRequests.push(request.url())
         }
       })

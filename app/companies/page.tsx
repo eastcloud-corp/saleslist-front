@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { CompanyFilters } from "@/components/companies/company-filters"
 import { CompanyTable } from "@/components/companies/company-table"
@@ -15,16 +16,27 @@ import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
 import { Download, Plus, Upload, ArrowLeft, Database } from "lucide-react"
 import Link from "next/link"
 
-export default function CompaniesPage() {
+function CompaniesPageContent() {
   const [filters, setFilters] = useState<CompanyFiltersType>({})
   const [currentPage, setCurrentPage] = useState(1)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const { companies, pagination, isLoading, error, refetch } = useCompanies(filters, currentPage, 100)
-  
+
   const isAdmin = user?.role === 'admin'
+
+  // Auto-refresh when returning from company creation
+  useEffect(() => {
+    if (searchParams?.get('refresh') === 'true') {
+      console.log("[v0] Auto-refreshing companies list after creation")
+      refetch()
+      // Clean up URL parameter
+      window.history.replaceState(null, '', '/companies')
+    }
+  }, [searchParams, refetch])
 
   const handleFiltersChange = (newFilters: CompanyFiltersType) => {
     setFilters(newFilters)
@@ -150,5 +162,13 @@ export default function CompaniesPage() {
         <CSVImportDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} onImport={handleImport} />
       </div>
     </MainLayout>
+  )
+}
+
+export default function CompaniesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+      <CompaniesPageContent />
+    </Suspense>
   )
 }

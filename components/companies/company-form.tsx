@@ -47,18 +47,14 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
     facebook_url: company?.facebook_url || "",
     tob_toc_type: company?.tob_toc_type || "",
     business_description: company?.business_description || "",
-    description: company?.description || "",
     prefecture: company?.prefecture || "",
     city: company?.city || "",
-    location: company?.location || "",
     employee_count: company?.employee_count || 0,
     revenue: company?.revenue || 0,
     capital: company?.capital || 0,
     established_year: Number(company?.established_year) || new Date().getFullYear(),
     website_url: company?.website_url || "",
-    website: company?.website || "",
     contact_email: company?.contact_email || "",
-    email: company?.email || "",
     phone: company?.phone || "",
     notes: company?.notes || "",
     status: company?.status || "prospect",
@@ -321,17 +317,6 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
               />
             </div>
 
-            {/* Location */}
-            <div>
-              <Label htmlFor="location">詳細住所</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => updateField("location", e.target.value)}
-                disabled={isLoading}
-                placeholder="番地・建物名など"
-              />
-            </div>
 
             {/* Website */}
             <div>
@@ -372,17 +357,6 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
               {errors.contact_email && <p className="text-sm text-destructive mt-1">{errors.contact_email}</p>}
             </div>
 
-            {/* Description */}
-            <div className="md:col-span-2">
-              <Label htmlFor="description">説明</Label>
-              <Textarea
-                id="description"
-                rows={4}
-                value={formData.description}
-                onChange={(e) => updateField("description", e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
 
             {/* Notes (企業管理メモ) */}
             <div className="md:col-span-2">

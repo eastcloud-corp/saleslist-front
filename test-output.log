@@ -1,0 +1,67 @@
+
+Running 245 tests using 2 workers
+
+  ✘    1 [chromium] › tests/e2e/auth-flow.spec.js:7:3 › 認証フロー E2E統合テスト › ログイン→API認証→ダッシュボード表示の完全フロー (7.2s)
+  ✘    2 [chromium] › tests/e2e/auth-flow.spec.js:75:3 › 認証フロー E2E統合テスト › マスターデータAPI統合確認（v0レポート解決） (7.2s)
+  ✓    4 [chromium] › tests/e2e/auth.spec.ts:4:7 › Authentication Flow › should display login page with development credentials (2.6s)
+  ✓    3 [chromium] › tests/e2e/auth.spec.ts:20:7 › Authentication Flow › should login with valid credentials (5.2s)
+  ✘    5 [chromium] › tests/e2e/auth.spec.ts:40:7 › Authentication Flow › should show error with invalid credentials (7.3s)
+  ✘    6 [chromium] › tests/e2e/company.spec.ts:12:7 › Company Management › should create new company and display in list (1.1m)
+  ✘    7 [chromium] › tests/e2e/company.spec.ts:40:7 › Company Management › should edit company information (1.0m)
+  ✘    8 [chromium] › tests/e2e/company.spec.ts:60:7 › Company Management › should filter companies by industry (1.1m)
+  ✘    9 [chromium] › tests/e2e/complete-api-verification.spec.js:16:3 › フロントエンド→Django API完全検証 › 全14ページでAPIエラー0件確認 (1.1m)
+  ✘   10 [chromium] › tests/e2e/complete-api-verification.spec.js:94:3 › フロントエンド→Django API完全検証 › フォーム送信・操作でAPIエラー0件確認 (1.1m)
+  ✘   11 [chromium] › tests/e2e/complete-api-verification.spec.js:137:3 › フロントエンド→Django API完全検証 › 検索・フィルター操作でAPIエラー0件確認 (1.1m)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   12 [chromium] › tests/e2e/console-error-detection.spec.js:64:3 › Console Error Detection › Dashboard - Console Error Detection (612ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   13 [chromium] › tests/e2e/console-error-detection.spec.js:73:3 › Console Error Detection › Projects List - Console Error Detection (476ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   14 [chromium] › tests/e2e/console-error-detection.spec.js:88:3 › Console Error Detection › Companies List - Console Error Detection (467ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   15 [chromium] › tests/e2e/console-error-detection.spec.js:96:3 › Console Error Detection › Login Page - Console Error Detection (366ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   16 [chromium] › tests/e2e/console-error-detection.spec.js:104:3 › Console Error Detection › Project Detail - Console Error Detection (358ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   17 [chromium] › tests/e2e/console-error-detection.spec.js:128:3 › Console Error Detection › Add Companies Page - Console Error Detection (299ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+Testing navigation to: http://localhost:3007/dashboard
+  ✘   18 [chromium] › tests/e2e/console-error-detection.spec.js:136:3 › Console Error Detection › Company Detail - Console Error Detection (518ms)
+🔍 Test Summary:
+  Console Errors: 0
+  Network Errors (5xx): 0
+  Console Warnings: 0
+  ✘   19 [chromium] › tests/e2e/console-error-detection.spec.js:144:3 › Console Error Detection › Navigation Test - Console Error Detection (494ms)
+  ✘   20 [chromium] › tests/e2e/critical-user-flows.spec.ts:20:9 › Critical User Flows › Application Access › should load homepage without errors (672ms)
+  ✘   21 [chromium] › tests/e2e/critical-user-flows.spec.ts:42:9 › Critical User Flows › Application Access › should render main navigation (513ms)
+  ✘   22 [chromium] › tests/e2e/critical-user-flows.spec.ts:51:9 › Critical User Flows › Company Management › should navigate to companies page (559ms)
+  ✘   23 [chromium] › tests/e2e/critical-user-flows.spec.ts:60:9 › Critical User Flows › Company Management › should open new company form (410ms)
+  ✘   24 [chromium] › tests/e2e/critical-user-flows.spec.ts:73:9 › Critical User Flows › Project Management › should navigate to projects page (388ms)
+  ✘   25 [chromium] › tests/e2e/critical-user-flows.spec.ts:84:9 › Critical User Flows › Data Loading › should load data without infinite loading states (432ms)
+  ✘   26 [chromium] › tests/e2e/critical-user-flows.spec.ts:102:9 › Critical User Flows › Form Functionality › should handle form input without crashes (364ms)
+  ✘   27 [chromium] › tests/e2e/critical-user-flows.spec.ts:121:9 › Critical User Flows › API Integration › should make successful API calls to backend (385ms)
+  ✘   28 [chromium] › tests/e2e/critical-user-flows.spec.ts:143:9 › Critical User Flows › Error Resilience › should not crash on missing data (359ms)
+  ✘   29 [chromium] › tests/e2e/crud-flow.spec.js:20:3 › CRUD操作フロー E2Eテスト › 企業作成→一覧表示フロー（v0レポート解決確認） (7.3s)
+  ✘   30 [chromium] › tests/e2e/crud-flow.spec.js:78:3 › CRUD操作フロー E2Eテスト › プロジェクト削除フロー（v0レポート解決確認） (6.8s)
+  ✘   31 [chromium] › tests/e2e/crud-flow.spec.js:120:3 › CRUD操作フロー E2Eテスト › マスターデータ統合フロー（v0レポート解決確認） (6.7s)

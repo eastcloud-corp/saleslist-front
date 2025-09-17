@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test'
 
-const BASE_URL = 'http://localhost:3009'
+const BASE_URL = 'http://localhost:3002'
 
 test.describe('案件-企業管理フロー', () => {
   test.beforeEach(async ({ page }) => {

@@ -5,10 +5,9 @@ const { test, expect } = require('@playwright/test');
 // ログイン用ヘルパー
 async function login(page) {
   await page.goto('/login');
-  await page.fill('input[type="email"]', 'user@example.com');
-  await page.fill('input[type="password"]', 'password123');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL('/');
+  await page.click('button:has-text("デバッグ情報を自動入力")');
+  await page.click('button:has-text("ログイン")');
+  await page.waitForURL(url => url.pathname !== '/login', { timeout: 10000 });
 }
 
 test.describe('ダッシュボード画面統合テスト', () => {

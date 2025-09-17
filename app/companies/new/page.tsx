@@ -6,8 +6,9 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { CompanyForm } from "@/components/companies/company-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import { apiClient } from "@/lib/api-config"
+import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
+import type { Company } from "@/lib/types"
 
 export default function NewCompanyPage() {
   const router = useRouter()
@@ -16,26 +17,22 @@ export default function NewCompanyPage() {
   const handleSave = async (data: any) => {
     try {
       console.log("[v0] 企業作成開始:", data)
-      
-      const response = await apiClient.post("/companies/", data)
-      
-      if (response.ok) {
-        const newCompany = await response.json()
-        console.log("[v0] 企業作成成功:", newCompany)
-        
-        toast({
-          title: "企業作成成功",
-          description: `企業「${newCompany.name}」を作成しました`,
-        })
-        
-        router.push("/companies")
-      } else {
-        throw new Error("企業の作成に失敗しました")
-      }
+
+      // apiClient.post returns data directly, not a Response object
+      const newCompany = await apiClient.post<Company>("/companies/", data)
+      console.log("[v0] 企業作成成功:", newCompany)
+
+      toast({
+        title: "企業作成成功",
+        description: `企業「${newCompany?.name || '新規企業'}」を作成しました`,
+      })
+
+      // Navigate back to companies list and trigger refresh
+      router.push("/companies?refresh=true")
     } catch (error) {
       console.error("[v0] 企業作成エラー:", error)
       toast({
-        title: "企業作成失敗", 
+        title: "企業作成失敗",
         description: "企業の作成に失敗しました。もう一度お試しください。",
         variant: "destructive",
       })

@@ -68,6 +68,28 @@ class ApiError extends Error {
 }
 
 class ApiClient {
+  private isHandlingUnauthorized = false
+
+  private async handleUnauthorized(status: number) {
+    if (status !== 401 && status !== 403) return
+    if (typeof window === "undefined") return
+    if (this.isHandlingUnauthorized) return
+
+    this.isHandlingUnauthorized = true
+    try {
+      const { authService } = await import("./auth")
+      await authService.logout()
+    } catch (error) {
+      console.error("[api-config] failed to handle unauthorized response", error)
+    } finally {
+      try {
+        window.location.href = "/login"
+      } finally {
+        this.isHandlingUnauthorized = false
+      }
+    }
+  }
+
   private getAuthHeaders(): Record<string, string> {
     if (typeof window === "undefined") return {}
     const token = localStorage.getItem("access_token")
@@ -90,6 +112,7 @@ class ApiClient {
       },
       ...options,
     })
+    await this.handleUnauthorized(response.status)
     return response
   }
 
@@ -104,6 +127,7 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
+    await this.handleUnauthorized(response.status)
     return response
   }
 
@@ -118,6 +142,7 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
+    await this.handleUnauthorized(response.status)
     return response
   }
 
@@ -132,6 +157,7 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
+    await this.handleUnauthorized(response.status)
     return response
   }
 
@@ -145,6 +171,7 @@ class ApiClient {
       },
       ...options,
     })
+    await this.handleUnauthorized(response.status)
     return response
   }
 
@@ -167,6 +194,7 @@ class ApiClient {
       },
       body: formData,
     })
+    await this.handleUnauthorized(response.status)
 
     return response
   }

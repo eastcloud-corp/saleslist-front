@@ -269,7 +269,11 @@ export default function ProjectsPage() {
                   </thead>
                   <tbody>
                     {projects.map((project) => (
-                      <tr key={project.id} className={editMode ? "border-b hover:bg-gray-50 h-20" : "border-b hover:bg-gray-50 h-16"}>
+                      <tr
+                        key={project.id}
+                        data-project-id={project.id}
+                        className={editMode ? "border-b hover:bg-gray-50 h-20" : "border-b hover:bg-gray-50 h-16"}
+                      >
                         <td className="p-3 align-middle min-w-[120px] w-[120px] max-w-[120px] h-16">
                           <Link href={`/projects/${project.id}`} className="block hover:text-blue-600">
                             <div 
@@ -341,7 +345,11 @@ export default function ProjectsPage() {
                   </thead>
                   <tbody>
                     {projects.map((project) => (
-                      <tr key={project.id} className={editMode ? "border-b hover:bg-gray-50 h-20" : "border-b hover:bg-gray-50 h-16"}>
+                      <tr
+                        key={project.id}
+                        data-project-id={project.id}
+                        className={editMode ? "border-b hover:bg-gray-50 h-20" : "border-b hover:bg-gray-50 h-16"}
+                      >
                         <td className="p-2 align-middle h-16 text-xs min-w-[120px]">
                           {editMode ? (
                             <div className="text-red-500 text-xs">編集モード</div>

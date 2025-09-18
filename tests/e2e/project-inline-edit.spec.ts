@@ -2,6 +2,31 @@ import { test, expect, Page } from '@playwright/test'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
 
+async function loginAsDefaultUser(page: Page) {
+  await page.goto('/login', { waitUntil: 'networkidle' })
+
+  const emailInput = page.getByLabel('メールアドレス').first()
+  const passwordInput = page.getByLabel('パスワード').first()
+  await emailInput.waitFor({ state: 'visible' })
+
+  const debugFillButton = page.getByRole('button', { name: 'デバッグ情報を自動入力' })
+  if (await debugFillButton.count()) {
+    await debugFillButton.first().click()
+  }
+
+  if ((await emailInput.inputValue()).trim().length === 0) {
+    await emailInput.fill('test@dev.com')
+  }
+
+  if ((await passwordInput.inputValue()).trim().length === 0) {
+    await passwordInput.fill('dev123')
+  }
+
+  await page.getByRole('button', { name: 'ログイン' }).click()
+  await page.waitForURL('**/companies', { timeout: 60_000 })
+  await page.waitForLoadState('networkidle')
+}
+
 async function getAuthHeaders(page: Page) {
   const token = await page.evaluate(() => localStorage.getItem('access_token'))
   expect(token, 'ログイン後にアクセストークンが取得できませんでした').toBeTruthy()
@@ -75,43 +100,44 @@ async function createProject(page: Page, name: string, clientId: number) {
 
 test.describe('案件インライン編集（排他制御）', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-    await page.getByRole('button', { name: 'ログイン' }).click()
-    await page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 })
+    await loginAsDefaultUser(page)
   })
 
   test('編集モードで数値とメモを更新できる', async ({ page }) => {
-    const clientName = `E2E案件用クライアント-${Date.now()}`
-    const client = await createClient(page, clientName)
-    const projectName = `E2E案件-${Date.now()}`
-    await createProject(page, projectName, client.id)
+    const client = await createClient(page, `E2E案件用クライアント-${Date.now()}`)
+    const project = await createProject(page, `E2E案件-${Date.now()}`, client.id)
 
     await page.goto('/projects')
-    const projectRow = page.locator('div.flex-1 table tbody tr', { hasText: projectName }).first()
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(500)
+
+    const projectRow = page.locator(`div.flex-1 table tbody tr[data-project-id="${project.id}"]`).first()
     await expect(projectRow).toBeVisible({ timeout: 30_000 })
 
     const toggleButton = page.getByRole('button', { name: /編集モード/ })
     await toggleButton.click()
     await expect(page.getByRole('button', { name: /編集完了/ })).toBeVisible({ timeout: 30_000 })
 
-    const gridTable = projectRow
-    const appointmentInput = gridTable.locator('input[type="number"]').first()
+    const appointmentInput = projectRow.locator('input[type="number"]').first()
+    await expect(appointmentInput).toBeVisible({ timeout: 30_000 })
     await appointmentInput.fill('7')
 
-    const situationTextarea = gridTable.locator('textarea').first()
+    const situationTextarea = projectRow.locator('textarea').first()
     const memoText = `自動テスト更新-${Date.now()}`
     await situationTextarea.fill(memoText)
 
     const finishButton = page.getByRole('button', { name: /編集完了/ })
+    await finishButton.scrollIntoViewIfNeeded()
     await Promise.all([
-      page.waitForLoadState('networkidle'),
+      page.waitForResponse((response) => response.url().includes(`/projects/${project.id}`) && response.status() === 200),
       finishButton.click(),
     ])
 
+    await page.waitForLoadState('networkidle')
+
     await expect(page.getByRole('button', { name: /編集モード/ })).toBeVisible({ timeout: 30_000 })
 
-    const refreshedRow = page.locator('div.flex-1 table tbody tr', { hasText: projectName }).first()
+    const refreshedRow = page.locator(`div.flex-1 table tbody tr[data-project-id="${project.id}"]`).first()
     await expect(refreshedRow.locator('td').nth(1)).toContainText('7')
     await expect(refreshedRow).toContainText(memoText)
   })

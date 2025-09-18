@@ -4,6 +4,32 @@ import * as path from 'path'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
 
+async function loginAsDefaultUser(page: Page) {
+  await page.goto('/login', { waitUntil: 'networkidle' })
+
+  const emailInput = page.getByLabel('メールアドレス').first()
+  const passwordInput = page.getByLabel('パスワード').first()
+  await emailInput.waitFor({ state: 'visible' })
+
+  const debugFillButton = page.getByRole('button', { name: 'デバッグ情報を自動入力' })
+  if (await debugFillButton.count()) {
+    await debugFillButton.first().click()
+  }
+
+  if ((await emailInput.inputValue()).trim().length === 0) {
+    await emailInput.fill('test@dev.com')
+  }
+
+  if ((await passwordInput.inputValue()).trim().length === 0) {
+    await passwordInput.fill('dev123')
+  }
+
+  await page.getByRole('button', { name: 'ログイン' }).click()
+  await page.waitForURL('**/companies', { timeout: 60_000 })
+  await page.waitForLoadState('networkidle')
+}
+
+
 async function getAuthHeaders(page: Page) {
   const token = await page.evaluate(() => localStorage.getItem('access_token'))
   expect(token, 'ログイン後にアクセストークンが取得できませんでした').toBeTruthy()
@@ -85,10 +111,7 @@ async function createCompany(page: Page, name?: string) {
 
 test.describe('NGリスト管理フロー', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-    await page.getByRole('button', { name: 'ログイン' }).click()
-    await page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 })
+    await loginAsDefaultUser(page)
   })
 
   test('CSVインポートからNG追加・削除フロー', async ({ page }) => {
@@ -118,7 +141,8 @@ test.describe('NGリスト管理フロー', () => {
         .getByRole('button', { name: `${matchedCompany.name}をNGリストから削除` })
         .click()
 
-      await expect(page.getByText('削除完了')).toBeVisible()
+      await expect(page.getByRole('table')).not.toContainText(matchedCompany.name)
+      await expect(page.getByRole('table')).toContainText(unmatchedName)
     } finally {
       if (fs.existsSync(csvPath)) {
         fs.unlinkSync(csvPath)
@@ -141,12 +165,13 @@ test.describe('NGリスト管理フロー', () => {
     await expect(resultRow).toBeVisible({ timeout: 10000 })
 
     await resultRow.click()
-    await page.getByLabel('NG理由 *').fill('テスト用のNG登録')
+    await page.getByLabel(/NG理由/).fill('テスト用のNG登録')
     await page.getByRole('button', { name: 'NGリストに追加' }).click()
 
     await expect(page.getByText('追加完了', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByRole('table')).toContainText(company.name)
-    await expect(page.getByRole('table')).toContainText('テスト用のNG登録')
+    const addedRow = page.locator('table tbody tr', { has: page.getByText(company.name) }).first()
+    await expect(addedRow).toBeVisible({ timeout: 20_000 })
+    await expect(addedRow).toContainText('テスト用のNG登録')
   })
 
   test('NG統計のマッチ/未マッチ表示確認', async ({ page }) => {

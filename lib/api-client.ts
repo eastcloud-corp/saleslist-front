@@ -16,6 +16,7 @@ class ApiClient {
   private maxRetries = 0  // Disable retries for mock server
   private isRefreshingToken = false
   private refreshPromise: Promise<void> | null = null
+  private isHandlingUnauthorized = false
 
   private getAuthHeaders(): Record<string, string> {
     if (typeof window === "undefined") return {}
@@ -42,6 +43,7 @@ class ApiClient {
 
   private async processResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
+      await this.handleUnauthorized(response.status)
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
 
       try {
@@ -60,6 +62,26 @@ class ApiClient {
     }
 
     return response.text() as unknown as T
+  }
+
+  private async handleUnauthorized(status: number) {
+    if (status !== 401 && status !== 403) return
+    if (typeof window === "undefined") return
+    if (this.isHandlingUnauthorized) return
+    this.isHandlingUnauthorized = true
+
+    try {
+      const { authService } = await import("./auth")
+      await authService.logout()
+    } catch (error) {
+      console.error("[api-client] failed to handle unauthorized response", error)
+    } finally {
+      try {
+        window.location.href = "/login"
+      } finally {
+        this.isHandlingUnauthorized = false
+      }
+    }
   }
 
   private buildUrl(endpoint: string): string {

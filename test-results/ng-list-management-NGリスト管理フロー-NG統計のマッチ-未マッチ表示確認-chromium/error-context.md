@@ -1,7 +1,7 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e1]:
+- generic [active] [ref=e1]:
   - generic [ref=e2]:
     - generic [ref=e4]: 開発環境
     - generic [ref=e5]:
@@ -12,7 +12,7 @@
         - generic [ref=e10]:
           - generic [ref=e11]:
             - generic [ref=e12]: メールアドレス
-            - textbox "メールアドレス" [active] [ref=e13]
+            - textbox "メールアドレス" [ref=e13]
           - generic [ref=e14]:
             - generic [ref=e15]: パスワード
             - textbox "パスワード" [ref=e16]
@@ -31,4 +31,7 @@
             - button "デバッグ情報を自動入力" [ref=e31]
   - region "Notifications (F8)":
     - list
+  - button "Open Next.js Dev Tools" [ref=e37] [cursor=pointer]:
+    - img [ref=e38] [cursor=pointer]
+  - alert [ref=e41]
 ```

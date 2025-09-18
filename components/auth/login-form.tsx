@@ -23,7 +23,8 @@ export function LoginForm() {
   const router = useRouter()
 
   // Environment-based configuration
-  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'dev'
+  const inferredEnvironment = process.env.NODE_ENV === 'production' ? 'prd' : 'dev'
+  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || inferredEnvironment
   const showDebugInfo = !['prd', 'stg'].includes(environment)
 
   const getEnvironmentBadge = () => {

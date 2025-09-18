@@ -99,7 +99,7 @@ export function NGListTab({ clientId }: NGListTabProps) {
     }
   }
 
-  const handleAddCompanyToNG = async (company: any, reason: string) => {
+  const handleAddCompanyToNG = async (company: any, reason?: string) => {
     await addCompanyToNG(company.id, company.name, reason)
   }
 
@@ -220,7 +220,13 @@ export function NGListTab({ clientId }: NGListTabProps) {
                     <TableCell>{ng.reason || "-"}</TableCell>
                     <TableCell>{new Date(ng.created_at).toLocaleDateString("ja-JP")}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(ng.id)} className="h-8 w-8 p-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(ng.id)}
+                        className="h-8 w-8 p-0"
+                        aria-label={`${ng.company_name}をNGリストから削除`}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

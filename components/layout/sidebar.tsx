@@ -64,7 +64,7 @@ export function Sidebar() {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-center h-16 px-4 border-b border-sidebar-border">
-            <h1 className="text-lg font-bold text-sidebar-foreground">営業管理</h1>
+            <h1 className="text-lg font-bold text-sidebar-foreground">セールスナビゲーター</h1>
           </div>
 
           {/* Navigation */}

@@ -62,8 +62,8 @@ export default function ClientsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">営業管理システム</h1>
-            <p className="text-gray-600 mt-1">クライアント企業の営業代行業務を効率的に管理</p>
+            <h1 className="text-3xl font-bold">クライアント管理</h1>
+            <p className="text-gray-600 mt-1">クライアント企業の情報と営業状況を効率的に管理</p>
 
             {/* Quick Stats */}
             <div className="flex items-center gap-6 mt-4">

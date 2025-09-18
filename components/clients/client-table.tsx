@@ -1,5 +1,6 @@
 "use client"
 import type { Client } from "@/lib/types"
+import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -54,10 +55,15 @@ export function ClientTable({ clients, loading }: ClientTableProps) {
           {clients.map((client) => (
             <TableRow key={client.id}>
               <TableCell className="font-medium">
-                <div>
-                  <div className="font-semibold">{client.name}</div>
+                <Link
+                  href={`/clients/${client.id}`}
+                  className="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                >
+                  <div className="font-semibold text-foreground group-hover:text-blue-600">
+                    {client.name}
+                  </div>
                   {client.email && <div className="text-sm text-gray-500">{client.email}</div>}
-                </div>
+                </Link>
               </TableCell>
               <TableCell>{client.contact_person || "-"}</TableCell>
               <TableCell>{client.industry || "-"}</TableCell>

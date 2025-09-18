@@ -23,7 +23,7 @@ interface Company {
 interface CompanySearchDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAddToNGList: (company: Company, reason: string) => Promise<void>
+  onAddToNGList: (company: Company, reason?: string) => Promise<void>
   clientId: number
 }
 
@@ -48,10 +48,10 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
   }
 
   const handleAddToNG = async () => {
-    if (!selectedCompany || !ngReason.trim()) {
+    if (!selectedCompany) {
       toast({
         title: "エラー",
-        description: "企業を選択してNG理由を入力してください",
+        description: "企業を選択してください",
         variant: "destructive",
       })
       return
@@ -59,7 +59,8 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
 
     setIsAdding(true)
     try {
-      await onAddToNGList(selectedCompany, ngReason.trim())
+      const trimmedReason = ngReason.trim()
+      await onAddToNGList(selectedCompany, trimmedReason || undefined)
       
       toast({
         title: "追加完了",
@@ -91,7 +92,7 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -99,7 +100,7 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {/* Search Input */}
           <div className="space-y-2">
             <Label htmlFor="search">企業名で検索</Label>
@@ -119,22 +120,18 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
           <Card className="flex-1 overflow-hidden">
             <CardHeader>
               <CardTitle className="text-lg">
-                検索結果 {searchTerm && `(${companies.length}件)`}
+                検索結果 ({companies.length}件)
               </CardTitle>
             </CardHeader>
-            <CardContent className="overflow-auto max-h-64">
-              {!searchTerm ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  企業名を入力して検索してください
-                </div>
-              ) : companiesLoading ? (
+            <CardContent className="overflow-auto max-h-[320px]">
+              {companiesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   検索中...
                 </div>
               ) : companies.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  該当する企業が見つかりません
+                  {searchTerm ? "該当する企業が見つかりません" : "企業情報が登録されていません"}
                 </div>
               ) : (
                 <Table>
@@ -190,7 +187,7 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="ng-reason">NG理由 *</Label>
+                  <Label htmlFor="ng-reason">NG理由（任意）</Label>
                   <Input
                     id="ng-reason"
                     placeholder="例: 競合他社、既存取引先、対象外業界など"
@@ -214,7 +211,7 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
           </Button>
           <Button 
             onClick={handleAddToNG} 
-            disabled={!selectedCompany || !ngReason.trim() || isAdding}
+            disabled={!selectedCompany || isAdding}
           >
             <Plus className="h-4 w-4 mr-2" />
             {isAdding ? "追加中..." : "NGリストに追加"}

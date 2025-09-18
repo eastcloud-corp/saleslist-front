@@ -69,14 +69,14 @@ export function useNGList(clientId: number) {
     }
   }
 
-  const addCompanyToNG = async (companyId: number, companyName: string, reason: string) => {
+  const addCompanyToNG = async (companyId: number, companyName: string, reason?: string) => {
     console.log("[v0] Adding company to NG list:", { companyId, companyName, reason })
 
     try {
       await apiClient.post(`/clients/${clientId}/ng-companies/add/`, {
         company_id: companyId,
         company_name: companyName,
-        reason: reason,
+        reason: reason ?? "",
       })
       await fetchNGList()
     } catch (err) {

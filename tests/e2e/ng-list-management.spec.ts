@@ -1,139 +1,180 @@
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect, Page } from '@playwright/test'
+import * as fs from 'fs'
+import * as path from 'path'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
+
+async function getAuthHeaders(page: Page) {
+  const token = await page.evaluate(() => localStorage.getItem('access_token'))
+  expect(token, 'ログイン後にアクセストークンが取得できませんでした').toBeTruthy()
+
+  return {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
+}
+
+async function apiPost(page: Page, endpoint: string, data: Record<string, unknown>) {
+  const headers = await getAuthHeaders(page)
+  const response = await page.request.post(`${API_BASE_URL}/api/v1${endpoint}`, {
+    data,
+    headers,
+  })
+  expect(response.ok(), `POST ${endpoint} が失敗しました: ${response.status()} ${response.statusText()}`).toBeTruthy()
+  return response.json()
+}
+
+async function apiGet(page: Page, endpoint: string, params?: Record<string, string>) {
+  const headers = await getAuthHeaders(page)
+  const response = await page.request.get(`${API_BASE_URL}/api/v1${endpoint}`, {
+    params,
+    headers,
+  })
+  expect(response.ok(), `GET ${endpoint} が失敗しました: ${response.status()} ${response.statusText()}`).toBeTruthy()
+  return response.json()
+}
+
+function extractFirstMatch<T extends { name?: string }>(data: any, predicate: (item: any) => boolean): T | undefined {
+  if (!data) return undefined
+  if (Array.isArray(data.results)) {
+    return data.results.find(predicate)
+  }
+  if (Array.isArray(data)) {
+    return data.find(predicate)
+  }
+  return undefined
+}
+
+async function createClient(page: Page, name?: string) {
+  const clientName = name ?? `E2Eクライアント-${Date.now()}`
+  await apiPost(page, '/clients/', {
+    name: clientName,
+    contact_person: 'テスト担当',
+    contact_email: 'test@example.com',
+    contact_phone: '03-0000-0000',
+  })
+
+  const list = await apiGet(page, '/clients/', {
+    search: clientName,
+    page_size: '1',
+  })
+
+  const client = extractFirstMatch(list, (item) => item.name === clientName)
+  expect(client, `作成したクライアント「${clientName}」が一覧から取得できません`).toBeTruthy()
+  return client as { id: number; name: string }
+}
+
+async function createCompany(page: Page, name?: string) {
+  const companyName = name ?? `E2E企業-${Date.now()}`
+  await apiPost(page, '/companies/', {
+    name: companyName,
+    industry: 'テクノロジー',
+    contact_person_name: '担当者A',
+    contact_email: 'company@example.com',
+  })
+
+  const list = await apiGet(page, '/companies/', {
+    search: companyName,
+    page_size: '1',
+  })
+
+  const company = extractFirstMatch(list, (item) => item.name === companyName)
+  expect(company, `作成した企業「${companyName}」が一覧から取得できません`).toBeTruthy()
+  return company as { id: number; name: string }
+}
 
 test.describe('NGリスト管理フロー', () => {
   test.beforeEach(async ({ page }) => {
-    // ログイン処理
-    await page.goto('/login');
-    await page.click('button:has-text("デバッグ情報を自動入力")');
-    await page.click('button:has-text("ログイン")');
-    await page.waitForURL('**/dashboard');
-  });
+    await page.goto('/login')
+    await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
+    await page.getByRole('button', { name: 'ログイン' }).click()
+    await page.waitForURL((url) => url.pathname !== '/login', { timeout: 30_000 })
+  })
 
   test('CSVインポートからNG追加・削除フロー', async ({ page }) => {
-    // クライアント一覧へ移動
-    await page.goto('/clients');
+    const client = await createClient(page)
+    const matchedCompany = await createCompany(page, `E2E-NG-Matched-${Date.now()}`)
+    const unmatchedName = `E2E-NG-Unmatched-${Date.now()}`
 
-    // 最初のクライアントをクリックして詳細へ
-    const firstClient = page.locator('.client-card, tr.client-row').first();
-    await firstClient.click();
-    await page.waitForURL(/.*clients\/\d+/);
+    const csvPath = path.join(process.cwd(), `tmp-ng-import-${Date.now()}.csv`)
+    const csvContent = `企業名,理由\n${matchedCompany.name},既存企業のため除外\n${unmatchedName},クライアント指定NG\n`
+    fs.writeFileSync(csvPath, csvContent, 'utf-8')
 
-    // NGリストタブをクリック
-    await page.click('button[role="tab"]:has-text("NGリスト"), a:has-text("NGリスト")');
+    try {
+      await page.goto(`/clients/${client.id}`)
+      await expect(page.getByRole('tab', { name: 'NGリスト' })).toBeVisible({ timeout: 30_000 })
+      await page.getByRole('tab', { name: 'NGリスト' }).click()
 
-    // CSVファイルを作成
-    const csvContent = '企業名,理由\n株式会社テストNG,競合他社\nNGコーポレーション,既存取引先\nNG商事,クライアント指定NG';
-    const csvPath = path.join(process.cwd(), 'test-ng-list.csv');
-    fs.writeFileSync(csvPath, csvContent, 'utf-8');
+      const fileInput = page.locator('input[type="file"][accept*=".csv"]')
+      await fileInput.setInputFiles(csvPath)
 
-    // ファイルアップロード
-    const fileInput = page.locator('input[type="file"][accept*=".csv"]');
-    await fileInput.setInputFiles(csvPath);
+      await expect(page.getByText('インポート完了', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('table')).toContainText(matchedCompany.name)
+      await expect(page.getByRole('table')).toContainText(unmatchedName)
 
-    // インポート結果の確認
-    await expect(page.locator('text=/インポート完了|Import completed/')).toBeVisible({
-      timeout: 10000
-    });
+      const matchedRow = page.locator('table tbody tr', { hasText: matchedCompany.name }).first()
+      page.once('dialog', (dialog) => dialog.accept())
+      await matchedRow
+        .getByRole('button', { name: `${matchedCompany.name}をNGリストから削除` })
+        .click()
 
-    // インポート結果のメッセージ確認（3件のNGリストを登録）
-    await expect(page.locator('text=/3件.*登録/')).toBeVisible();
-
-    // NGリスト一覧に表示確認
-    await expect(page.locator('text=株式会社テストNG')).toBeVisible();
-    await expect(page.locator('text=NGコーポレーション')).toBeVisible();
-    await expect(page.locator('text=NG商事')).toBeVisible();
-
-    // マッチ/アンマッチ表示確認
-    const ngListTable = page.locator('table, .ng-list');
-    await expect(ngListTable).toBeVisible();
-
-    // NG企業を削除
-    const deleteButton = page.locator('button[aria-label*="削除"], button:has-text("削除")').first();
-    await deleteButton.click();
-
-    // 削除確認ダイアログ
-    const confirmButton = page.locator('button:has-text("確認"), button:has-text("はい"), button:has-text("OK")');
-    if (await confirmButton.isVisible()) {
-      await confirmButton.click();
+      await expect(page.getByText('削除完了')).toBeVisible()
+    } finally {
+      if (fs.existsSync(csvPath)) {
+        fs.unlinkSync(csvPath)
+      }
     }
-
-    // 削除成功メッセージ
-    await expect(page.locator('text=/削除しました|Deleted successfully/')).toBeVisible();
-
-    // テストファイルをクリーンアップ
-    if (fs.existsSync(csvPath)) {
-      fs.unlinkSync(csvPath);
-    }
-  });
+  })
 
   test('企業検索からNG追加', async ({ page }) => {
-    // クライアント詳細のNGリストタブへ
-    await page.goto('/clients');
-    const firstClient = page.locator('.client-card, tr.client-row').first();
-    await firstClient.click();
-    await page.waitForURL(/.*clients\/\d+/);
-    await page.click('button[role="tab"]:has-text("NGリスト"), a:has-text("NGリスト")');
+    const client = await createClient(page)
+    const company = await createCompany(page, `E2E-NG-Search-${Date.now()}`)
 
-    // 企業検索セクションを探す
-    const searchSection = page.locator('section:has-text("企業検索"), div:has-text("企業を検索してNG追加")');
+    await page.goto(`/clients/${client.id}`)
+    await expect(page.getByRole('tab', { name: 'NGリスト' })).toBeVisible({ timeout: 30_000 })
+    await page.getByRole('tab', { name: 'NGリスト' }).click()
+    await page.getByRole('button', { name: '企業検索' }).click()
 
-    if (await searchSection.isVisible()) {
-      // 企業名を検索
-      await page.fill('input[placeholder*="企業名"]', 'テスト企業');
-      await page.click('button:has-text("検索")');
+    const searchInput = page.getByPlaceholder('企業名を入力してください...')
+    await searchInput.fill(company.name)
+    const resultRow = page.locator('table tbody tr', { hasText: company.name }).first()
+    await expect(resultRow).toBeVisible({ timeout: 10000 })
 
-      // 検索結果から企業を選択
-      const searchResult = page.locator('.search-result, .company-search-item').first();
-      await expect(searchResult).toBeVisible();
+    await resultRow.click()
+    await page.getByLabel('NG理由 *').fill('テスト用のNG登録')
+    await page.getByRole('button', { name: 'NGリストに追加' }).click()
 
-      // NG理由を入力
-      await page.fill('input[name="reason"], textarea[name="reason"]', 'テスト用NG理由');
+    await expect(page.getByText('追加完了', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('table')).toContainText(company.name)
+    await expect(page.getByRole('table')).toContainText('テスト用のNG登録')
+  })
 
-      // NG追加ボタンをクリック
-      await page.click('button:has-text("NGリストに追加")');
+  test('NG統計のマッチ/未マッチ表示確認', async ({ page }) => {
+    const client = await createClient(page)
+    const matchedCompany = await createCompany(page, `E2E-NG-Stat-Matched-${Date.now()}`)
+    const unmatchedName = `E2E-NG-Stat-Unmatched-${Date.now()}`
 
-      // 追加成功メッセージ
-      await expect(page.locator('text=/追加しました|Added to NG list/')).toBeVisible();
+    const csvPath = path.join(process.cwd(), `tmp-ng-stats-${Date.now()}.csv`)
+    const csvContent = `企業名,理由\n${matchedCompany.name},既存企業NG\n${unmatchedName},未マッチ企業NG\n`
+    fs.writeFileSync(csvPath, csvContent, 'utf-8')
 
-      // NGリスト一覧に追加されたことを確認
-      await expect(page.locator('text=テスト企業')).toBeVisible();
-      await expect(page.locator('text=テスト用NG理由')).toBeVisible();
-    }
-  });
+    try {
+      await page.goto(`/clients/${client.id}`)
+      await expect(page.getByRole('tab', { name: 'NGリスト' })).toBeVisible({ timeout: 30_000 })
+      await page.getByRole('tab', { name: 'NGリスト' }).click()
 
-  test('NG企業のマッチング状態確認', async ({ page }) => {
-    await page.goto('/clients');
-    const firstClient = page.locator('.client-card, tr.client-row').first();
-    await firstClient.click();
-    await page.waitForURL(/.*clients\/\d+/);
-    await page.click('button[role="tab"]:has-text("NGリスト"), a:has-text("NGリスト")');
+      const fileInput = page.locator('input[type="file"][accept*=".csv"]')
+      await fileInput.setInputFiles(csvPath)
+      await expect(page.getByText('インポート完了', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
 
-    // マッチ済み/未マッチのフィルター確認
-    const matchedFilter = page.locator('button:has-text("マッチ済み"), input[value="matched"]');
-    const unmatchedFilter = page.locator('button:has-text("未マッチ"), input[value="unmatched"]');
-
-    if (await matchedFilter.isVisible()) {
-      // マッチ済みフィルター
-      await matchedFilter.click();
-
-      // マッチ済み企業のバッジ確認
-      const matchedBadge = page.locator('.badge:has-text("マッチ済み"), .matched-indicator').first();
-      if (await matchedBadge.isVisible()) {
-        await expect(matchedBadge).toBeVisible();
+      await expect(page.getByText(/マッチ済: 1/)).toBeVisible()
+      await expect(page.getByText(/未マッチ: 1/)).toBeVisible()
+      await expect(page.getByRole('table')).toContainText('マッチ済')
+      await expect(page.getByRole('table')).toContainText('未マッチ')
+    } finally {
+      if (fs.existsSync(csvPath)) {
+        fs.unlinkSync(csvPath)
       }
     }
-
-    if (await unmatchedFilter.isVisible()) {
-      // 未マッチフィルター
-      await unmatchedFilter.click();
-
-      // 未マッチ企業のバッジ確認
-      const unmatchedBadge = page.locator('.badge:has-text("未マッチ"), .unmatched-indicator').first();
-      if (await unmatchedBadge.isVisible()) {
-        await expect(unmatchedBadge).toBeVisible();
-      }
-    }
-  });
-});
+  })
+})

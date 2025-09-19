@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useClient } from "@/hooks/use-clients"
 import type { Company, CompanyFilter } from "@/lib/types"
 import { apiClient } from "@/lib/api-config"
+import { Switch } from "@/components/ui/switch"
 
 export default function CompanySelectionPage() {
   const params = useParams()
@@ -32,7 +33,7 @@ export default function CompanySelectionPage() {
   const [filters, setFilters] = useState<CompanyFilter>({
     page: 1,
     page_size: 100,
-    exclude_ng: true,
+    exclude_ng: false,
   })
   const [totalCount, setTotalCount] = useState(0)
   const [projects, setProjects] = useState([])
@@ -383,9 +384,34 @@ export default function CompanySelectionPage() {
                 </Select>
               </div>
               <div className="flex items-end">
-                <Button variant="outline" onClick={() => setFilters({ page: 1, page_size: 100, exclude_ng: true })}>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setFilters({
+                      page: 1,
+                      page_size: 100,
+                      exclude_ng: false,
+                    })
+                  }
+                >
                   クリア
                 </Button>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="exclude-ng"
+                  checked={Boolean(filters.exclude_ng)}
+                  onCheckedChange={(checked) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      exclude_ng: Boolean(checked),
+                      page: 1,
+                    }))
+                  }
+                />
+                <Label htmlFor="exclude-ng" className="text-sm">
+                  NG企業を除外
+                </Label>
               </div>
             </div>
           </CardContent>

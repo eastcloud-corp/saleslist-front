@@ -175,9 +175,7 @@ describe('CompanyForm', () => {
       
       await user.click(screen.getByText('変更を保存'))
 
-      await waitFor(() => {
-        expect(screen.getByText('無効なメール形式です')).toBeInTheDocument()
-      })
+      expect(await screen.findByText('無効なメール形式です')).toBeInTheDocument()
     })
 
     it('should validate website URL format', async () => {
@@ -193,9 +191,7 @@ describe('CompanyForm', () => {
       
       await user.click(screen.getByText('変更を保存'))
 
-      await waitFor(() => {
-        expect(screen.getByText(/ウェブサイトはhttp/)).toBeInTheDocument()
-      })
+      expect(await screen.findByText(/ウェブサイトはhttp/)).toBeInTheDocument()
     })
   })
 

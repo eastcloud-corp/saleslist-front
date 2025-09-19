@@ -97,7 +97,7 @@ describe("CompanySettings", () => {
     await user.type(emailInput, "invalid-email")
     await user.click(saveButton)
 
-    expect(screen.getByText("無効なメール形式です")).toBeInTheDocument()
+    expect(await screen.findByText("無効なメール形式です")).toBeInTheDocument()
   })
 
   it("saves settings successfully", async () => {

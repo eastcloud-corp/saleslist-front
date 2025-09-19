@@ -51,7 +51,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
           row: 0,
           field: "file",
           value: "",
-          message: error instanceof Error ? error.message : "Failed to parse CSV file",
+          message: error instanceof Error ? error.message : "CSVファイルの解析に失敗しました。形式を確認してください。",
         },
       ])
     } finally {
@@ -82,7 +82,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
           row: 0,
           field: "import",
           value: "",
-          message: "Import failed. Please try again.",
+          message: "インポート処理でエラーが発生しました。内容を確認して再度お試しください。",
         },
       ])
     } finally {
@@ -111,7 +111,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Import Companies from CSV
+            CSVから企業データをインポート
           </DialogTitle>
         </DialogHeader>
 
@@ -133,14 +133,14 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
             <div className="space-y-4">
               <Alert>
                 <AlertDescription>
-                  Ready to import {csvData.length} companies. This action will add new companies to your database.
+                  {csvData.length}件の企業データをインポートします。この操作により新しい企業が登録されます。
                 </AlertDescription>
               </Alert>
 
               {isImporting && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span>Importing companies...</span>
+                    <span>インポート中...</span>
                     <span>{importProgress}%</span>
                   </div>
                   <Progress value={importProgress} />
@@ -149,10 +149,10 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
 
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => setStep("validate")} disabled={isImporting}>
-                  Back
+                  戻る
                 </Button>
                 <Button onClick={handleImport} disabled={isImporting}>
-                  {isImporting ? "Importing..." : `Import ${csvData.length} Companies`}
+                  {isImporting ? "インポート中..." : `インポート開始（${csvData.length}件）`}
                 </Button>
               </div>
             </div>
@@ -161,9 +161,9 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
           {step === "complete" && (
             <div className="text-center py-8">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Import Complete!</h3>
-              <p className="text-muted-foreground mb-4">Successfully imported {csvData.length} companies.</p>
-              <Button onClick={handleClose}>Close</Button>
+              <h3 className="text-lg font-medium mb-2">インポートが完了しました</h3>
+              <p className="text-muted-foreground mb-4">{csvData.length}件の企業データを登録しました。</p>
+              <Button onClick={handleClose}>閉じる</Button>
             </div>
           )}
         </div>

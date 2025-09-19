@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { MainLayout } from "@/components/layout/main-layout"
 import { ProjectForm } from "@/components/projects/project-form"
@@ -14,10 +14,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, FolderOpen, Calendar, Users, Building2, Edit3 } from "lucide-react"
+import { Plus, FolderOpen, Edit3, Search } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -29,8 +31,51 @@ export default function ProjectsPage() {
   const [mediaTypes, setMediaTypes] = useState<Array<{id: number, name: string}>>([])
   const [listImportSources, setListImportSources] = useState<Array<{id: number, name: string}>>([])
   const [listAvailabilities, setListAvailabilities] = useState<Array<{id: number, name: string}>>([])
-  const { projects, isLoading, error, createProject } = useProjects()
-  // const { clients } = useClients({ limit: 100 })
+  const [projectFilters, setProjectFilters] = useState({
+    search: '',
+    client: 'all',
+    progress_status: 'all',
+    service_type: 'all',
+  })
+
+  const activeFilters = useMemo(() => {
+    const params: Record<string, string> = {}
+    if (projectFilters.search.trim()) {
+      params.search = projectFilters.search.trim()
+    }
+    if (projectFilters.client !== 'all') {
+      params.client = projectFilters.client
+    }
+    if (projectFilters.progress_status !== 'all') {
+      params.progress_status = projectFilters.progress_status
+    }
+    if (projectFilters.service_type !== 'all') {
+      params.service_type = projectFilters.service_type
+    }
+    return params
+  }, [projectFilters])
+
+  const filterHash = useMemo(() => {
+    const entries = Object.entries(activeFilters)
+    if (!entries.length) return 'default'
+    return entries
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}:${value}`)
+      .join('|')
+  }, [activeFilters])
+
+  const hasActiveFilters = useMemo(() => Object.keys(activeFilters).length > 0, [activeFilters])
+
+  const { projects, isLoading, error, createProject, refetch, pagination } = useProjects({
+    filters: activeFilters,
+  })
+  const { clients, loading: clientsLoading } = useClients({ limit: 200, filters: { is_active: true } })
+  const { toast } = useToast()
+  const [isAcquiringLock, setIsAcquiringLock] = useState(false)
+  const [isPageLocked, setIsPageLocked] = useState(false)
+  const lockParamsRef = useRef({ page: 1, page_size: 20, filter_hash: "default" })
+  const filtersDisabled = editMode
+  const totalProjects = pagination?.total ?? projects.length
 
   // マスターデータ取得
   useEffect(() => {
@@ -80,56 +125,168 @@ export default function ProjectsPage() {
     }
     fetchMasterData()
   }, [])
-
   const getClientName = (project: any) => {
     return project.client_name || project.client_company || "クライアント未設定"
   }
 
-  const handleSaveAll = async () => {
+  const handleFilterReset = () => {
+    setProjectFilters({
+      search: '',
+      client: 'all',
+      progress_status: 'all',
+      service_type: 'all',
+    })
+  }
+
+  const handleSaveAll = async (): Promise<boolean> => {
     console.log('保存処理開始, editData:', editData)
-    
-    const changedProjectIds = Object.keys(editData).filter(projectId => {
-      const changes = editData[parseInt(projectId)]
-      return changes && Object.keys(changes).length > 0
-    }).map(id => parseInt(id))
+
+    const changedProjectIds = Object.keys(editData)
+      .filter((projectId) => {
+        const changes = editData[Number(projectId)]
+        return changes && Object.keys(changes).length > 0
+      })
+      .map((id) => Number(id))
 
     console.log('変更対象案件:', changedProjectIds)
-    
+
     if (changedProjectIds.length === 0) {
-      console.log('変更がないため保存をスキップ')
-      return
+      toast({
+        title: '変更はありません',
+        description: '更新対象の入力はありませんでした。',
+      })
+      return true
     }
 
     try {
       for (const projectId of changedProjectIds) {
         const changes = editData[projectId]
         console.log(`プロジェクト${projectId}の変更内容:`, changes)
-        
+
         const response = await apiClient.patch(`/projects/${projectId}/?management_mode=true`, changes)
-        
+
         if (!response.ok) {
-          throw new Error(`プロジェクト${projectId}の更新に失敗: ${response.status}`)
+          let detail = ''
+          try {
+            const errorBody = await response.json()
+            detail = errorBody?.error || errorBody?.message || ''
+          } catch (jsonError) {
+            detail = await response.text()
+          }
+          throw new Error(`プロジェクト${projectId}の更新に失敗しました (${response.status}) ${detail}`)
         }
       }
-      
-      // 保存成功後、データを再取得
-      window.location.reload()
+
+      await refetch()
+      setEditData({})
+      toast({
+        title: '保存しました',
+        description: `${changedProjectIds.length}件の案件を更新しました。`,
+      })
+      return true
     } catch (error) {
       console.error('保存エラー:', error)
-      alert('保存に失敗しました。再度お試しください。')
+      toast({
+        title: '保存に失敗しました',
+        description:
+          error instanceof Error ? error.message : '保存処理でエラーが発生しました。再度お試しください。',
+        variant: 'destructive',
+      })
+      return false
     }
   }
 
+  const releasePageLock = useCallback(async () => {
+    if (!isPageLocked) return
+
+    const params = lockParamsRef.current
+    const query = new URLSearchParams({
+      page: String(params.page),
+      page_size: String(params.page_size),
+      filter_hash: params.filter_hash,
+    })
+
+    try {
+      const response = await apiClient.delete(`/projects/page-unlock/?${query.toString()}`)
+      if (!response.ok) {
+        const text = await response.text()
+        console.warn('ページロック解除応答:', text)
+      }
+    } catch (error) {
+      console.error('ページロック解除エラー:', error)
+    } finally {
+      setIsPageLocked(false)
+    }
+  }, [isPageLocked])
+
+  useEffect(() => {
+    return () => {
+      if (isPageLocked) {
+        releasePageLock().catch((error) => console.error('クリーンアップ時のロック解除エラー:', error))
+      }
+    }
+  }, [isPageLocked, releasePageLock])
+
   const handleEditModeToggle = async () => {
     console.log('編集モード切り替え, 現在:', editMode)
+
     if (!editMode) {
-      setEditMode(true)
-      console.log('編集モードON')
+      setIsAcquiringLock(true)
+      const params = {
+        page: pagination?.page || 1,
+        page_size: pagination?.limit || Math.max(projects.length, 20),
+        filter_hash: filterHash,
+      }
+
+      try {
+        const response = await apiClient.post('/projects/page-lock/', params)
+
+        if (!response.ok) {
+          let detail = ''
+          try {
+            const body = await response.json()
+            detail = body?.error || body?.message || ''
+          } catch (jsonError) {
+            detail = await response.text()
+          }
+
+          toast({
+            title: '編集モードを開始できません',
+            description: detail || '他のユーザーが編集中の可能性があります。',
+            variant: 'destructive',
+          })
+          return
+        }
+
+        lockParamsRef.current = params
+        setIsPageLocked(true)
+        setEditMode(true)
+        toast({
+          title: '編集モードを開始しました',
+          description: '入力後に「編集終了」で保存してください。',
+        })
+        console.log('編集モードON')
+      } catch (error) {
+        console.error('ページロック取得エラー:', error)
+        toast({
+          title: '編集モードを開始できません',
+          description: error instanceof Error ? error.message : 'ロック取得中にエラーが発生しました。',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsAcquiringLock(false)
+      }
     } else {
-      await handleSaveAll()
-      setEditMode(false)
-      setEditData({})
-      console.log('編集モードOFF')
+      const saved = await handleSaveAll()
+      if (saved) {
+        await releasePageLock()
+        setEditMode(false)
+        toast({
+          title: '編集モードを終了しました',
+          description: '最新のデータに更新しました。',
+        })
+        console.log('編集モードOFF')
+      }
     }
   }
 
@@ -199,10 +356,13 @@ export default function ProjectsPage() {
             <Button
               variant={editMode ? "default" : "outline"}
               onClick={handleEditModeToggle}
+              disabled={isAcquiringLock}
             >
               <Edit3 className="h-4 w-4 mr-2" />
-              {editMode ? '編集完了' : '編集モード'}
-              <span className="ml-1 text-xs">({editMode ? 'OFF' : 'ON'})</span>
+              {isAcquiringLock ? 'ロック取得中...' : editMode ? '編集完了' : '編集モード'}
+              {!isAcquiringLock && (
+                <span className="ml-1 text-xs">({editMode ? 'OFF' : 'ON'})</span>
+              )}
             </Button>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -227,6 +387,141 @@ export default function ProjectsPage() {
             {error}
           </div>
         )}
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-search">キーワード</Label>
+                <div className="relative">
+                  <Input
+                    id="project-search"
+                    placeholder="案件名・クライアント名で検索"
+                    value={projectFilters.search}
+                    onChange={(event) =>
+                      setProjectFilters((prev) => ({ ...prev, search: event.target.value }))
+                    }
+                    disabled={filtersDisabled}
+                    className="pl-8"
+                    autoComplete="off"
+                  />
+                  <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-client-filter">クライアント</Label>
+                <Select
+                  value={projectFilters.client}
+                  onValueChange={(value) =>
+                    setProjectFilters((prev) => ({ ...prev, client: value }))
+                  }
+                  disabled={filtersDisabled}
+                >
+                  <SelectTrigger id="project-client-filter">
+                    <SelectValue placeholder={clientsLoading ? "読み込み中..." : "すべて"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    {clientsLoading ? (
+                      <SelectItem value="loading" disabled>
+                        読み込み中...
+                      </SelectItem>
+                    ) : (
+                      clients.map((client) => (
+                        <SelectItem key={client.id} value={String(client.id)}>
+                          {client.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-progress-filter">進行状況</Label>
+                <Select
+                  value={projectFilters.progress_status}
+                  onValueChange={(value) =>
+                    setProjectFilters((prev) => ({ ...prev, progress_status: value }))
+                  }
+                  disabled={filtersDisabled}
+                >
+                  <SelectTrigger id="project-progress-filter">
+                    <SelectValue placeholder="すべて" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    {progressStatuses.length === 0 ? (
+                      <SelectItem value="no-data" disabled>
+                        選択肢を取得できませんでした
+                      </SelectItem>
+                    ) : (
+                      progressStatuses.map((status) => (
+                        <SelectItem key={status.id} value={String(status.id)}>
+                          {status.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-service-filter">サービス種別</Label>
+                <Select
+                  value={projectFilters.service_type}
+                  onValueChange={(value) =>
+                    setProjectFilters((prev) => ({ ...prev, service_type: value }))
+                  }
+                  disabled={filtersDisabled}
+                >
+                  <SelectTrigger id="project-service-filter">
+                    <SelectValue placeholder="すべて" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    {serviceTypes.length === 0 ? (
+                      <SelectItem value="no-service" disabled>
+                        選択肢を取得できませんでした
+                      </SelectItem>
+                    ) : (
+                      serviceTypes.map((service) => (
+                        <SelectItem key={service.id} value={String(service.id)}>
+                          {service.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {isLoading
+                  ? '案件を読み込み中...'
+                  : `表示件数: ${projects.length}件 / 総件数: ${totalProjects}件`}
+              </p>
+              <div className="flex items-center gap-2">
+                {editMode && (
+                  <span className="text-xs text-muted-foreground">
+                    編集モード中はフィルターを変更できません
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleFilterReset}
+                  disabled={!hasActiveFilters || filtersDisabled}
+                >
+                  フィルターをクリア
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Projects Grid */}
         {!projects || projects.length === 0 ? (

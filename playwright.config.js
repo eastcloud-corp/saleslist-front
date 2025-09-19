@@ -31,10 +31,4 @@ module.exports = defineConfig({
       },
     },
   ],
-
-  webServer: {
-    command: 'npm run dev',
-    port: 3009,
-    reuseExistingServer: !process.env.CI,
-  },
 });

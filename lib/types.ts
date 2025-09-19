@@ -201,6 +201,24 @@ export interface ProjectCompany {
   updated_at: string
 }
 
+export interface BulkAddCompaniesResponse {
+  message: string
+  total_requested: number
+  total_added: number
+  missing_company_ids: number[]
+  missing_project_ids: number[]
+  projects: Array<{
+    project_id: number
+    project_name: string
+    added_company_ids: number[]
+    skipped: Array<{
+      company_id: number
+      company_name: string
+      reason: string
+    }>
+  }>
+}
+
 // NG Company Types
 export interface NGCompany {
   id: number

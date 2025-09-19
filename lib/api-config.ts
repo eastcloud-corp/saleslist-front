@@ -19,6 +19,7 @@ export const API_CONFIG = {
     COMPANY_EXPORT: "/companies/export/",
     COMPANY_IMPORT: "/companies/import/",
     COMPANY_BULK_IMPORT: "/companies/bulk-import/",
+    COMPANY_BULK_ADD_TO_PROJECTS: "/companies/bulk-add-to-projects/",
 
     // Projects
     PROJECTS: "/projects/",

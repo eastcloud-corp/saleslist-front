@@ -1,19 +1,25 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { Company } from "@/lib/types"
-import { ExternalLink, Building2, Info } from 'lucide-react'
+import { ExternalLink, Building2, Info, Plus } from 'lucide-react'
+import type { CheckedState } from '@radix-ui/react-checkbox'
 
 interface CompanyTableProps {
   companies: Company[]
   isLoading: boolean
   onRefresh?: () => void
+  selectable?: boolean
+  selectedIds?: number[]
+  onSelectChange?: (companyId: number, selected: boolean) => void
+  onSelectAllChange?: (selectAll: boolean) => void
+  onAddToProject?: (company: Company) => void
 }
 
 const formatCurrency = (amount: number) => {
@@ -48,7 +54,16 @@ const getStatusBadge = (status: string) => {
   )
 }
 
-export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTableProps) {
+export function CompanyTable({
+  companies,
+  isLoading,
+  onRefresh,
+  selectable = false,
+  selectedIds = [],
+  onSelectChange,
+  onSelectAllChange,
+  onAddToProject,
+}: CompanyTableProps) {
   if (isLoading) {
     return (
       <Card>
@@ -69,6 +84,12 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
     )
   }
 
+  const selectedSet = new Set(selectedIds)
+  const companyIds = companies.map((company) => company.id)
+  const isAllSelected = companyIds.length > 0 && companyIds.every((id) => selectedSet.has(id))
+  const isPartiallySelected = companyIds.some((id) => selectedSet.has(id)) && !isAllSelected
+  const headerChecked: CheckedState = isAllSelected ? true : isPartiallySelected ? 'indeterminate' : false
+
   return (
     <Card>
       <CardHeader>
@@ -82,19 +103,28 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
           <Table>
             <TableHeader>
               <TableRow>
+                {selectable && (
+                  <TableHead className="w-[48px]">
+                    <Checkbox
+                      aria-label="すべての企業を選択"
+                      checked={headerChecked}
+                      onCheckedChange={(checked) => onSelectAllChange?.(checked === true)}
+                    />
+                  </TableHead>
+                )}
                 <TableHead>企業名</TableHead>
                 <TableHead>業界</TableHead>
                 <TableHead>従業員数</TableHead>
                 <TableHead>売上</TableHead>
                 <TableHead>所在地</TableHead>
                 <TableHead>ステータス</TableHead>
-                <TableHead className="w-[100px]">操作</TableHead>
+                <TableHead className="w-[160px]">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={selectable ? 8 : 7} className="text-center py-8 text-muted-foreground">
                     企業が見つかりません。検索条件を調整してください。
                   </TableCell>
                 </TableRow>
@@ -107,7 +137,19 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
                   const hasAnyNG = hasClientNG || hasProjectNG || hasGlobalNG
 
                   return (
-                    <TableRow key={company.id}>
+                    <TableRow
+                      key={company.id}
+                      className={selectedSet.has(company.id) ? "bg-muted/30" : undefined}
+                    >
+                      {selectable && (
+                        <TableCell className="w-[48px]">
+                          <Checkbox
+                            aria-label={`企業を選択: ${company.name}`}
+                            checked={selectedSet.has(company.id)}
+                            onCheckedChange={(checked) => onSelectChange?.(company.id, checked === true)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div>
@@ -184,9 +226,23 @@ export function CompanyTable({ companies, isLoading, onRefresh }: CompanyTablePr
                       <TableCell>{company.prefecture}</TableCell>
                       <TableCell>{getStatusBadge(company.status || "active")}</TableCell>
                       <TableCell>
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/companies/${company.id}`}>詳細</Link>
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/companies/${company.id}`}>詳細</Link>
+                          </Button>
+                          {onAddToProject && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => onAddToProject(company)}
+                              disabled={hasAnyNG}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              案件追加
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
 import { authService } from "@/lib/auth"
 import { API_CONFIG } from "@/lib/api-config"
-import type { Company, CompanyFilter, PaginatedResponse } from "@/lib/types"
+import type { Company, CompanyFilter, PaginatedResponse, BulkAddCompaniesResponse } from "@/lib/types"
 
 export function useCompanies(filters: CompanyFilter = {}, page = 1, limit = 100) {
   const [companies, setCompanies] = useState<Company[]>([])
@@ -127,5 +127,10 @@ export function useCompanies(filters: CompanyFilter = {}, page = 1, limit = 100)
     isLoading,
     error,
     refetch: fetchCompanies,
+    bulkAddCompaniesToProjects: (companyIds: number[], projectIds: number[]) =>
+      apiClient.post<BulkAddCompaniesResponse>(
+        API_CONFIG.ENDPOINTS.COMPANY_BULK_ADD_TO_PROJECTS,
+        { company_ids: companyIds, project_ids: projectIds }
+      ),
   }
 }

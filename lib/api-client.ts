@@ -85,7 +85,9 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL + "/api/v1"
+    const baseUrl = (typeof window === "undefined"
+      ? process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL
+      : process.env.NEXT_PUBLIC_API_URL) + "/api/v1"
     return `${baseUrl}${endpoint}`
   }
 

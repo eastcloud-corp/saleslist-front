@@ -19,35 +19,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    const redirectToLogin = () => {
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+    }
+
     // Check if user is already authenticated on mount
     const checkAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
-          // Django API でユーザー情報取得
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${authService.getAccessToken()}`
-            }
+        if (!authService.isAuthenticated()) {
+          setUser(null)
+          redirectToLogin()
+          return
+        }
+
+        const apiBase = process.env.NEXT_PUBLIC_API_URL
+        if (!apiBase) {
+          throw new Error('NEXT_PUBLIC_API_URL is not configured')
+        }
+
+        const response = await fetch(`${apiBase}/api/v1/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${authService.getAccessToken()}`,
+          },
+        })
+
+        if (response.ok) {
+          const userData = await response.json()
+          setUser({
+            id: userData.id.toString(),
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            created_at: userData.created_at,
+            updated_at: userData.updated_at,
           })
-          
-          if (response.ok) {
-            const userData = await response.json()
-            setUser({
-              id: userData.id.toString(),
-              email: userData.email,
-              name: userData.name,
-              role: userData.role,
-              created_at: userData.created_at,
-              updated_at: userData.updated_at,
-            })
-          } else {
-            // トークンが無効な場合はログアウト
-            await authService.logout()
-          }
+        } else {
+          await authService.logout()
+          setUser(null)
+          redirectToLogin()
         }
       } catch (error) {
         console.error("Auth check failed:", error)
         await authService.logout()
+        setUser(null)
+        redirectToLogin()
       } finally {
         setIsLoading(false)
       }

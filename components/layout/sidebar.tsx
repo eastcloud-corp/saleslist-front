@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings, Users, Edit3 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const navigation = [
   {
@@ -101,17 +102,39 @@ export function Sidebar() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name || "ユーザー"}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email || ""}</p>
+                  {user?.email ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p
+                          className="text-xs text-muted-foreground truncate cursor-default"
+                          title={user.email}
+                        >
+                          {user.email}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="start">
+                        <span>{user.email}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="text-sidebar-foreground hover:text-sidebar-accent-foreground"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label="ログアウト"
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleLogout}
+                    className="text-sidebar-foreground hover:text-sidebar-accent-foreground"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <span>ログアウト</span>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>

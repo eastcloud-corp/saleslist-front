@@ -29,9 +29,15 @@ export function ValidationStep({
   if (isProcessing) {
     return (
       <div className="text-center py-8">
-        <LoadingSpinner text="Processing CSV file..." />
+        <LoadingSpinner text="CSVファイルを解析しています..." />
       </div>
     )
+  }
+
+  const formatErrorMessage = (error: CSVValidationError) => {
+    const rowLabel = error.row > 0 ? `${error.row}行目` : "全体"
+    const valueText = error.value && String(error.value).trim() ? `（入力値: ${error.value}）` : ""
+    return `${rowLabel}: ${error.message}${valueText}`
   }
 
   return (
@@ -39,22 +45,20 @@ export function ValidationStep({
       <div className="flex items-center gap-2">
         <FileText className="h-5 w-5" />
         <span className="font-medium">{file.name}</span>
-        <Badge variant="outline">{csvData.length} rows</Badge>
+        <Badge variant="outline">{csvData.length}行</Badge>
       </div>
 
       {validationErrors.length > 0 ? (
         <ErrorAlert
-          title={`${validationErrors.length} validation error(s) found`}
-          message="Please fix the following issues before importing:"
-          errors={validationErrors
-            .slice(0, 10)
-            .map((error) => `Row ${error.row}: ${error.message} (${error.field}: "${error.value}")`)}
+          title={`${validationErrors.length}件のエラーを検出しました`}
+          message="以下の内容を修正してからインポートを実行してください。"
+          errors={validationErrors.slice(0, 10).map(formatErrorMessage)}
         />
       ) : (
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            CSV file validated successfully. Ready to import {csvData.length} companies.
+            CSVの検証が完了しました。{csvData.length}件の企業データをインポートできます。
           </AlertDescription>
         </Alert>
       )}
@@ -94,9 +98,9 @@ export function ValidationStep({
       <div className="flex items-center gap-2">
         <Button variant="outline" onClick={onCancel}>
           <X className="h-4 w-4 mr-2" />
-          Cancel
+          キャンセル
         </Button>
-        {validationErrors.length === 0 && <Button onClick={onContinue}>Continue to Import</Button>}
+        {validationErrors.length === 0 && <Button onClick={onContinue}>インポートへ進む</Button>}
       </div>
     </div>
   )

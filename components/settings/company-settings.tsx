@@ -201,7 +201,7 @@ export function CompanySettings({ onSave }: CompanySettingsProps) {
         <CardDescription>システムで使用する会社情報を設定します</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Company Name */}
             <div className="md:col-span-2">

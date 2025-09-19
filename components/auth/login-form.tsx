@@ -40,8 +40,8 @@ export function LoginForm() {
   }
 
   const debugCredentials = {
-    email: 'test@dev.com',
-    password: 'dev123'
+    email: process.env.NEXT_PUBLIC_DEBUG_EMAIL || 'salesnav_admin@budget-sales.com',
+    password: process.env.NEXT_PUBLIC_DEBUG_PASSWORD || 'salesnav20250901'
   }
 
   const handleDebugLogin = () => {
@@ -65,15 +65,18 @@ export function LoginForm() {
   }
 
   const badgeConfig = getEnvironmentBadge()
+  const shouldShowBadge = environment !== 'prd'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      {/* Environment Badge - Top Right */}
-      <div className="fixed top-4 right-4 z-50">
-        <Badge variant={badgeConfig.variant} className="text-sm font-medium">
-          {badgeConfig.label}環境
-        </Badge>
-      </div>
+      {/* Environment Badge - Top Right (非本番のみ表示) */}
+      {shouldShowBadge && (
+        <div className="fixed top-4 right-4 z-50">
+          <Badge variant={badgeConfig.variant} className="text-sm font-medium">
+            {badgeConfig.label}環境
+          </Badge>
+        </div>
+      )}
 
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">

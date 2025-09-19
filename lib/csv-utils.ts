@@ -39,6 +39,19 @@ export const CSV_HEADER_LABELS = {
   status: "Status",
 } as const
 
+export const CSV_FIELD_DISPLAY_NAMES: Record<string, string> = {
+  name: "企業名",
+  industry: "業種",
+  employee_count: "従業員数",
+  revenue: "売上（円）",
+  location: "所在地",
+  website: "WebサイトURL",
+  phone: "電話番号",
+  email: "メールアドレス",
+  description: "備考",
+  status: "ステータス",
+}
+
 export function exportCompaniesToCSV(companies: Company[]): string {
   const headers = CSV_HEADERS.map((header) => CSV_HEADER_LABELS[header]).join(",")
 
@@ -82,7 +95,7 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
   const lines = csvText.split("\n").filter((line) => line.trim())
 
   if (lines.length < 2) {
-    throw new Error("CSV file must contain at least a header row and one data row")
+    throw new Error("CSVファイルにはヘッダー行と1件以上のデータ行が必要です。")
   }
 
   const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
@@ -92,7 +105,7 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
     const values = parseCSVLine(line)
 
     if (values.length !== headers.length) {
-      throw new Error(`Row ${index + 2}: Expected ${headers.length} columns, got ${values.length}`)
+      throw new Error(`${index + 2}行目: 列数が一致しません（期待: ${headers.length}列 / 実際: ${values.length}列）`)
     }
 
     const row: any = {}
@@ -145,6 +158,7 @@ function normalizeHeader(header: string): string {
     employee_count: "employee_count",
     staff_count: "employee_count",
     revenue: "revenue",
+    revenue____: "revenue",
     annual_revenue: "revenue",
     sales: "revenue",
     industry: "industry",
@@ -179,77 +193,58 @@ export interface CSVValidationError {
 export function validateCSVData(data: CSVCompanyData[]): CSVValidationError[] {
   const errors: CSVValidationError[] = []
 
+  const getFieldLabel = (field: string): string => CSV_FIELD_DISPLAY_NAMES[field] || field
+
   data.forEach((row, index) => {
     const rowNumber = index + 2 // Account for header row
 
-    // Required fields
-    if (!row.name?.trim()) {
+    const addError = (field: keyof CSVCompanyData | string, value: unknown, detail: string) => {
+      const label = getFieldLabel(field as string)
       errors.push({
         row: rowNumber,
-        field: "name",
-        value: row.name || "",
-        message: "Company name is required",
+        field: field as string,
+        value: value === undefined || value === null ? "" : String(value),
+        message: `「${label}」列: ${detail}`,
       })
     }
 
+    // Required fields
+    if (!row.name?.trim()) {
+      addError("name", row.name, "必須項目です")
+    }
+
     if (!row.industry?.trim()) {
-      errors.push({
-        row: rowNumber,
-        field: "industry",
-        value: row.industry || "",
-        message: "Industry is required",
-      })
+      addError("industry", row.industry, "必須項目です")
     }
 
     // Validate employee count
     if (row.employee_count && isNaN(Number(row.employee_count))) {
-      errors.push({
-        row: rowNumber,
-        field: "employee_count",
-        value: row.employee_count,
-        message: "Employee count must be a number",
-      })
+      addError("employee_count", row.employee_count, "数値で入力してください")
     }
 
     // Validate revenue
     if (row.revenue && isNaN(Number(row.revenue))) {
-      errors.push({
-        row: rowNumber,
-        field: "revenue",
-        value: row.revenue,
-        message: "Revenue must be a number",
-      })
+      addError("revenue", row.revenue, "数値で入力してください")
     }
 
     // Validate email format
     if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
-      errors.push({
-        row: rowNumber,
-        field: "email",
-        value: row.email,
-        message: "Invalid email format",
-      })
+      addError("email", row.email, "メールアドレスの形式が正しくありません")
     }
 
     // Validate website format
     if (row.website && row.website.trim() && !/^https?:\/\/.+/.test(row.website)) {
-      errors.push({
-        row: rowNumber,
-        field: "website",
-        value: row.website,
-        message: "Website must start with http:// or https://",
-      })
+      addError("website", row.website, "http:// または https:// から始まるURLを入力してください")
     }
 
     // Validate status
     const validStatuses = ["active", "prospect", "inactive"]
     if (row.status && !validStatuses.includes(row.status.toLowerCase())) {
-      errors.push({
-        row: rowNumber,
-        field: "status",
-        value: row.status,
-        message: `Status must be one of: ${validStatuses.join(", ")}`,
-      })
+      addError(
+        "status",
+        row.status,
+        `次のいずれかの値を指定してください: ${validStatuses.join(", ")}`,
+      )
     }
   })
 

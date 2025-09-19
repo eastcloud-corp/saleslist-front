@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react"
+import { useRouter } from "next/navigation"
 import { useSearchParams } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { CompanyFilters } from "@/components/companies/company-filters"
@@ -13,7 +14,9 @@ import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
 import { apiClient, API_CONFIG } from "@/lib/api-config"
 import { useAuth } from "@/hooks/use-auth"
 import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
-import { Download, Plus, Upload, ArrowLeft, Database } from "lucide-react"
+import { Download, Plus, Upload, Database } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog"
 import Link from "next/link"
 
 function CompaniesPageContent() {
@@ -21,12 +24,26 @@ function CompaniesPageContent() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([])
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
   const searchParams = useSearchParams()
   const { user } = useAuth()
   const { companies, pagination, isLoading, error, refetch } = useCompanies(filters, currentPage, 100)
+  const { toast } = useToast()
+  const router = useRouter()
 
   const isAdmin = user?.role === 'admin'
+
+  useEffect(() => {
+    setSelectedCompanyIds((prev) => prev.filter((id) => companies.some((company) => company.id === id)))
+  }, [companies])
+
+  const selectedCompanySet = useMemo(() => new Set(selectedCompanyIds), [selectedCompanyIds])
+  const selectedCompanies = useMemo(
+    () => companies.filter((company) => selectedCompanySet.has(company.id)),
+    [companies, selectedCompanySet]
+  )
 
   // Auto-refresh when returning from company creation
   useEffect(() => {
@@ -47,6 +64,60 @@ function CompaniesPageContent() {
     setFilters({})
     setCurrentPage(1)
   }
+
+  const handleSelectChange = useCallback((companyId: number, selected: boolean) => {
+    setSelectedCompanyIds((prev) => {
+      const next = new Set(prev)
+      if (selected) {
+        next.add(companyId)
+      } else {
+        next.delete(companyId)
+      }
+      return Array.from(next)
+    })
+  }, [])
+
+  const handleSelectAllChange = useCallback((selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedCompanyIds(companies.map((company) => company.id))
+    } else {
+      setSelectedCompanyIds([])
+    }
+  }, [companies])
+
+  const handleInlineAdd = useCallback(
+    (company: typeof companies[number]) => {
+      setSelectedCompanyIds([company.id])
+      setIsAddDialogOpen(true)
+    },
+    []
+  )
+
+  const handleAddCompleted = useCallback(
+    (results: Array<{ projectId: number; projectName: string; addedCount: number; errors: string[] }>) => {
+      setIsAddDialogOpen(false)
+      setSelectedCompanyIds([])
+
+      const totalAdded = results.reduce((sum, item) => sum + (item.addedCount ?? 0), 0)
+      const totalErrors = results.reduce((sum, item) => sum + (item.errors?.length ?? 0), 0)
+      const targetLabel = results.length === 1 ? results[0].projectName : `${results.length}件の案件`
+
+      toast({
+        title: '案件に追加しました',
+        description:
+          totalErrors > 0
+            ? `${targetLabel} に ${totalAdded}社を追加。${totalErrors}件は除外されました。`
+            : `${targetLabel} に ${totalAdded}社を追加しました。`,
+      })
+
+      if (results.length === 1 && results[0].addedCount > 0) {
+        router.push(`/projects/${results[0].projectId}`)
+      }
+
+      refetch()
+    },
+    [refetch, router, toast]
+  )
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -101,6 +172,28 @@ function CompaniesPageContent() {
                 {isExporting ? "エクスポート中..." : "CSV エクスポート"}
               </Button>
             )}
+            <Button
+              variant="outline"
+              disabled={companies.length === 0}
+              onClick={() => setSelectedCompanyIds(companies.map((company) => company.id))}
+            >
+              表示中を全選択
+            </Button>
+            <Button
+              variant="outline"
+              disabled={selectedCompanyIds.length === 0}
+              onClick={() => setSelectedCompanyIds([])}
+            >
+              選択を解除
+            </Button>
+            <Button
+              variant="default"
+              disabled={selectedCompanyIds.length === 0}
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              案件に追加
+            </Button>
             <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               CSV インポート
@@ -125,7 +218,16 @@ function CompaniesPageContent() {
         )}
 
         {/* Company Table */}
-        <CompanyTable companies={companies} isLoading={isLoading} onRefresh={refetch} />
+        <CompanyTable
+          companies={companies}
+          isLoading={isLoading}
+          onRefresh={refetch}
+          selectable
+          selectedIds={selectedCompanyIds}
+          onSelectChange={handleSelectChange}
+          onSelectAllChange={handleSelectAllChange}
+          onAddToProject={handleInlineAdd}
+        />
 
         {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (
@@ -160,6 +262,18 @@ function CompaniesPageContent() {
 
         {/* CSV Import Dialog */}
         <CSVImportDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} onImport={handleImport} />
+
+        <AddToProjectDialog
+          open={isAddDialogOpen}
+          onOpenChange={(open) => {
+            setIsAddDialogOpen(open)
+            if (!open) {
+              setSelectedCompanyIds([])
+            }
+          }}
+          companies={selectedCompanies}
+          onCompleted={handleAddCompleted}
+        />
       </div>
     </MainLayout>
   )

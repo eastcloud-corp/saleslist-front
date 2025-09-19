@@ -1,12 +1,31 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"  
 import type { Project, Company } from "@/lib/types"
 import { authService } from "@/lib/auth"
 
-export function useProjects(page = 1, limit = 20) {
+interface ProjectFilters {
+  search?: string
+  client?: string | number
+  status?: string
+  progress_status?: string | number
+  service_type?: string | number
+  media_type?: string | number
+  list_availability?: string | number
+  list_import_source?: string | number
+  regular_meeting_status?: string | number
+}
+
+interface UseProjectsOptions {
+  page?: number
+  limit?: number
+  filters?: ProjectFilters
+}
+
+export function useProjects(options: UseProjectsOptions = {}) {
+  const { page = 1, limit = 20, filters = {} } = options
   const [projects, setProjects] = useState<Project[]>([])
   const [pagination, setPagination] = useState({
     page: 1,
@@ -17,14 +36,12 @@ export function useProjects(page = 1, limit = 20) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     // 認証チェック
     if (!authService.isAuthenticated()) {
       setIsLoading(false)
       return
     }
-    
-    if (!authService.isAuthenticated()) { setIsLoading(false); return; }
     setIsLoading(true)
     setError(null)
 
@@ -33,6 +50,12 @@ export function useProjects(page = 1, limit = 20) {
         page: page.toString(),
         limit: limit.toString(),
         management_mode: 'true',
+      })
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value === undefined || value === null) return
+        if (typeof value === 'string' && value.trim() === '') return
+        params.append(key, String(value))
       })
 
       console.log("[v0] GET request to:", `${API_CONFIG.ENDPOINTS.PROJECTS}?${params.toString()}`)
@@ -57,14 +80,14 @@ export function useProjects(page = 1, limit = 20) {
       setProjects([])
       setPagination({
         page: 1,
-        limit: 20,
+        limit: limit,
         total: 0,
         total_pages: 0,
       })
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [filters, limit, page])
 
   const createProject = async (projectData: Omit<Project, "id" | "created_at" | "updated_at" | "companies">) => {
     try {
@@ -78,7 +101,7 @@ export function useProjects(page = 1, limit = 20) {
 
   useEffect(() => {
     fetchProjects()
-  }, [page, limit])
+  }, [fetchProjects])
 
   return {
     projects,

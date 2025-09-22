@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import {
   createAuthenticatedContext,
   createClient,
@@ -10,7 +10,7 @@ import {
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'salesnav_admin@budget-sales.com'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'salesnav20250901'
 
-async function login(page) {
+async function login(page: Page) {
   await page.goto('/login')
   await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
   await page.getByRole('button', { name: 'ログイン' }).click()

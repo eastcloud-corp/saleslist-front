@@ -14,6 +14,9 @@ interface CompanyFiltersProps {
   filters: any
   onFiltersChange: (filters: any) => void
   onClearFilters: () => void
+  onApplyFilters: () => void
+  filtersChanged: boolean
+  hasAppliedFilters: boolean
 }
 
 const statuses = [
@@ -22,7 +25,14 @@ const statuses = [
   { value: "inactive", label: "非アクティブ" },
 ]
 
-export function CompanyFilters({ filters, onFiltersChange, onClearFilters }: CompanyFiltersProps) {
+export function CompanyFilters({
+  filters,
+  onFiltersChange,
+  onClearFilters,
+  onApplyFilters,
+  filtersChanged,
+  hasAppliedFilters,
+}: CompanyFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [industries, setIndustries] = useState<string[]>([])
 
@@ -74,12 +84,24 @@ export function CompanyFilters({ filters, onFiltersChange, onClearFilters }: Com
             検索・フィルター
           </CardTitle>
           <div className="flex items-center gap-2">
-            {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={onClearFilters} className="text-xs bg-transparent">
-                <X className="h-3 w-3 mr-1" />
-                すべてクリア
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearFilters}
+              className="text-xs bg-transparent"
+              disabled={!hasAppliedFilters && !filtersChanged}
+            >
+              <X className="h-3 w-3 mr-1" />
+              すべてクリア
+            </Button>
+            <Button
+              size="sm"
+              onClick={onApplyFilters}
+              disabled={!filtersChanged}
+              className="text-xs"
+            >
+              <Search className="h-3 w-3 mr-1" />検索
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
               <Filter className="h-4 w-4 mr-1" />
               {isExpanded ? "フィルターを隠す" : "フィルターを表示"}

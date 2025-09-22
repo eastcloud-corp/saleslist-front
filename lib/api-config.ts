@@ -27,6 +27,12 @@ export const API_CONFIG = {
     PROJECT_COMPANIES: (id: string) => `/projects/${id}/companies/`,
     PROJECT_IMPORT: "/projects/import_csv/",
     PROJECT_EXPORT: (id: string) => `/projects/${id}/export_csv/`,
+    PROJECT_BULK_PARTIAL_UPDATE: "/projects/bulk-partial-update",
+    PROJECT_PAGE_LOCK: "/projects/page-lock/",
+    PROJECT_PAGE_UNLOCK: "/projects/page-unlock/",
+    PROJECT_SNAPSHOTS: (id: string) => `/projects/${id}/snapshots/`,
+    PROJECT_SNAPSHOT_RESTORE: (projectId: string, snapshotId: string) =>
+      `/projects/${projectId}/snapshots/${snapshotId}/restore/`,
 
     // NG Companies
     NG_COMPANIES: "/ng-companies/",
@@ -98,9 +104,9 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
-    const url = `${API_CONFIG.BASE_URL}${endpoint}`
-    // ダブルスラッシュを自動修正（プロトコル部分は除外）
-    return url.replace(/([^:]\/)\/+/g, '$1')
+    const base = API_CONFIG.BASE_URL.replace(/\/+$/, "")
+    const path = endpoint.replace(/^\/+/, "")
+    return `${base}/${path}`
   }
 
   async get(endpoint: string, options?: RequestInit): Promise<Response> {

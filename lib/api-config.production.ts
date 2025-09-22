@@ -18,6 +18,9 @@ export const API_CONFIG = {
     PROJECTS: "/projects",
     PROJECT_DETAIL: (id: string) => `/projects/${id}`,
     PROJECT_COMPANIES: (id: string) => `/projects/${id}/companies`,
+    PROJECT_BULK_PARTIAL_UPDATE: "/projects/bulk-partial-update",
+    PROJECT_PAGE_LOCK: "/projects/page-lock/",
+    PROJECT_PAGE_UNLOCK: "/projects/page-unlock/",
 
     // NG Companies
     NG_COMPANIES: "/ng-companies",

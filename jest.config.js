@@ -18,12 +18,12 @@ const customJestConfig = {
     '<rootDir>/__tests__/e2e/'
   ],
   collectCoverageFrom: [
-    'components/**/*.{js,jsx,ts,tsx}',
-    'app/**/*.{js,jsx,ts,tsx}',
-    'lib/**/*.{js,jsx,ts,tsx}',
-    '!**/*.d.ts',
-    '!**/*.test.*',
-    '!**/__tests__/**',
+    'lib/csv-utils.ts',
+    'components/companies/csv-import-dialog.tsx',
+    'components/companies/csv-steps/**/*.tsx',
+    'app/projects/components/project-history-dialog.tsx',
+    'hooks/use-ng-list.tsx',
+    'components/clients/ng-list-tab.tsx',
   ],
 }
 

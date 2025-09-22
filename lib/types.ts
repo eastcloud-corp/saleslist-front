@@ -182,6 +182,38 @@ export interface Project {
   list_import_source_id?: number
 }
 
+export interface ProjectSnapshotOverview {
+  name?: string
+  client_name?: string
+  progress_status?: string
+  service_type?: string
+  media_type?: string
+  director?: string
+  operator?: string
+  sales_person?: string
+  appointment_count?: number
+  approval_count?: number
+  reply_count?: number
+  friends_count?: number
+  expected_end_date?: string
+  operation_start_date?: string
+  situation?: string
+  [key: string]: unknown
+}
+
+export interface ProjectSnapshot {
+  id: number
+  project: number
+  created_at: string
+  created_by: number | null
+  created_by_name?: string | null
+  reason?: string | null
+  source: string
+  source_label?: string | null
+  changed_fields?: string[]
+  project_overview?: ProjectSnapshotOverview
+}
+
 export interface ProjectCompany {
   id: number
   project_id: number

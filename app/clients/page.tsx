@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { useClients } from "@/hooks/use-clients"
@@ -13,19 +13,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Search, Filter, TrendingUp, Users, FolderOpen } from "lucide-react"
 import { MainLayout } from "@/components/layout/main-layout"
 
+const DEFAULT_FILTERS = {
+  search: "",
+  industry: "all" as string,
+  is_active: "all" as "all" | "true" | "false",
+}
+
 export default function ClientsPage() {
   const router = useRouter()
   const [industries, setIndustries] = useState<any[]>([])
-  const [filters, setFilters] = useState({
-    search: "",
-    industry: undefined as string | undefined,
-    is_active: undefined as boolean | undefined,
-  })
+  const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS)
+  const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS)
+
+  const computedFilters = useMemo(() => {
+    const params: { [key: string]: string | boolean } = {}
+    if (appliedFilters.search.trim()) {
+      params.search = appliedFilters.search.trim()
+    }
+    if (appliedFilters.industry !== "all") {
+      params.industry = appliedFilters.industry
+    }
+    if (appliedFilters.is_active === "true") {
+      params.is_active = true
+    }
+    if (appliedFilters.is_active === "false") {
+      params.is_active = false
+    }
+    return params
+  }, [appliedFilters])
+
+  const hasActiveFilters = useMemo(() => Object.keys(computedFilters).length > 0, [computedFilters])
+  const filtersChanged = useMemo(
+    () => JSON.stringify(pendingFilters) !== JSON.stringify(appliedFilters),
+    [pendingFilters, appliedFilters]
+  )
 
   const { clients, loading, error, pagination } = useClients({
     page: 1,
     limit: 100,
-    filters,
+    filters: computedFilters,
   })
 
   // 業界マスター取得
@@ -41,16 +67,9 @@ export default function ClientsPage() {
     fetchIndustries()
   }, [])
 
-  const handleFilterChange = (key: string, value: string | boolean | undefined) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }
-
   const clearFilters = () => {
-    setFilters({
-      search: "",
-      industry: undefined,
-      is_active: undefined,
-    })
+    setPendingFilters(DEFAULT_FILTERS)
+    setAppliedFilters(DEFAULT_FILTERS)
   }
 
   const activeClients = clients.filter((client) => client.is_active).length
@@ -108,8 +127,8 @@ export default function ClientsPage() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="クライアント名で検索"
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    value={pendingFilters.search}
+                    onChange={(e) => setPendingFilters((prev) => ({ ...prev, search: e.target.value }))}
                     className="pl-10"
                   />
                 </div>
@@ -117,7 +136,10 @@ export default function ClientsPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">業界</label>
-                <Select value={filters.industry} onValueChange={(value) => handleFilterChange("industry", value)}>
+                <Select
+                  value={pendingFilters.industry}
+                  onValueChange={(value) => setPendingFilters((prev) => ({ ...prev, industry: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="業界を選択" />
                   </SelectTrigger>
@@ -135,9 +157,9 @@ export default function ClientsPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">ステータス</label>
                 <Select
-                  value={filters.is_active?.toString() || "all"}
+                  value={pendingFilters.is_active}
                   onValueChange={(value) =>
-                    handleFilterChange("is_active", value === "all" ? undefined : value === "true")
+                    setPendingFilters((prev) => ({ ...prev, is_active: value as typeof prev.is_active }))
                   }
                 >
                   <SelectTrigger>
@@ -152,9 +174,14 @@ export default function ClientsPage() {
               </div>
 
               <div className="flex items-end">
-                <Button variant="outline" onClick={clearFilters}>
-                  フィルタクリア
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={clearFilters} disabled={!hasActiveFilters && !filtersChanged}>
+                    フィルタクリア
+                  </Button>
+                  <Button onClick={() => setAppliedFilters({ ...pendingFilters })} disabled={!filtersChanged}>
+                    <Search className="mr-2 h-4 w-4" />検索
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -162,7 +189,7 @@ export default function ClientsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>クライアント一覧 ({pagination.total}件)</CardTitle>
+            <CardTitle>クライアント一覧 ({pagination.total ?? clients.length}件)</CardTitle>
           </CardHeader>
           <CardContent>
             {error ? (

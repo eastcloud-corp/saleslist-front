@@ -1,4 +1,3 @@
-import { authService } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -20,6 +19,18 @@ interface UseClientsOptions {
   filters?: ClientFilters
 }
 
+const isProduction = process.env.NODE_ENV === "production"
+const debugLog = (...args: unknown[]) => {
+  if (!isProduction) {
+    console.log("[useClients]", ...args)
+  }
+}
+const debugWarn = (...args: unknown[]) => {
+  if (!isProduction) {
+    console.warn("[useClients]", ...args)
+  }
+}
+
 export function useClients(options: UseClientsOptions = {}) {
   const { page = 1, limit = 50, filters = {} } = options
   const [clients, setClients] = useState<Client[]>([])
@@ -37,8 +48,6 @@ export function useClients(options: UseClientsOptions = {}) {
       setLoading(true)
       setError(null)
 
-      console.log("[v0] クライアント一覧を取得中...", { page, limit, filters })
-
       const params = new URLSearchParams({
         page: page.toString(),
         page_size: limit.toString(),
@@ -52,10 +61,10 @@ export function useClients(options: UseClientsOptions = {}) {
       })
 
       const response = await apiClient.get(`/clients?${params}`);
-      console.log("[v0] クライアント一覧レスポンス:", response);
+      debugLog("一覧レスポンス", response);
       
       const data = await response.json();
-      console.log("[DEBUG] API Response structure:", data);
+      debugLog("APIレスポンス構造", data);
       
       if (data && typeof data === 'object') {
         // Check multiple possible response formats
@@ -77,14 +86,14 @@ export function useClients(options: UseClientsOptions = {}) {
             total_pages: Math.ceil(data.length / limit),
           });
         } else {
-          console.warn("Unexpected response format:", data);
+          debugWarn("Unexpected response format", data);
           setError("予期しないAPIレスポンス形式");
         }
       } else {
         setError("APIからデータを取得できませんでした");
       }
     } catch (err) {
-      console.error("[v0] クライアント一覧取得エラー:", err);
+      console.error("[useClients] クライアント一覧取得エラー", err);
       setError(err instanceof Error ? err.message : "クライアント一覧の取得に失敗しました");
     } finally {
       setLoading(false);
@@ -97,40 +106,40 @@ export function useClients(options: UseClientsOptions = {}) {
 
   const createClient = async (clientData: Omit<Client, "id" | "created_at" | "updated_at">) => {
     try {
-      console.log("[v0] クライアント作成中...", clientData)
+      debugLog("クライアント作成", clientData)
 
       const response = await apiClient.post("/clients/", clientData)
 
       if (response.ok) {
         const newClient = await response.json()
-        console.log("[v0] クライアント作成成功:", newClient)
+        debugLog("クライアント作成成功", newClient)
         await fetchClients() // リストを再取得
         return newClient
       } else {
         throw new Error("クライアントの作成に失敗しました")
       }
     } catch (err) {
-      console.error("[v0] クライアント作成エラー:", err)
+      console.error("[useClients] クライアント作成エラー", err)
       throw err
     }
   }
 
   const updateClient = async (id: number, clientData: Partial<Client>) => {
     try {
-      console.log("[v0] クライアント更新中...", { id, clientData })
+      debugLog("クライアント更新", { id, clientData })
 
       const response = await apiClient.put(`/clients/${id}/`, clientData)
 
       if (response.ok) {
         const updatedClient = await response.json()
-        console.log("[v0] クライアント更新成功:", updatedClient)
+        debugLog("クライアント更新成功", updatedClient)
         await fetchClients() // リストを再取得
         return updatedClient
       } else {
         throw new Error("クライアントの更新に失敗しました")
       }
     } catch (err) {
-      console.error("[v0] クライアント更新エラー:", err)
+      console.error("[useClients] クライアント更新エラー", err)
       throw err
     }
   }
@@ -156,13 +165,13 @@ export function useClient(id: number) {
       setLoading(true)
       setError(null)
 
-      console.log("[v0] クライアント詳細を取得中...", { id })
+      debugLog("クライアント詳細を取得", { id })
 
       const response = await apiClient.get(`/clients/${id}`)
 
       if (response.ok) {
         const data = await response.json()
-        console.log("[v0] クライアント詳細取得成功:", data)
+        debugLog("クライアント詳細取得成功", data)
 
         if (data && data.id) {
           setClient(data)
@@ -173,7 +182,7 @@ export function useClient(id: number) {
         throw new Error("クライアント詳細の取得に失敗しました")
       }
     } catch (err) {
-      console.error("[v0] クライアント詳細取得エラー:", err)
+      console.error("[useClients] クライアント詳細取得エラー", err)
       setError(err instanceof Error ? err.message : "クライアント詳細の取得に失敗しました")
     } finally {
       setLoading(false)
@@ -211,13 +220,13 @@ export function useClientStats(id: number) {
       setLoading(true)
       setError(null)
 
-      console.log("[v0] クライアント統計情報を取得中...", { id })
+      debugLog("クライアント統計情報を取得", { id })
 
       const response = await apiClient.get(`/clients/${id}/stats`)
 
       if (response.ok) {
         const data = await response.json()
-        console.log("[v0] クライアント統計情報取得成功:", data)
+        debugLog("クライアント統計情報取得成功", data)
         if (data) {
           setStats(data)
         } else {
@@ -227,7 +236,7 @@ export function useClientStats(id: number) {
         throw new Error("統計情報の取得に失敗しました")
       }
     } catch (err) {
-      console.error("[v0] クライアント統計情報取得エラー:", err)
+      console.error("[useClients] クライアント統計情報取得エラー", err)
       setError(err instanceof Error ? err.message : "統計情報の取得に失敗しました")
     } finally {
       setLoading(false)
@@ -258,13 +267,13 @@ export function useClientProjects(id: number) {
       setLoading(true)
       setError(null)
 
-      console.log("[v0] クライアント関連案件を取得中...", { id })
+      debugLog("クライアント関連案件を取得", { id })
 
       const response = await apiClient.get(`/clients/${id}/projects`)
 
       if (response.ok) {
         const data = await response.json()
-        console.log("[v0] クライアント関連案件取得成功:", data)
+        debugLog("クライアント関連案件取得成功", data)
 
         if (data && Array.isArray(data.results)) {
           setProjects(data.results)
@@ -277,7 +286,7 @@ export function useClientProjects(id: number) {
         throw new Error("関連案件の取得に失敗しました")
       }
     } catch (err) {
-      console.error("[v0] クライアント関連案件取得エラー:", err)
+      console.error("[useClients] クライアント関連案件取得エラー", err)
       setError(err instanceof Error ? err.message : "関連案件の取得に失敗しました")
     } finally {
       setLoading(false)

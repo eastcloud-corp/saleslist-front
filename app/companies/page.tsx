@@ -20,7 +20,8 @@ import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog
 import Link from "next/link"
 
 function CompaniesPageContent() {
-  const [filters, setFilters] = useState<CompanyFiltersType>({})
+  const [pendingFilters, setPendingFilters] = useState<CompanyFiltersType>({})
+  const [appliedFilters, setAppliedFilters] = useState<CompanyFiltersType>({})
   const [currentPage, setCurrentPage] = useState(1)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -29,7 +30,17 @@ function CompaniesPageContent() {
 
   const searchParams = useSearchParams()
   const { user } = useAuth()
-  const { companies, pagination, isLoading, error, refetch } = useCompanies(filters, currentPage, 100)
+  const filtersChanged = useMemo(
+    () => JSON.stringify(pendingFilters) !== JSON.stringify(appliedFilters),
+    [pendingFilters, appliedFilters]
+  )
+  const hasAppliedFilters = useMemo(
+    () => Object.values(appliedFilters).some((value) =>
+      Array.isArray(value) ? value.length > 0 : value !== undefined && value !== ""
+    ),
+    [appliedFilters]
+  )
+  const { companies, pagination, isLoading, error, refetch } = useCompanies(appliedFilters, currentPage, 100)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -56,12 +67,17 @@ function CompaniesPageContent() {
   }, [searchParams, refetch])
 
   const handleFiltersChange = (newFilters: CompanyFiltersType) => {
-    setFilters(newFilters)
+    setPendingFilters(newFilters)
+  }
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(JSON.parse(JSON.stringify(pendingFilters)) as CompanyFiltersType)
     setCurrentPage(1)
   }
 
   const handleClearFilters = () => {
-    setFilters({})
+    setPendingFilters({})
+    setAppliedFilters({})
     setCurrentPage(1)
   }
 
@@ -208,7 +224,14 @@ function CompaniesPageContent() {
         </div>
 
         {/* Filters */}
-        <CompanyFilters filters={filters} onFiltersChange={handleFiltersChange} onClearFilters={handleClearFilters} />
+        <CompanyFilters
+          filters={pendingFilters}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+          onApplyFilters={handleApplyFilters}
+          filtersChanged={filtersChanged}
+          hasAppliedFilters={hasAppliedFilters}
+        />
 
         {/* Error Message */}
         {error && (

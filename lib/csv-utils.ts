@@ -208,15 +208,6 @@ export function validateCSVData(data: CSVCompanyData[]): CSVValidationError[] {
       })
     }
 
-    // Required fields
-    if (!row.name?.trim()) {
-      addError("name", row.name, "必須項目です")
-    }
-
-    if (!row.industry?.trim()) {
-      addError("industry", row.industry, "必須項目です")
-    }
-
     // Validate employee count
     if (row.employee_count && isNaN(Number(row.employee_count))) {
       addError("employee_count", row.employee_count, "数値で入力してください")
@@ -254,27 +245,32 @@ export function validateCSVData(data: CSVCompanyData[]): CSVValidationError[] {
 export function convertCSVToCompanyData(
   csvData: CSVCompanyData[],
 ): Omit<Company, "id" | "created_at" | "updated_at" | "executives">[] {
-  return csvData.map((row) => ({
-    name: row.name?.trim() || "",
-    industry: row.industry?.trim() || "",
-    employee_count: Number(row.employee_count) || 0,
-    revenue: Number(row.revenue) || 0,
-    location: row.location?.trim() || "",
-    website: row.website?.trim() || "",
-    phone: row.phone?.trim() || "",
-    email: row.email?.trim() || "",
-    description: row.description?.trim() || "",
-    status: (row.status?.toLowerCase() as "active" | "prospect" | "inactive") || "prospect",
-    // Company型に必要な追加フィールド
-    established_year: new Date().getFullYear(),
-    prefecture: "",
-    city: "",
-    website_url: row.website?.trim() || "",
-    contact_email: row.email?.trim() || "",
-    notes: "",
-    is_global_ng: false,
-    capital: 0,
-  }))
+  return csvData.map((row, index) => {
+    const sanitizedName = row.name?.trim()
+    const fallbackName = `インポート企業（行${index + 2}）`
+
+    return {
+      name: sanitizedName && sanitizedName.length > 0 ? sanitizedName : fallbackName,
+      industry: row.industry?.trim() || "",
+      employee_count: Number(row.employee_count) || 0,
+      revenue: Number(row.revenue) || 0,
+      location: row.location?.trim() || "",
+      website: row.website?.trim() || "",
+      phone: row.phone?.trim() || "",
+      email: row.email?.trim() || "",
+      description: row.description?.trim() || "",
+      status: (row.status?.toLowerCase() as "active" | "prospect" | "inactive") || "prospect",
+      // Company型に必要な追加フィールド
+      established_year: new Date().getFullYear(),
+      prefecture: "",
+      city: "",
+      website_url: row.website?.trim() || "",
+      contact_email: row.email?.trim() || "",
+      notes: "",
+      is_global_ng: false,
+      capital: 0,
+    }
+  })
 }
 
 export function convertCompaniesArrayToCSV(companies: any[]): string {

@@ -92,50 +92,44 @@ export function Sidebar() {
           </nav>
 
           {/* User info and logout */}
-          <div className="p-4 border-t border-sidebar-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
-                  <span className="text-xs font-medium text-sidebar-primary-foreground">
-                    {user?.name?.charAt(0) || "U"}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name || "ユーザー"}</p>
-                  {user?.email ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p
-                          className="text-xs text-muted-foreground truncate cursor-default"
-                          title={user.email}
-                        >
-                          {user.email}
-                        </p>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" align="start">
-                        <span>{user.email}</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : null}
-                </div>
+          <div className="p-4 border-t border-sidebar-border space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
+                <span className="text-xs font-medium text-sidebar-primary-foreground">
+                  {user?.name?.charAt(0) || "U"}
+                </span>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label="ログアウト"
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="text-sidebar-foreground hover:text-sidebar-accent-foreground"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">
-                  <span>ログアウト</span>
-                </TooltipContent>
-              </Tooltip>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate" title={user?.name || undefined}>
+                  {user?.name || "ユーザー"}
+                </p>
+                {user?.email ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p
+                        className="text-xs text-muted-foreground break-all leading-snug cursor-default"
+                        title={user.email}
+                      >
+                        {user.email}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="start">
+                      <span>{user.email}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
+              </div>
             </div>
+            <Button
+              aria-label="ログアウト"
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="w-full justify-center gap-2 text-sidebar-foreground hover:text-sidebar-accent-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              ログアウト
+            </Button>
           </div>
         </div>
       </div>

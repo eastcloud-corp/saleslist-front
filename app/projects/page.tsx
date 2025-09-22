@@ -1,16 +1,15 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import Link from "next/link"
+import { useState, useEffect, useRef, useCallback, useMemo, useTransition } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { ProjectForm } from "@/components/projects/project-form"
 import { useProjects } from "@/hooks/use-projects"
 import { useClients } from "@/hooks/use-clients"
-import { apiClient } from "@/lib/api-config"
+import { apiClient, API_CONFIG } from "@/lib/api-config"
+import { createLogger } from "@/lib/logger"
 import type { Project } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -20,40 +19,50 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, FolderOpen, Edit3, Search } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import ProjectTableRow, { STICKY_PROJECT_WIDTH } from "./components/project-table-row"
+import { ProjectHistoryDialog } from "./components/project-history-dialog"
+
+const pageLogger = createLogger("projects:page")
+
+const DEFAULT_FILTERS = {
+  search: "",
+  client: "all",
+  progress_status: "all",
+  service_type: "all",
+}
 
 export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editData, setEditData] = useState<Record<number, Partial<Project>>>({})
-  const [progressStatuses, setProgressStatuses] = useState<Array<{id: number, name: string}>>([])
-  const [serviceTypes, setServiceTypes] = useState<Array<{id: number, name: string}>>([])
-  const [meetingStatuses, setMeetingStatuses] = useState<Array<{id: number, name: string}>>([])
-  const [mediaTypes, setMediaTypes] = useState<Array<{id: number, name: string}>>([])
-  const [listImportSources, setListImportSources] = useState<Array<{id: number, name: string}>>([])
-  const [listAvailabilities, setListAvailabilities] = useState<Array<{id: number, name: string}>>([])
-  const [projectFilters, setProjectFilters] = useState({
-    search: '',
-    client: 'all',
-    progress_status: 'all',
-    service_type: 'all',
-  })
+  const [editVisibleCount, setEditVisibleCount] = useState<number>(Infinity)
+  const [progressStatuses, setProgressStatuses] = useState<Array<{ id: number; name: string }>>([])
+  const [serviceTypes, setServiceTypes] = useState<Array<{ id: number; name: string }>>([])
+  const [meetingStatuses, setMeetingStatuses] = useState<Array<{ id: number; name: string }>>([])
+  const [mediaTypes, setMediaTypes] = useState<Array<{ id: number; name: string }>>([])
+  const [listImportSources, setListImportSources] = useState<Array<{ id: number; name: string }>>([])
+  const [listAvailabilities, setListAvailabilities] = useState<Array<{ id: number; name: string }>>([])
+  const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS)
+  const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS)
+  const [historyProject, setHistoryProject] = useState<Project | null>(null)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
   const activeFilters = useMemo(() => {
     const params: Record<string, string> = {}
-    if (projectFilters.search.trim()) {
-      params.search = projectFilters.search.trim()
+    if (appliedFilters.search.trim()) {
+      params.search = appliedFilters.search.trim()
     }
-    if (projectFilters.client !== 'all') {
-      params.client = projectFilters.client
+    if (appliedFilters.client !== "all") {
+      params.client = appliedFilters.client
     }
-    if (projectFilters.progress_status !== 'all') {
-      params.progress_status = projectFilters.progress_status
+    if (appliedFilters.progress_status !== "all") {
+      params.progress_status = appliedFilters.progress_status
     }
-    if (projectFilters.service_type !== 'all') {
-      params.service_type = projectFilters.service_type
+    if (appliedFilters.service_type !== "all") {
+      params.service_type = appliedFilters.service_type
     }
     return params
-  }, [projectFilters])
+  }, [appliedFilters])
 
   const filterHash = useMemo(() => {
     const entries = Object.entries(activeFilters)
@@ -66,16 +75,23 @@ export default function ProjectsPage() {
 
   const hasActiveFilters = useMemo(() => Object.keys(activeFilters).length > 0, [activeFilters])
 
+  const filtersChanged = useMemo(() => {
+    return JSON.stringify(pendingFilters) !== JSON.stringify(appliedFilters)
+  }, [pendingFilters, appliedFilters])
+
   const { projects, isLoading, error, createProject, refetch, pagination } = useProjects({
     filters: activeFilters,
   })
   const { clients, loading: clientsLoading } = useClients({ limit: 200, filters: { is_active: true } })
   const { toast } = useToast()
   const [isAcquiringLock, setIsAcquiringLock] = useState(false)
+  const [lastLockDuration, setLastLockDuration] = useState<number | null>(null)
   const [isPageLocked, setIsPageLocked] = useState(false)
   const lockParamsRef = useRef({ page: 1, page_size: 20, filter_hash: "default" })
   const filtersDisabled = editMode
   const totalProjects = pagination?.total ?? projects.length
+  const visibleProjects = editMode ? projects.slice(0, editVisibleCount) : projects
+  const [isModePending, startModeTransition] = useTransition()
 
   // マスターデータ取得
   useEffect(() => {
@@ -111,35 +127,50 @@ export default function ProjectsPage() {
         setListImportSources(listImportJson.results || [])
         setListAvailabilities(listAvailabilityJson.results || [])
         
-        console.log('マスターデータ取得完了:', {
-          進行状況: progressJson.results?.length || 0,
-          サービス: serviceJson.results?.length || 0,
-          定例会: meetingJson.results?.length || 0,
-          媒体: mediaJson.results?.length || 0,
-          リスト輸入先: listImportJson.results?.length || 0,
-          リスト有無: listAvailabilityJson.results?.length || 0
-        })
       } catch (error) {
         console.error('マスターデータ取得エラー:', error)
       }
     }
     fetchMasterData()
   }, [])
-  const getClientName = (project: any) => {
-    return project.client_name || project.client_company || "クライアント未設定"
+  const handleFilterReset = () => {
+    setPendingFilters({ ...DEFAULT_FILTERS })
+    setAppliedFilters({ ...DEFAULT_FILTERS })
   }
 
-  const handleFilterReset = () => {
-    setProjectFilters({
-      search: '',
-      client: 'all',
-      progress_status: 'all',
-      service_type: 'all',
+  useEffect(() => {
+    if (editMode) {
+      const initialCount = Math.min(12, projects.length || 0)
+      setEditVisibleCount(initialCount || projects.length)
+    } else {
+      setEditVisibleCount(projects.length)
+    }
+  }, [editMode, projects.length])
+
+  const handleOpenHistory = useCallback((project: Project) => {
+    setHistoryProject(project)
+    setIsHistoryOpen(true)
+  }, [])
+
+  const updateProjectEdit = useCallback((projectId: number, changes: Partial<Project>) => {
+    setEditData((prev) => {
+      const previous = prev[projectId] ?? {}
+      const merged = { ...previous, ...changes }
+      const sanitizedEntries = Object.entries(merged).filter(([, value]) => value !== undefined)
+
+      if (sanitizedEntries.length === 0) {
+        const { [projectId]: _removed, ...rest } = prev
+        return rest
+      }
+
+      return {
+        ...prev,
+        [projectId]: Object.fromEntries(sanitizedEntries) as Partial<Project>,
+      }
     })
-  }
+  }, [])
 
   const handleSaveAll = async (): Promise<boolean> => {
-    console.log('保存処理開始, editData:', editData)
 
     const changedProjectIds = Object.keys(editData)
       .filter((projectId) => {
@@ -148,7 +179,6 @@ export default function ProjectsPage() {
       })
       .map((id) => Number(id))
 
-    console.log('変更対象案件:', changedProjectIds)
 
     if (changedProjectIds.length === 0) {
       toast({
@@ -159,33 +189,57 @@ export default function ProjectsPage() {
     }
 
     try {
-      for (const projectId of changedProjectIds) {
-        const changes = editData[projectId]
-        console.log(`プロジェクト${projectId}の変更内容:`, changes)
+      const bulkItems = changedProjectIds
+        .map((projectId) => {
+          const changes = editData[projectId]
+          if (!changes) return null
 
-        const response = await apiClient.patch(`/projects/${projectId}/?management_mode=true`, changes)
+          const payload = Object.fromEntries(
+            Object.entries(changes).filter(([, value]) => value !== undefined)
+          )
 
-        if (!response.ok) {
-          let detail = ''
-          try {
-            const errorBody = await response.json()
-            detail = errorBody?.error || errorBody?.message || ''
-          } catch (jsonError) {
-            detail = await response.text()
+          if (Object.keys(payload).length === 0) return null
+
+          return {
+            project_id: projectId,
+            data: payload,
+            reason: 'Bulk partial update via UI',
           }
-          throw new Error(`プロジェクト${projectId}の更新に失敗しました (${response.status}) ${detail}`)
-        }
+        })
+        .filter(Boolean) as Array<{ project_id: number; data: Record<string, unknown>; reason: string }>
+
+      if (bulkItems.length === 0) {
+        toast({
+          title: '変更はありません',
+          description: '更新対象の入力はありませんでした。',
+        })
+        return true
       }
 
-      await refetch()
+      const response = await apiClient.post(
+        API_CONFIG.ENDPOINTS.PROJECT_BULK_PARTIAL_UPDATE,
+        { items: bulkItems },
+      )
+
+      if (!response.ok) {
+        const detail = await response.text()
+        throw new Error(`案件の一括更新に失敗しました (${response.status}) ${detail}`)
+      }
+
+      const result = await response.json()
+      if (!result?.success) {
+        const errorMessage = result?.error || '案件の一括更新に失敗しました'
+        throw new Error(errorMessage)
+      }
+
       setEditData({})
+      await refetch()
       toast({
         title: '保存しました',
-        description: `${changedProjectIds.length}件の案件を更新しました。`,
+        description: `${result.updated_count ?? changedProjectIds.length}件の案件を更新しました。`,
       })
       return true
     } catch (error) {
-      console.error('保存エラー:', error)
       toast({
         title: '保存に失敗しました',
         description:
@@ -210,10 +264,8 @@ export default function ProjectsPage() {
       const response = await apiClient.delete(`/projects/page-unlock/?${query.toString()}`)
       if (!response.ok) {
         const text = await response.text()
-        console.warn('ページロック解除応答:', text)
       }
     } catch (error) {
-      console.error('ページロック解除エラー:', error)
     } finally {
       setIsPageLocked(false)
     }
@@ -222,14 +274,13 @@ export default function ProjectsPage() {
   useEffect(() => {
     return () => {
       if (isPageLocked) {
-        releasePageLock().catch((error) => console.error('クリーンアップ時のロック解除エラー:', error))
       }
     }
   }, [isPageLocked, releasePageLock])
 
-  const handleEditModeToggle = async () => {
-    console.log('編集モード切り替え, 現在:', editMode)
+  const getNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
 
+  const handleEditModeToggle = async () => {
     if (!editMode) {
       setIsAcquiringLock(true)
       const params = {
@@ -238,8 +289,14 @@ export default function ProjectsPage() {
         filter_hash: filterHash,
       }
 
+      const startedAt = getNow()
+      let lockSuccess = false
+      let statusCode: number | undefined
+      let errorMessage: string | undefined
+
       try {
         const response = await apiClient.post('/projects/page-lock/', params)
+        statusCode = response.status
 
         if (!response.ok) {
           let detail = ''
@@ -255,25 +312,39 @@ export default function ProjectsPage() {
             description: detail || '他のユーザーが編集中の可能性があります。',
             variant: 'destructive',
           })
+          errorMessage = detail
           return
         }
 
         lockParamsRef.current = params
-        setIsPageLocked(true)
-        setEditMode(true)
+        startModeTransition(() => {
+          setIsPageLocked(true)
+          setEditMode(true)
+        })
+        lockSuccess = true
         toast({
           title: '編集モードを開始しました',
           description: '入力後に「編集終了」で保存してください。',
         })
-        console.log('編集モードON')
       } catch (error) {
-        console.error('ページロック取得エラー:', error)
+        errorMessage = error instanceof Error ? error.message : String(error)
         toast({
           title: '編集モードを開始できません',
           description: error instanceof Error ? error.message : 'ロック取得中にエラーが発生しました。',
           variant: 'destructive',
         })
       } finally {
+        const duration = Math.max(0, getNow() - startedAt)
+        setLastLockDuration(duration)
+        pageLogger.info('page-lock attempt finished', {
+          duration_ms: Math.round(duration),
+          success: lockSuccess,
+          status_code: statusCode,
+          page: params.page,
+          page_size: params.page_size,
+          filter_hash: params.filter_hash,
+          error: errorMessage,
+        })
         setIsAcquiringLock(false)
       }
     } else {
@@ -281,11 +352,11 @@ export default function ProjectsPage() {
       if (saved) {
         await releasePageLock()
         setEditMode(false)
+        setEditVisibleCount(projects.length)
         toast({
           title: '編集モードを終了しました',
           description: '最新のデータに更新しました。',
         })
-        console.log('編集モードOFF')
       }
     }
   }
@@ -298,7 +369,6 @@ export default function ProjectsPage() {
       })
       setIsCreateDialogOpen(false)
     } catch (error) {
-      console.error("Failed to create project:", error)
     }
   }
 
@@ -356,7 +426,7 @@ export default function ProjectsPage() {
             <Button
               variant={editMode ? "default" : "outline"}
               onClick={handleEditModeToggle}
-              disabled={isAcquiringLock}
+              disabled={isAcquiringLock || isModePending}
             >
               <Edit3 className="h-4 w-4 mr-2" />
               {isAcquiringLock ? 'ロック取得中...' : editMode ? '編集完了' : '編集モード'}
@@ -364,6 +434,11 @@ export default function ProjectsPage() {
                 <span className="ml-1 text-xs">({editMode ? 'OFF' : 'ON'})</span>
               )}
             </Button>
+            {!isAcquiringLock && lastLockDuration !== null && (
+              <span className="self-center text-xs text-muted-foreground">
+                直近ロック: {Math.round(lastLockDuration)}ms
+              </span>
+            )}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -398,9 +473,9 @@ export default function ProjectsPage() {
                   <Input
                     id="project-search"
                     placeholder="案件名・クライアント名で検索"
-                    value={projectFilters.search}
+                    value={pendingFilters.search}
                     onChange={(event) =>
-                      setProjectFilters((prev) => ({ ...prev, search: event.target.value }))
+                      setPendingFilters((prev) => ({ ...prev, search: event.target.value }))
                     }
                     disabled={filtersDisabled}
                     className="pl-8"
@@ -413,11 +488,11 @@ export default function ProjectsPage() {
               <div className="space-y-2">
                 <Label htmlFor="project-client-filter">クライアント</Label>
                 <Select
-                  value={projectFilters.client}
+                  value={pendingFilters.client}
                   onValueChange={(value) =>
-                    setProjectFilters((prev) => ({ ...prev, client: value }))
+                    setPendingFilters((prev) => ({ ...prev, client: value }))
                   }
-                  disabled={filtersDisabled}
+                  disabled={filtersDisabled || clientsLoading}
                 >
                   <SelectTrigger id="project-client-filter">
                     <SelectValue placeholder={clientsLoading ? "読み込み中..." : "すべて"} />
@@ -442,9 +517,9 @@ export default function ProjectsPage() {
               <div className="space-y-2">
                 <Label htmlFor="project-progress-filter">進行状況</Label>
                 <Select
-                  value={projectFilters.progress_status}
+                  value={pendingFilters.progress_status}
                   onValueChange={(value) =>
-                    setProjectFilters((prev) => ({ ...prev, progress_status: value }))
+                    setPendingFilters((prev) => ({ ...prev, progress_status: value }))
                   }
                   disabled={filtersDisabled}
                 >
@@ -471,9 +546,9 @@ export default function ProjectsPage() {
               <div className="space-y-2">
                 <Label htmlFor="project-service-filter">サービス種別</Label>
                 <Select
-                  value={projectFilters.service_type}
+                  value={pendingFilters.service_type}
                   onValueChange={(value) =>
-                    setProjectFilters((prev) => ({ ...prev, service_type: value }))
+                    setPendingFilters((prev) => ({ ...prev, service_type: value }))
                   }
                   disabled={filtersDisabled}
                 >
@@ -514,9 +589,16 @@ export default function ProjectsPage() {
                   type="button"
                   variant="outline"
                   onClick={handleFilterReset}
-                  disabled={!hasActiveFilters || filtersDisabled}
+                  disabled={(!hasActiveFilters && !filtersChanged) || filtersDisabled}
                 >
                   フィルターをクリア
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setAppliedFilters({ ...pendingFilters })}
+                  disabled={!filtersChanged || filtersDisabled}
+                >
+                  <Search className="mr-2 h-4 w-4" />検索
                 </Button>
               </div>
             </div>
@@ -547,554 +629,100 @@ export default function ProjectsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="border rounded-md">
-            <div className="flex">
-              {/* 固定列: 案件名・クライアント名 */}
-              <div className="flex-none border-r bg-background">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="h-10 px-3 text-left align-middle text-xs font-medium text-muted-foreground min-w-[120px] w-[120px]">
-                        案件名
-                      </th>
-                      <th className="h-10 px-3 text-left align-middle text-xs font-medium text-muted-foreground min-w-[120px] w-[120px]">
-                        クライアント
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects.map((project) => (
-                      <tr
-                        key={project.id}
-                        data-project-id={project.id}
-                        className={editMode ? "border-b hover:bg-gray-50 h-20" : "border-b hover:bg-gray-50 h-16"}
-                      >
-                        <td className="p-3 align-middle min-w-[120px] w-[120px] max-w-[120px] h-16">
-                          <Link href={`/projects/${project.id}`} className="block hover:text-blue-600">
-                            <div 
-                              className="text-xs font-medium leading-3 overflow-hidden cursor-pointer"
-                              style={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                textOverflow: 'ellipsis',
-                                wordBreak: 'break-all'
-                              }}
-                            >
-                              {project.name}
-                            </div>
-                          </Link>
-                        </td>
-                        <td className="p-3 align-middle min-w-[120px] w-[120px] max-w-[120px] h-16">
-                          <div 
-                            className="text-xs leading-3 overflow-hidden"
-                            style={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              textOverflow: 'ellipsis',
-                              wordBreak: 'break-all'
-                            }}
-                          >
-                            {getClientName(project)}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="border rounded-md overflow-x-auto">
+            <table className="w-full border-separate" style={{ borderSpacing: 0 }}>
+              <thead>
+                <tr className="border-b">
+                  <th
+                    className="sticky left-0 z-20 h-10 px-3 text-left align-middle text-xs font-medium text-muted-foreground bg-background min-w-[200px]"
+                  >
+                    案件名
+                  </th>
+                  <th
+                    className="sticky z-20 h-10 px-3 text-left align-middle text-xs font-medium text-muted-foreground bg-background min-w-[200px]"
+                    style={{ left: `${STICKY_PROJECT_WIDTH}px` }}
+                  >
+                    クライアント
+                  </th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[180px]">進行状況</th>
+                  <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">アポ数</th>
+                  <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">承認数</th>
+                  <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">返信数</th>
+                  <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">友達数</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">Dログイン可</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">運用者招待</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">状況</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">定例会実施日</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[100px]">リスト輸入先</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">記載日</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">進行タスク</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">デイリータスク</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">返信チェック</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">備考</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">クレームor要望</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">ディレクター</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">運用者</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">営業マン</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">運用開始日</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">終了予定日</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[100px]">サービス</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">媒体</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[100px]">定例会ステータス</th>
+                  <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">リスト有無</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[60px]">リスト数</th>
+                  <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[120px]">履歴</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleProjects.map((project) => (
+                  <ProjectTableRow
+                    key={project.id}
+                    project={project}
+                    editMode={editMode}
+                    isPending={false}
+                    pendingChanges={editData[Number(project.id)]}
+                    progressStatuses={progressStatuses}
+                    serviceTypes={serviceTypes}
+                    meetingStatuses={meetingStatuses}
+                    mediaTypes={mediaTypes}
+                    listImportSources={listImportSources}
+                    listAvailabilities={listAvailabilities}
+                    onFieldChange={updateProjectEdit}
+                    onOpenHistory={handleOpenHistory}
+                  />
+                ))}
+              </tbody>
+            </table>
+            {editMode && visibleProjects.length < projects.length && (
+              <div className="flex justify-center border-t bg-muted/30 py-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditVisibleCount((prev) => Math.min(prev + 10, projects.length))
+                  }}
+                >
+                  さらに{Math.min(projects.length - visibleProjects.length, 10)}件を表示
+                </Button>
               </div>
-
-              {/* 横スクロール可能な編集エリア */}
-              <div className="flex-1 overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[180px]">進行状況</th>
-                      <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">アポ数</th>
-                      <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">承認数</th>
-                      <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">返信数</th>
-                      <th className="h-10 px-1 text-center align-middle text-xs font-medium text-muted-foreground min-w-[50px] w-[50px]">友達数</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">Dログイン可</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">運用者招待</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">状況</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">定例会実施日</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[100px]">リスト輸入先</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">記載日</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">進行タスク</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">デイリータスク</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">返信チェック</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">備考</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[150px]">クレームor要望</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">ディレクター</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">運用者</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">営業マン</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">運用開始日</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[80px]">終了予定日</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[100px]">サービス</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">媒体</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[100px]">定例会ステータス</th>
-                      <th className="h-10 px-2 text-left align-middle text-xs font-medium text-muted-foreground min-w-[80px]">リスト有無</th>
-                      <th className="h-10 px-2 text-center align-middle text-xs font-medium text-muted-foreground min-w-[60px]">リスト数</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects.map((project) => (
-                      <tr
-                        key={project.id}
-                        data-project-id={project.id}
-                        className={editMode ? "border-b hover:bg-gray-50 h-20" : "border-b hover:bg-gray-50 h-16"}
-                      >
-                        <td className="p-2 align-middle h-16 text-xs min-w-[120px]">
-                          {editMode ? (
-                            <div className="text-red-500 text-xs">編集モード</div>
-                          ) : (
-                            <div className="text-gray-500 text-xs">表示モード</div>
-                          )}
-                          {editMode ? (
-                            <Select
-                              value={editData[Number(project.id)]?.progress_status_id?.toString() || project.progress_status || ''}
-                              onValueChange={(value) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], progress_status_id: parseInt(value) }
-                              }))}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder={project.progress_status || "進行状況を選択"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="debug" className="text-red-500 text-xs">
-                                  DEBUG: {progressStatuses.length}件
-                                </SelectItem>
-                                {progressStatuses.map((status) => (
-                                  <SelectItem key={status.id} value={status.id.toString()} className="text-xs">
-                                    {status.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            project.progress_status || '-'
-                          )}
-                        </td>
-                        <td className="p-1 align-middle text-center text-xs min-w-[50px] w-[50px] h-16">
-                          {editMode ? (
-                            <Input
-                              type="number"
-                              value={editData[Number(project.id)]?.appointment_count ?? project.appointment_count}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], appointment_count: parseInt(e.target.value) || 0 }
-                              }))}
-                              className="w-12 h-8 text-xs text-center p-1"
-                            />
-                          ) : (
-                            project.appointment_count || 0
-                          )}
-                        </td>
-                        <td className="p-1 align-middle text-center text-xs min-w-[50px] w-[50px] h-16">
-                          {editMode ? (
-                            <Input
-                              type="number"
-                              value={editData[Number(project.id)]?.approval_count ?? project.approval_count}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], approval_count: parseInt(e.target.value) || 0 }
-                              }))}
-                              className="w-12 h-8 text-xs text-center p-1"
-                            />
-                          ) : (
-                            project.approval_count || 0
-                          )}
-                        </td>
-                        <td className="p-1 align-middle text-center text-xs min-w-[50px] w-[50px] h-16">
-                          {editMode ? (
-                            <Input
-                              type="number"
-                              value={editData[Number(project.id)]?.reply_count ?? project.reply_count}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], reply_count: parseInt(e.target.value) || 0 }
-                              }))}
-                              className="w-12 h-8 text-xs text-center p-1"
-                            />
-                          ) : (
-                            project.reply_count || 0
-                          )}
-                        </td>
-                        <td className="p-1 align-middle text-center text-xs min-w-[50px] w-[50px] h-16">
-                          {editMode ? (
-                            <Input
-                              type="number"
-                              value={editData[Number(project.id)]?.friends_count ?? project.friends_count}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], friends_count: parseInt(e.target.value) || 0 }
-                              }))}
-                              className="w-12 h-8 text-xs text-center p-1"
-                            />
-                          ) : (
-                            project.friends_count || 0
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Checkbox
-                              checked={editData[Number(project.id)]?.director_login_available ?? project.director_login_available}
-                              onCheckedChange={(checked) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { 
-                                  ...prev[Number(project.id)], 
-                                  director_login_available: checked === true
-                                }
-                              }))}
-                            />
-                          ) : (
-                            project.director_login_available ? '✓' : ''
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Checkbox
-                              checked={editData[Number(project.id)]?.operator_group_invited ?? project.operator_group_invited}
-                              onCheckedChange={(checked) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { 
-                                  ...prev[Number(project.id)], 
-                                  operator_group_invited: checked === true
-                                }
-                              }))}
-                            />
-                          ) : (
-                            project.operator_group_invited ? '✓' : ''
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
-                          {editMode ? (
-                            <Textarea
-                              value={editData[Number(project.id)]?.situation ?? (project.situation || '')}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], situation: e.target.value }
-                              }))}
-                              className="w-full h-12 text-xs p-1 resize-none"
-                              rows={2}
-                            />
-                          ) : (
-                            project.situation || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              type="date"
-                              value={editData[Number(project.id)]?.regular_meeting_date || project.regular_meeting_date || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], regular_meeting_date: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            formatDate(project.regular_meeting_date || "")
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[100px]">
-                          {editMode ? (
-                            <Select
-                              value={editData[Number(project.id)]?.list_import_source_id?.toString() || project.list_import_source_id?.toString() || ''}
-                              onValueChange={(value) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], list_import_source_id: parseInt(value) }
-                              }))}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="リスト輸入先を選択" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {listImportSources.map((source) => (
-                                  <SelectItem key={source.id} value={source.id.toString()} className="text-xs">
-                                    {source.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            project.list_import_source || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              type="date"
-                              value={editData[Number(project.id)]?.entry_date_sales || project.entry_date_sales || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], entry_date_sales: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            formatDate(project.entry_date_sales || "")
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
-                          {editMode ? (
-                            <Textarea
-                              value={editData[Number(project.id)]?.progress_tasks || project.progress_tasks || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], progress_tasks: e.target.value }
-                              }))}
-                              className="w-full h-12 text-xs p-1 resize-none"
-                              rows={2}
-                            />
-                          ) : (
-                            project.progress_tasks || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
-                          {editMode ? (
-                            <Textarea
-                              value={editData[Number(project.id)]?.daily_tasks || project.daily_tasks || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], daily_tasks: e.target.value }
-                              }))}
-                              className="w-full h-12 text-xs p-1 resize-none"
-                              rows={2}
-                            />
-                          ) : (
-                            project.daily_tasks || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
-                          {editMode ? (
-                            <Textarea
-                              value={editData[Number(project.id)]?.reply_check_notes || project.reply_check_notes || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], reply_check_notes: e.target.value }
-                              }))}
-                              className="w-full h-12 text-xs p-1 resize-none"
-                              rows={2}
-                            />
-                          ) : (
-                            project.reply_check_notes || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
-                          {editMode ? (
-                            <Textarea
-                              value={editData[Number(project.id)]?.remarks || project.remarks || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], remarks: e.target.value }
-                              }))}
-                              className="w-full h-12 text-xs p-1 resize-none"
-                              rows={2}
-                            />
-                          ) : (
-                            project.remarks || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[150px]">
-                          {editMode ? (
-                            <Textarea
-                              value={editData[Number(project.id)]?.complaints_requests || project.complaints_requests || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], complaints_requests: e.target.value }
-                              }))}
-                              className="w-full h-12 text-xs p-1 resize-none"
-                              rows={2}
-                            />
-                          ) : (
-                            project.complaints_requests || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              value={editData[Number(project.id)]?.director || project.director || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], director: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            project.director || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              value={editData[Number(project.id)]?.operator || project.operator || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], operator: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            project.operator || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              value={editData[Number(project.id)]?.sales_person || project.sales_person || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], sales_person: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            project.sales_person || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              type="date"
-                              value={editData[Number(project.id)]?.operation_start_date || project.operation_start_date || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], operation_start_date: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            formatDate(project.operation_start_date || "")
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Input
-                              type="date"
-                              value={editData[Number(project.id)]?.expected_end_date || project.expected_end_date || ''}
-                              onChange={(e) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], expected_end_date: e.target.value }
-                              }))}
-                              className="h-8 text-xs"
-                            />
-                          ) : (
-                            formatDate(project.expected_end_date || "")
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[100px]">
-                          {editMode ? (
-                            <Select
-                              value={editData[Number(project.id)]?.service_type_id?.toString() || ''}
-                              onValueChange={(value) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], service_type_id: parseInt(value) }
-                              }))}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="サービスを選択" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {serviceTypes.map((service) => (
-                                  <SelectItem key={service.id} value={service.id.toString()} className="text-xs">
-                                    {service.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            project.service_type || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Select
-                              value={editData[Number(project.id)]?.media_type_id?.toString() || project.media_type_id?.toString() || ''}
-                              onValueChange={(value) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], media_type_id: parseInt(value) }
-                              }))}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="媒体を選択" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {mediaTypes.map((media) => (
-                                  <SelectItem key={media.id} value={media.id.toString()} className="text-xs">
-                                    {media.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            project.media_type || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[100px]">
-                          {editMode ? (
-                            <Select
-                              value={editData[Number(project.id)]?.regular_meeting_status_id?.toString() || ''}
-                              onValueChange={(value) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], regular_meeting_status_id: parseInt(value) }
-                              }))}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="定例会ステータスを選択" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {meetingStatuses.map((status) => (
-                                  <SelectItem key={status.id} value={status.id.toString()} className="text-xs">
-                                    {status.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            project.regular_meeting_status || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-xs min-w-[80px]">
-                          {editMode ? (
-                            <Select
-                              value={editData[Number(project.id)]?.list_availability_id?.toString() || project.list_availability_id?.toString() || ''}
-                              onValueChange={(value) => setEditData(prev => ({
-                                ...prev,
-                                [Number(project.id)]: { ...prev[Number(project.id)], list_availability_id: parseInt(value) }
-                              }))}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="リスト有無を選択" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {listAvailabilities.map((availability) => (
-                                  <SelectItem key={availability.id} value={availability.id.toString()} className="text-xs">
-                                    {availability.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            project.list_availability || '-'
-                          )}
-                        </td>
-                        <td className="p-2 align-middle h-16 text-center text-xs min-w-[60px]">
-                          <div className="font-medium text-blue-600">
-                            {project.company_count || 0}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
+      <ProjectHistoryDialog
+        project={historyProject}
+        open={isHistoryOpen}
+        onOpenChange={(open) => {
+          setIsHistoryOpen(open)
+          if (!open) {
+            setHistoryProject(null)
+          }
+        }}
+        onRestored={async () => {
+          await refetch()
+        }}
+      />
     </MainLayout>
   )
 }

@@ -28,13 +28,46 @@ export type ProjectTableRowProps = {
   onOpenHistory: (project: Project) => void
 }
 
-type IntegerSelectField =
+type IntegerSelectField = Extract<
+  keyof Project,
   | "progress_status_id"
   | "service_type_id"
   | "media_type_id"
   | "regular_meeting_status_id"
   | "list_availability_id"
   | "list_import_source_id"
+>
+
+type NumericCounterField = Extract<
+  keyof Project,
+  | "appointment_count"
+  | "approval_count"
+  | "reply_count"
+  | "friends_count"
+>
+
+type BooleanToggleField = Extract<
+  keyof Project,
+  | "director_login_available"
+  | "operator_group_invited"
+>
+
+type TextInputField = Extract<
+  keyof Project,
+  | "situation"
+  | "regular_meeting_date"
+  | "entry_date_sales"
+  | "progress_tasks"
+  | "daily_tasks"
+  | "reply_check_notes"
+  | "remarks"
+  | "complaints_requests"
+  | "director"
+  | "operator"
+  | "sales_person"
+  | "operation_start_date"
+  | "expected_end_date"
+>
 
 export const STICKY_PROJECT_WIDTH = 200
 const STICKY_CLIENT_OFFSET = `${STICKY_PROJECT_WIDTH}px`
@@ -69,30 +102,27 @@ const ProjectTableRow = memo<ProjectTableRowProps>(
     const handleIntegerSelectChange = (field: IntegerSelectField, value: string) => {
       if (value === "debug") return
       const numeric = value ? Number.parseInt(value, 10) : undefined
-      const original = (project as Record<string, unknown>)[field]
+      const original = project[field]
       const cleanValue = numeric === undefined || numeric === original ? undefined : numeric
       onFieldChange(projectId, { [field]: cleanValue } as Partial<Project>)
     }
 
-    const handleNumberChange = (field: keyof Project, value: string) => {
+    const handleNumberChange = (field: NumericCounterField, value: string) => {
       const numeric = Number.parseInt(value, 10) || 0
-      const original = (project as Record<string, unknown>)[field]
+      const original = project[field]
       const cleanValue = numeric === original ? undefined : numeric
       onFieldChange(projectId, { [field]: cleanValue } as Partial<Project>)
     }
 
-    const handleBooleanChange = (
-      field: "director_login_available" | "operator_group_invited",
-      checked: CheckedState,
-    ) => {
+    const handleBooleanChange = (field: BooleanToggleField, checked: CheckedState) => {
       const nextValue = checked === true
-      const original = Boolean((project as Record<string, unknown>)[field])
+      const original = Boolean(project[field])
       const cleanValue = nextValue === original ? undefined : nextValue
       onFieldChange(projectId, { [field]: cleanValue } as Partial<Project>)
     }
 
-    const handleTextChange = (field: keyof Project, value: string) => {
-      const original = (project as Record<string, unknown>)[field]
+    const handleTextChange = (field: TextInputField, value: string) => {
+      const original = project[field]
       const cleanValue = value === (original ?? "") ? undefined : value
       onFieldChange(projectId, { [field]: cleanValue } as Partial<Project>)
     }

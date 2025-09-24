@@ -1,0 +1,21 @@
+{
+  "pages": {
+    "/companies/page": [
+      "static/chunks/[root of the server]__46e663f7._.css",
+      "static/chunks/node_modules_d98d21ee._.js",
+      "static/chunks/_5f69e6e6._.js",
+      "static/chunks/app_layout_tsx_f0e4c1a2._.js",
+      "static/chunks/[root of the server]__c6825ed2._.js",
+      "static/chunks/_5abb5254._.js",
+      "static/chunks/node_modules_87f1e8b4._.js",
+      "static/chunks/app_companies_page_tsx_c6973e1e._.js",
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_49a6ea35._.js",
+      "static/chunks/node_modules_next_dist_compiled_2ce9398a._.js",
+      "static/chunks/node_modules_next_dist_client_43e3ffb8._.js",
+      "static/chunks/node_modules_next_dist_3bfaed20._.js",
+      "static/chunks/node_modules_@swc_helpers_cjs_00636ac3._.js",
+      "static/chunks/_e69f0d32._.js",
+      "static/chunks/_be317ff2._.js"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/clients/[id]/select-companies/page": "/clients/[id]/select-companies",
+  "/clients/page": "/clients",
+  "/clients/new/page": "/clients/new",
+  "/companies/[id]/page": "/companies/[id]",
+  "/companies/new/page": "/companies/new",
+  "/companies/page": "/companies",
+  "/dashboard/page": "/dashboard",
+  "/executives/page": "/executives",
+  "/login/page": "/login",
+  "/page": "/",
+  "/projects/[id]/add-companies/page": "/projects/[id]/add-companies",
+  "/projects/[id]/companies/[companyId]/page": "/projects/[id]/companies/[companyId]",
+  "/projects/[id]/page": "/projects/[id]",
+  "/projects/page": "/projects",
+  "/settings/page": "/settings",
+  "/clients/[id]/page": "/clients/[id]"
+}

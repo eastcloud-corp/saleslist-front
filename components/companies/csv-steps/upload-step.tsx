@@ -17,8 +17,8 @@ export function UploadStep({ onFileSelect }: UploadStepProps) {
     <div className="space-y-4">
       <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
         <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-2">Upload CSV File</h3>
-        <p className="text-muted-foreground mb-4">Select a CSV file containing company data to import</p>
+        <h3 className="text-lg font-medium mb-2">インポートするCSVファイルを選択</h3>
+        <p className="text-muted-foreground mb-4">企業データを含むCSVファイルをアップロードしてください</p>
 
         <input
           ref={fileInputRef}
@@ -33,7 +33,7 @@ export function UploadStep({ onFileSelect }: UploadStepProps) {
 
         <Button onClick={() => fileInputRef.current?.click()}>
           <Upload className="h-4 w-4 mr-2" />
-          Choose CSV File
+          CSVファイルを選択
         </Button>
       </div>
 
@@ -41,12 +41,12 @@ export function UploadStep({ onFileSelect }: UploadStepProps) {
 
       <Alert>
         <AlertDescription>
-          <strong>CSV Format Requirements:</strong>
-          <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Required columns: Company Name, Industry</li>
-            <li>Optional columns: Employee Count, Revenue, Location, Website, Phone, Email, Description, Status</li>
-            <li>First row should contain column headers</li>
-            <li>Use UTF-8 encoding for special characters</li>
+          <strong>CSVの書式について</strong>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+            <li>ヘッダー（1行目）は英語のまま変更しないでください（例: Company Name, Industry）。</li>
+            <li>必須列：Company Name（企業名）、Industry（業種）</li>
+            <li>任意列：Employee Count、Revenue、Prefecture、City、Location、Website URL、Phone、Email、Business Description</li>
+            <li>ファイルは UTF-8 で保存してください。</li>
           </ul>
         </AlertDescription>
       </Alert>

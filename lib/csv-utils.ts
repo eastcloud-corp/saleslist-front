@@ -3,14 +3,19 @@ import type { Company } from "./types"
 export interface CSVCompanyData {
   name: string
   industry: string
-  employee_count: string
-  revenue: string
-  location: string
-  website: string
-  phone: string
-  email: string
-  description: string
-  status: string
+  employee_count?: string
+  revenue?: string
+  location?: string
+  prefecture?: string
+  city?: string
+  website?: string
+  website_url?: string
+  phone?: string
+  email?: string
+  contact_email?: string
+  description?: string
+  business_description?: string
+  status?: string
 }
 
 export const CSV_HEADERS = [
@@ -45,10 +50,15 @@ export const CSV_FIELD_DISPLAY_NAMES: Record<string, string> = {
   employee_count: "従業員数",
   revenue: "売上（円）",
   location: "所在地",
+  prefecture: "都道府県",
+  city: "市区町村",
   website: "WebサイトURL",
+  website_url: "WebサイトURL",
   phone: "電話番号",
   email: "メールアドレス",
+  contact_email: "メールアドレス",
   description: "備考",
+  business_description: "事業内容",
   status: "ステータス",
 }
 
@@ -92,90 +102,198 @@ export function downloadCSV(csvContent: string, filename: string): void {
 }
 
 export function parseCSV(csvText: string): CSVCompanyData[] {
-  const lines = csvText.split("\n").filter((line) => line.trim())
+  const rows = parseCSVRows(csvText)
 
-  if (lines.length < 2) {
+  if (rows.length < 2) {
     throw new Error("CSVファイルにはヘッダー行と1件以上のデータ行が必要です。")
   }
 
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
-  const dataLines = lines.slice(1)
+  const headersRaw = rows[0].map((h) => h.trim().replace(/"/g, ""))
+  const headerMap = headersRaw.map((header) => normalizeHeader(header))
 
-  return dataLines.map((line, index) => {
-    const values = parseCSVLine(line)
+  const recognizedHeaders = new Set(headerMap.filter(Boolean))
+  if (!recognizedHeaders.has("name")) {
+    throw new Error('企業名に対応するヘッダーが見つかりません。"name" または "会社名" 列を追加してください。')
+  }
 
-    if (values.length !== headers.length) {
-      throw new Error(`${index + 2}行目: 列数が一致しません（期待: ${headers.length}列 / 実際: ${values.length}列）`)
+  const emptyRow = (row: string[]) => row.every((value) => !value || value.trim().length === 0)
+
+  return rows.slice(1).reduce<CSVCompanyData[]>((acc, values, index) => {
+    const rowNumber = index + 2
+    if (values.length === 1 && values[0] === "") {
+      return acc
     }
 
-    const row: any = {}
-    headers.forEach((header, i) => {
-      // Map header variations to standard field names
-      const normalizedHeader = normalizeHeader(header)
-      row[normalizedHeader] = values[i]?.trim() || ""
+    if (values.length !== headersRaw.length) {
+      if (emptyRow(values)) {
+        return acc
+      }
+      throw new Error(`${rowNumber}行目: 列数が一致しません（期待: ${headersRaw.length}列 / 実際: ${values.length}列）`)
+    }
+
+    const record: CSVCompanyData = {
+      name: "",
+      industry: "",
+      employee_count: "",
+      revenue: "",
+      location: "",
+      prefecture: "",
+      city: "",
+      website: "",
+      website_url: "",
+      phone: "",
+      email: "",
+      contact_email: "",
+      description: "",
+      business_description: "",
+      status: "",
+    }
+
+    headersRaw.forEach((originalHeader, i) => {
+      const key = headerMap[i]
+      if (!key) return
+      const value = values[i]?.trim() ?? ""
+      switch (key) {
+        case "name":
+        case "industry":
+        case "employee_count":
+        case "revenue":
+        case "location":
+        case "prefecture":
+        case "city":
+        case "phone":
+        case "status":
+          ;(record as Record<string, string | undefined>)[key] = value
+          break
+        case "website":
+        case "website_url":
+          record.website = value
+          record.website_url = value
+          break
+        case "email":
+        case "contact_email":
+          record.email = value
+          record.contact_email = value
+          break
+        case "business_description":
+          record.business_description = value
+          record.description = value
+          break
+        case "description":
+          record.description = value
+          break
+        default:
+          ;(record as Record<string, string | undefined>)[key] = value
+      }
     })
 
-    return row as CSVCompanyData
-  })
+    if (emptyRow(Object.values(record))) {
+      return acc
+    }
+
+    acc.push(record)
+    return acc
+  }, [])
 }
 
-function parseCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ""
+function parseCSVRows(csvText: string): string[][] {
+  const rows: string[][] = []
+  let currentField = ""
+  let currentRow: string[] = []
   let inQuotes = false
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    const nextChar = line[i + 1]
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i]
+    const nextChar = csvText[i + 1]
 
     if (char === '"') {
       if (inQuotes && nextChar === '"') {
-        current += '"'
-        i++ // Skip next quote
+        currentField += '"'
+        i++
       } else {
         inQuotes = !inQuotes
       }
-    } else if (char === "," && !inQuotes) {
-      result.push(current)
-      current = ""
+    } else if (char === ',' && !inQuotes) {
+      currentRow.push(currentField)
+      currentField = ""
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (currentField.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentField)
+        rows.push(currentRow)
+        currentRow = []
+        currentField = ""
+      }
+      if (char === '\r' && nextChar === '\n') {
+        i++
+      }
+    } else if (char === '\r') {
+      continue
     } else {
-      current += char
+      currentField += char
     }
   }
 
-  result.push(current)
-  return result
+  if (currentField.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentField)
+    rows.push(currentRow)
+  }
+
+  return rows
 }
 
 function normalizeHeader(header: string): string {
-  const normalized = header.toLowerCase().replace(/[^a-z0-9]/g, "_")
+  const directMap: Record<string, string> = {
+    名前: "name",
+    会社名: "name",
+    企業名: "name",
+    業種: "industry",
+    "従業員数(あれば)": "employee_count",
+    従業員数: "employee_count",
+    "売上規模(あれば)": "revenue",
+    売上規模: "revenue",
+    "所在地(都道府県)": "prefecture",
+    都道府県: "prefecture",
+    所在地: "location",
+    市区町村: "city",
+    会社HP: "website_url",
+    HP: "website_url",
+    メールアドレス: "contact_email",
+    電話番号: "phone",
+    事業内容: "business_description",
+    備考: "description",
+  }
 
-  // Map common header variations
+  if (directMap[header]) {
+    return directMap[header]
+  }
+
+  const normalized = header.toLowerCase().replace(/[^a-z0-9]/g, "_")
   const headerMap: Record<string, string> = {
     company_name: "name",
     company: "name",
-    employees: "employee_count",
+    name: "name",
+    industry: "industry",
     employee_count: "employee_count",
+    employees: "employee_count",
     staff_count: "employee_count",
     revenue: "revenue",
-    revenue____: "revenue",
     annual_revenue: "revenue",
     sales: "revenue",
-    industry: "industry",
-    sector: "industry",
+    prefecture: "prefecture",
+    city: "city",
     location: "location",
     address: "location",
-    city: "location",
+    website_url: "website_url",
     website: "website",
     url: "website",
-    web: "website",
     phone: "phone",
     telephone: "phone",
     tel: "phone",
-    email: "email",
-    e_mail: "email",
+    email: "contact_email",
+    e_mail: "contact_email",
     description: "description",
     notes: "description",
+    business_description: "business_description",
     status: "status",
     state: "status",
   }
@@ -255,18 +373,18 @@ export function convertCSVToCompanyData(
       employee_count: Number(row.employee_count) || 0,
       revenue: Number(row.revenue) || 0,
       location: row.location?.trim() || "",
-      website: row.website?.trim() || "",
+      website: (row.website_url ?? row.website ?? "").trim() || "",
       phone: row.phone?.trim() || "",
-      email: row.email?.trim() || "",
-      description: row.description?.trim() || "",
+      email: (row.contact_email ?? row.email ?? "").trim() || "",
+      description: (row.description ?? row.business_description ?? "").trim() || "",
       status: (row.status?.toLowerCase() as "active" | "prospect" | "inactive") || "prospect",
       // Company型に必要な追加フィールド
       established_year: new Date().getFullYear(),
-      prefecture: "",
-      city: "",
-      website_url: row.website?.trim() || "",
-      contact_email: row.email?.trim() || "",
-      notes: "",
+      prefecture: row.prefecture?.trim() || "",
+      city: row.city?.trim() || "",
+      website_url: (row.website_url ?? row.website ?? "").trim() || "",
+      contact_email: (row.contact_email ?? row.email ?? "").trim() || "",
+      notes: (row.description ?? "").trim(),
       is_global_ng: false,
       capital: 0,
     }

@@ -202,7 +202,7 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(95vw,1200px)] max-w-5xl">
+      <DialogContent className="w-[95vw] max-w-[1400px]">
         <DialogHeader>
           <DialogTitle>{projectLabel} の履歴</DialogTitle>
           <DialogDescription>
@@ -223,13 +223,13 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
             過去{HISTORY_DAYS}日以内の履歴は見つかりませんでした。
           </p>
         ) : (
-          <div className="max-h-[480px] overflow-y-auto overflow-x-auto pr-2">
+          <div className="max-h-[520px] overflow-y-auto overflow-x-auto pr-2">
             {showFallbackNotice && (
               <p className="mb-3 text-xs text-muted-foreground">
                 過去{HISTORY_DAYS}日以内の履歴が無かったため、取得できる最新の履歴を表示しています。
               </p>
             )}
-            <Table>
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[160px]">保存日時</TableHead>
@@ -321,7 +321,7 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
                                 <span>スナップショットID: {snapshot.id}</span>
                                 {snapshot.reason && <span>理由: {snapshot.reason}</span>}
                               </div>
-                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
                                 {overviewEntries.length ? (
                                   overviewEntries.map((entry) => {
                                     const isChangedEntry = changed.includes(entry.key)

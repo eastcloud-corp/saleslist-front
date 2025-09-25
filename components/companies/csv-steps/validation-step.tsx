@@ -51,32 +51,30 @@ export function ValidationStep({
       {validationErrors.length > 0 ? (
         <ErrorAlert
           title={`${validationErrors.length}件のエラーを検出しました`}
-          message="以下の内容を修正してからインポートを実行してください。"
+          message="以下の内容を修正してから再度インポートしてください。"
           errors={validationErrors.slice(0, 10).map(formatErrorMessage)}
         />
       ) : (
         <Alert>
           <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            CSVの検証が完了しました。{csvData.length}件の企業データをインポートできます。
-          </AlertDescription>
+          <AlertDescription>CSVの検証が完了しました。{csvData.length}件の企業データをインポートできます。</AlertDescription>
         </Alert>
       )}
 
       {csvData.length > 0 && (
         <div className="border rounded-lg">
           <div className="p-4 border-b">
-            <h4 className="font-medium">Data Preview (first 5 rows)</h4>
+            <h4 className="font-medium">データプレビュー（先頭5行）</h4>
           </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Employees</TableHead>
-                  <TableHead>Revenue</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>Company Name（企業名）</TableHead>
+                  <TableHead>Industry（業種）</TableHead>
+                  <TableHead>Employee Count（従業員数）</TableHead>
+                  <TableHead>Revenue（売上）</TableHead>
+                  <TableHead>Location（所在地）</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -2,6 +2,7 @@ import type { Company } from "./types"
 
 export interface CSVCompanyData {
   name: string
+  corporate_number?: string
   industry: string
   employee_count?: string
   revenue?: string
@@ -20,6 +21,7 @@ export interface CSVCompanyData {
 
 export const CSV_HEADERS = [
   "name",
+  "corporate_number",
   "industry",
   "employee_count",
   "revenue",
@@ -33,6 +35,7 @@ export const CSV_HEADERS = [
 
 export const CSV_HEADER_LABELS = {
   name: "Company Name",
+  corporate_number: "Corporate Number",
   industry: "Industry",
   employee_count: "Employee Count",
   revenue: "Revenue (¥)",
@@ -46,6 +49,7 @@ export const CSV_HEADER_LABELS = {
 
 export const CSV_FIELD_DISPLAY_NAMES: Record<string, string> = {
   name: "企業名",
+  corporate_number: "法人番号",
   industry: "業種",
   employee_count: "従業員数",
   revenue: "売上（円）",
@@ -133,6 +137,7 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
 
     const record: CSVCompanyData = {
       name: "",
+      corporate_number: "",
       industry: "",
       employee_count: "",
       revenue: "",
@@ -156,6 +161,7 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
       switch (key) {
         case "name":
         case "industry":
+        case "corporate_number":
         case "employee_count":
         case "revenue":
         case "location":
@@ -251,6 +257,7 @@ function normalizeHeader(header: string): string {
     従業員数: "employee_count",
     "売上規模(あれば)": "revenue",
     売上規模: "revenue",
+    "Revenue (¥)": "revenue",
     "所在地(都道府県)": "prefecture",
     都道府県: "prefecture",
     所在地: "location",
@@ -261,6 +268,7 @@ function normalizeHeader(header: string): string {
     電話番号: "phone",
     事業内容: "business_description",
     備考: "description",
+    法人番号: "corporate_number",
   }
 
   if (directMap[header]) {
@@ -296,6 +304,10 @@ function normalizeHeader(header: string): string {
     business_description: "business_description",
     status: "status",
     state: "status",
+    corporate_number: "corporate_number",
+    corporate_no: "corporate_number",
+    corporateid: "corporate_number",
+    corporateidnumber: "corporate_number",
   }
 
   return headerMap[normalized] || normalized
@@ -355,6 +367,17 @@ export function validateCSVData(data: CSVCompanyData[]): CSVValidationError[] {
         `次のいずれかの値を指定してください: ${validStatuses.join(", ")}`,
       )
     }
+
+    if (row.corporate_number && row.corporate_number.trim().length > 0) {
+      const sanitizedCorporateNumber = row.corporate_number.replace(/[^0-9]/g, "")
+      if (!/^\d{13}$/.test(sanitizedCorporateNumber)) {
+        addError(
+          "corporate_number",
+          row.corporate_number,
+          "法人番号はハイフンを除いた13桁の数字で入力してください",
+        )
+      }
+    }
   })
 
   return errors
@@ -366,9 +389,11 @@ export function convertCSVToCompanyData(
   return csvData.map((row, index) => {
     const sanitizedName = row.name?.trim()
     const fallbackName = `インポート企業（行${index + 2}）`
+    const sanitizedCorporateNumber = (row.corporate_number ?? "").replace(/[^0-9]/g, "")
 
     return {
       name: sanitizedName && sanitizedName.length > 0 ? sanitizedName : fallbackName,
+      corporate_number: sanitizedCorporateNumber,
       industry: row.industry?.trim() || "",
       employee_count: Number(row.employee_count) || 0,
       revenue: Number(row.revenue) || 0,
@@ -392,10 +417,11 @@ export function convertCSVToCompanyData(
 }
 
 export function convertCompaniesArrayToCSV(companies: any[]): string {
-  const headers = "name,industry,employee_count,revenue,prefecture,city,website_url,contact_email,phone,business_description"
+  const headers = "name,corporate_number,industry,employee_count,revenue,prefecture,city,website_url,contact_email,phone,business_description"
   const rows = companies.map(company => {
     return [
       company.name || '',
+      company.corporate_number || '',
       company.industry || '',
       company.employee_count || '',
       company.revenue || '', 

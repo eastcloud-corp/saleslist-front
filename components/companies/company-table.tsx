@@ -20,6 +20,7 @@ interface CompanyTableProps {
   onSelectChange?: (companyId: number, selected: boolean) => void
   onSelectAllChange?: (selectAll: boolean) => void
   onAddToProject?: (company: Company) => void
+  totalCount?: number
 }
 
 const formatCurrency = (amount: number) => {
@@ -63,6 +64,7 @@ export function CompanyTable({
   onSelectChange,
   onSelectAllChange,
   onAddToProject,
+  totalCount,
 }: CompanyTableProps) {
   if (isLoading) {
     return (
@@ -70,7 +72,7 @@ export function CompanyTable({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Companies
+            企業一覧
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -95,7 +97,12 @@ export function CompanyTable({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          企業 ({companies.length})
+          企業一覧
+          {typeof totalCount === "number" && totalCount > 0 && (
+            <Badge variant="outline" className="text-xs font-normal">
+              全 {totalCount} 件
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>

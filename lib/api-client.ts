@@ -5,6 +5,7 @@ class ApiError extends Error {
     message: string,
     public status: number,
     public response?: Response,
+    public data?: unknown,
   ) {
     super(message)
     this.name = "ApiError"
@@ -45,15 +46,29 @@ class ApiClient {
     if (!response.ok) {
       await this.handleUnauthorized(response.status)
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      let errorData: unknown = null
 
       try {
-        const errorData = await response.json()
-        errorMessage = errorData.message || errorData.error || errorMessage
+        const rawBody = await response.text()
+        if (rawBody) {
+          try {
+            const parsed = JSON.parse(rawBody)
+            errorData = parsed
+            if (parsed && typeof parsed === "object") {
+              const candidate = (parsed as Record<string, unknown>).message || (parsed as Record<string, unknown>).error
+              if (typeof candidate === "string" && candidate.trim().length > 0) {
+                errorMessage = candidate
+              }
+            }
+          } catch {
+            errorData = { raw: rawBody }
+          }
+        }
       } catch {
-        // If response is not JSON, use default error message
+        // ignore body parse errors
       }
 
-      throw new ApiError(errorMessage, response.status, response)
+      throw new ApiError(errorMessage, response.status, response, errorData)
     }
 
     const contentType = response.headers.get("content-type")

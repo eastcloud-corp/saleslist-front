@@ -10,10 +10,31 @@ import { ValidationStep } from "./csv-steps/validation-step"
 import { parseCSV, validateCSVData, convertCSVToCompanyData, type CSVValidationError } from "@/lib/csv-utils"
 import { Upload, CheckCircle } from "lucide-react"
 
+export type ImportErrorCategory = "duplicate" | "validation" | "api" | "unknown"
+
+export type ImportErrorItem = {
+  name: string
+  message: string
+  category: ImportErrorCategory
+}
+
 interface CSVImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onImport: (companies: any[]) => Promise<void>
+  onImport: (
+    companies: any[],
+    onProgress: (progress: number) => void,
+  ) => Promise<{
+    successCount: number
+    errorItems: ImportErrorItem[]
+    missingCorporateNumberCount: number
+  }>
+}
+
+type ImportSummary = {
+  successCount: number
+  errorItems: ImportErrorItem[]
+  missingCorporateNumberCount: number
 }
 
 export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialogProps) {
@@ -24,10 +45,12 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
   const [isImporting, setIsImporting] = useState(false)
   const [importProgress, setImportProgress] = useState(0)
   const [step, setStep] = useState<"upload" | "validate" | "import" | "complete">("upload")
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null)
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile)
     setStep("validate")
+    setImportSummary(null)
     processFile(selectedFile)
   }
 
@@ -64,16 +87,16 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
 
     setIsImporting(true)
     setImportProgress(0)
+    setImportSummary(null)
 
     try {
       const companies = convertCSVToCompanyData(csvData)
+      const result = await onImport(companies, (progress) => {
+        setImportProgress(Math.min(100, Math.max(progress, 0)))
+      })
 
-      for (let i = 0; i <= 100; i += 10) {
-        setImportProgress(i)
-        await new Promise((resolve) => setTimeout(resolve, 100))
-      }
-
-      await onImport(companies)
+      setImportProgress(100)
+      setImportSummary(result)
       setStep("complete")
     } catch (error) {
       console.error("Import failed:", error)
@@ -98,6 +121,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
     setIsImporting(false)
     setImportProgress(0)
     setStep("upload")
+    setImportSummary(null)
   }
 
   const handleClose = () => {
@@ -133,19 +157,19 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
             <div className="space-y-4">
               <Alert>
                 <AlertDescription>
-                  {csvData.length}件の企業データをインポートします。この操作により新しい企業が登録されます。
-                </AlertDescription>
-              </Alert>
+          {csvData.length}件の企業データをインポートします。この操作により新しい企業が登録されます。
+        </AlertDescription>
+      </Alert>
 
-              {isImporting && (
-                <div className="space-y-2">
+      {isImporting && (
+        <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span>インポート中...</span>
-                    <span>{importProgress}%</span>
-                  </div>
-                  <Progress value={importProgress} />
-                </div>
-              )}
+                <span>インポート中...</span>
+                <span>{importProgress}%</span>
+              </div>
+              <Progress value={importProgress} />
+            </div>
+      )}
 
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => setStep("validate")} disabled={isImporting}>
@@ -159,11 +183,98 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
           )}
 
           {step === "complete" && (
-            <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">インポートが完了しました</h3>
-              <p className="text-muted-foreground mb-4">{csvData.length}件の企業データを登録しました。</p>
-              <Button onClick={handleClose}>閉じる</Button>
+            <div className="py-8">
+              <div className="flex flex-col items-center text-center mb-6">
+                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <h3 className="text-lg font-medium">インポートが完了しました</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {importSummary?.successCount ?? 0}件の企業を登録しました。
+                </p>
+              </div>
+
+              {importSummary && (
+                <div className="space-y-5 text-sm">
+                  <div className="grid gap-2">
+                    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-muted-foreground">
+                      <span>登録成功: {importSummary.successCount}件</span>
+                      <span>処理対象: {importSummary.successCount + importSummary.errorItems.length}件</span>
+                      <span>エラー: {importSummary.errorItems.length}件</span>
+                    </div>
+                    {importSummary.missingCorporateNumberCount > 0 && (
+                      <p className="text-xs text-amber-600 text-center">
+                        法人番号未入力の企業が {importSummary.missingCorporateNumberCount} 件ありました。重複判定ができないため、後続で確認してください。
+                      </p>
+                    )}
+                  </div>
+
+                  {importSummary.errorItems.length > 0 && (
+                    <div className="space-y-4">
+                      {(() => {
+                        const duplicateItems = importSummary.errorItems.filter((item) => item.category === "duplicate")
+                        const validationItems = importSummary.errorItems.filter((item) => item.category === "validation")
+                        const apiItems = importSummary.errorItems.filter((item) => item.category === "api")
+                        const unknownItems = importSummary.errorItems.filter((item) => item.category === "unknown")
+
+                        return (
+                          <div className="space-y-4">
+                            {duplicateItems.length > 0 && (
+                              <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+                                <p className="font-medium text-amber-600 mb-2">
+                                  法人番号の重複で登録できなかった企業（{duplicateItems.length}件）
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-amber-700">
+                                  {duplicateItems.slice(0, 5).map((item, index) => (
+                                    <li key={`duplicate-${item.name}-${index}`}>{item.name}: {item.message}</li>
+                                  ))}
+                                </ul>
+                                {duplicateItems.length > 5 && (
+                                  <p className="text-xs text-amber-700 mt-2">他 {duplicateItems.length - 5} 件の重複があります。</p>
+                                )}
+                              </div>
+                            )}
+
+                            {validationItems.length > 0 && (
+                              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">
+                                <p className="font-medium text-destructive mb-2">
+                                  入力内容の不備で登録できなかった企業（{validationItems.length}件）
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-destructive">
+                                  {validationItems.slice(0, 5).map((item, index) => (
+                                    <li key={`validation-${item.name}-${index}`}>{item.name}: {item.message}</li>
+                                  ))}
+                                </ul>
+                                {validationItems.length > 5 && (
+                                  <p className="text-xs text-destructive/80 mt-2">他 {validationItems.length - 5} 件の入力エラーがあります。</p>
+                                )}
+                              </div>
+                            )}
+
+                            {(apiItems.length > 0 || unknownItems.length > 0) && (
+                              <div className="rounded-md border border-muted/40 bg-muted/10 p-4">
+                                <p className="font-medium text-muted-foreground mb-2">
+                                  その他のエラー（{apiItems.length + unknownItems.length}件）
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                  {[...apiItems, ...unknownItems].slice(0, 5).map((item, index) => (
+                                    <li key={`other-${item.name}-${index}`}>{item.name}: {item.message}</li>
+                                  ))}
+                                </ul>
+                                {apiItems.length + unknownItems.length > 5 && (
+                                  <p className="text-xs mt-2">他 {apiItems.length + unknownItems.length - 5} 件のエラーがあります。</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-center">
+                <Button onClick={handleClose}>閉じる</Button>
+              </div>
             </div>
           )}
         </div>

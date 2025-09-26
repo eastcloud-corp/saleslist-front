@@ -7,11 +7,13 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { CompanyFilters } from "@/components/companies/company-filters"
 import { CompanyTable } from "@/components/companies/company-table"
 import { CSVImportDialog } from "@/components/companies/csv-import-dialog"
+import type { ImportErrorItem, ImportErrorCategory } from "@/components/companies/csv-import-dialog"
 import { useCompanies } from "@/hooks/use-companies"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
-import { apiClient, API_CONFIG } from "@/lib/api-config"
+import { API_CONFIG } from "@/lib/api-config"
+import { apiClient, ApiError } from "@/lib/api-client"
 import { useAuth } from "@/hooks/use-auth"
 import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
 import { Download, Plus, Upload, Database } from "lucide-react"
@@ -148,23 +150,112 @@ function CompaniesPageContent() {
     }
   }
 
-  const handleImport = async (importedCompanies: any[]) => {
-    try {
-      console.log("Importing companies:", importedCompanies)
-      
-      // Use individual company creation API
-      for (const company of importedCompanies) {
-        const response = await apiClient.post(API_CONFIG.ENDPOINTS.COMPANIES, company)
-        if (!response.ok) {
-          throw new Error(`Failed to import: ${company.name}`)
-        }
-      }
-      
-      await refetch()
-    } catch (error) {
-      console.error("Import failed:", error)
-      throw error
+  const handleImport = async (
+    importedCompanies: any[],
+    onProgress: (progress: number) => void,
+  ) => {
+    const total = importedCompanies.length
+    if (total === 0) {
+      onProgress(100)
+      return { successCount: 0, errorItems: [], missingCorporateNumberCount: 0 }
     }
+
+    const errorItems: ImportErrorItem[] = []
+    let successCount = 0
+    let missingCorporateNumberCount = 0
+
+    const seenCorporateNumbers = new Map<string, string>()
+
+    const pushError = (item: ImportErrorItem) => {
+      errorItems.push(item)
+    }
+
+    for (let index = 0; index < total; index += 1) {
+      const company = importedCompanies[index]
+      const displayName = company.name || `行${index + 2}`
+      const corporateNumber = typeof company.corporate_number === "string" ? company.corporate_number.trim() : ""
+
+      if (!corporateNumber) {
+        missingCorporateNumberCount += 1
+      }
+
+      const corporateNumberLabel = corporateNumber
+        ? `法人番号「${corporateNumber}」`
+        : "法人番号未入力の企業"
+
+      if (corporateNumber) {
+        const duplicatedWith = seenCorporateNumbers.get(corporateNumber)
+        if (duplicatedWith) {
+          pushError({
+            name: displayName,
+            message: `${corporateNumberLabel}は同じCSV内で「${duplicatedWith}」と重複しています。重複行を整理してから再実行してください。`,
+            category: "duplicate",
+          })
+          const progress = Math.round(((index + 1) / total) * 100)
+          onProgress(progress)
+          continue
+        }
+        seenCorporateNumbers.set(corporateNumber, displayName)
+      }
+
+      try {
+        await apiClient.post(API_CONFIG.ENDPOINTS.COMPANIES, company)
+        successCount += 1
+      } catch (requestError) {
+        console.error("[companies/import] failed to register company", requestError)
+
+        let message = "登録処理でエラーが発生しました"
+        let category: ImportErrorCategory = "unknown"
+
+        if (requestError instanceof ApiError) {
+          const errorData = requestError.data as
+            | { message?: string; duplicate_name?: string; duplicate_with?: number }
+            | undefined
+
+          if (requestError.status === 409) {
+            const fallbackMessage = errorData?.duplicate_name
+              ? `${corporateNumberLabel}は既存企業「${errorData.duplicate_name}」と重複しています。`
+              : `${corporateNumberLabel}は既存の企業と重複しているため登録できません。`
+            if (typeof errorData?.message === "string" && errorData.message.trim().length > 0) {
+              message = errorData.message
+            } else {
+              message = fallbackMessage
+            }
+            category = "duplicate"
+          } else if (requestError.status >= 400 && requestError.status < 500) {
+            if (typeof errorData?.message === "string" && errorData.message.trim().length > 0) {
+              message = errorData.message
+            } else if (typeof requestError.message === "string" && requestError.message.trim().length > 0) {
+              message = requestError.message
+            }
+            category = "validation"
+          } else {
+            if (typeof errorData?.message === "string" && errorData.message.trim().length > 0) {
+              message = errorData.message
+            } else if (typeof requestError.message === "string" && requestError.message.trim().length > 0) {
+              message = requestError.message
+            }
+            category = "api"
+          }
+        } else if (requestError instanceof Error) {
+          message = requestError.message
+          category = "api"
+        }
+
+        pushError({
+          name: displayName,
+          message,
+          category,
+        })
+      }
+
+      const progress = Math.round(((index + 1) / total) * 100)
+      onProgress(progress)
+    }
+
+    await refetch()
+
+    return { successCount, errorItems, missingCorporateNumberCount }
   }
 
   return (

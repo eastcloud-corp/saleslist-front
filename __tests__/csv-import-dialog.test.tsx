@@ -17,13 +17,14 @@ jest.mock('@/lib/csv-utils', () => ({
 }))
 
 describe('CSVImportDialog', () => {
-  const onImport = jest.fn().mockResolvedValue(undefined)
+  const onImport = jest.fn().mockResolvedValue({ successCount: 1, errorItems: [], missingCorporateNumberCount: 0 })
 
   beforeEach(() => {
     parseCSVMock.mockReset()
     validateCSVDataMock.mockReset()
     convertCSVToCompanyDataMock.mockReset()
     onImport.mockClear()
+    onImport.mockResolvedValue({ successCount: 1, errorItems: [], missingCorporateNumberCount: 0 })
     jest.useRealTimers()
   })
 
@@ -116,7 +117,7 @@ describe('CSVImportDialog', () => {
     })
 
     await waitFor(() => {
-      expect(onImport).toHaveBeenCalledWith([{ name: 'Example', industry: 'IT' }])
+      expect(onImport).toHaveBeenCalledWith([{ name: 'Example', industry: 'IT' }], expect.any(Function))
       expect(screen.getByText('インポートが完了しました')).toBeInTheDocument()
     })
 
@@ -125,6 +126,71 @@ describe('CSVImportDialog', () => {
     })
 
     expect(handleOpenChange).toHaveBeenCalledWith(false)
+    setTimeoutSpy.mockRestore()
+  })
+
+  it('displays categorized summary when import reports duplicates and validation errors', async () => {
+    parseCSVMock.mockReturnValue([{ name: 'Example' }])
+    validateCSVDataMock.mockReturnValue([])
+    convertCSVToCompanyDataMock.mockReturnValue([{ name: 'Example', corporate_number: '1234567890123' }])
+
+    onImport.mockImplementationOnce(async (_companies, onProgress) => {
+      onProgress(100)
+      return {
+        successCount: 0,
+        missingCorporateNumberCount: 1,
+        errorItems: [
+          { name: 'Row1', message: 'duplicate error', category: 'duplicate' },
+          { name: 'Row2', message: 'validation error', category: 'validation' },
+          { name: 'Row3', message: 'api error', category: 'api' },
+        ],
+      }
+    })
+
+    const realSetTimeout = global.setTimeout
+    const setTimeoutSpy = jest
+      .spyOn(global, 'setTimeout')
+      .mockImplementation((callback: TimerHandler, delay?: number, ...args: unknown[]) => {
+        if (typeof delay === 'number' && delay === 100) {
+          if (typeof callback === 'function') {
+            callback(...args)
+          }
+          return 0 as unknown as NodeJS.Timeout
+        }
+        return realSetTimeout(callback, delay as number, ...args)
+      })
+
+    render(<CSVImportDialog open onOpenChange={() => {}} onImport={onImport} />)
+
+    const fileInput = await waitFor(() => {
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement | null
+      if (!input) {
+        throw new Error('file input not rendered')
+      }
+      return input
+    })
+
+    const file = createCSVFile('Company Name,Corporate Number\nExample,1234567890123')
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('インポート開始（1件）')).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('インポート開始（1件）'))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/法人番号の重複で登録できなかった企業（1件）/)).toBeInTheDocument()
+      expect(screen.getByText(/入力内容の不備で登録できなかった企業（1件）/)).toBeInTheDocument()
+      expect(screen.getByText(/その他のエラー（1件）/)).toBeInTheDocument()
+      expect(screen.getByText(/法人番号未入力の企業が 1 件ありました/)).toBeInTheDocument()
+    })
+
     setTimeoutSpy.mockRestore()
   })
 

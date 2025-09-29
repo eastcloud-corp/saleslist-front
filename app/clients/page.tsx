@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Search, Filter, TrendingUp, Users, FolderOpen } from "lucide-react"
 import { MainLayout } from "@/components/layout/main-layout"
+import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -24,6 +25,8 @@ export default function ClientsPage() {
   const [industries, setIndustries] = useState<any[]>([])
   const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS)
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS)
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 50
 
   const computedFilters = useMemo(() => {
     const params: { [key: string]: string | boolean } = {}
@@ -49,8 +52,8 @@ export default function ClientsPage() {
   )
 
   const { clients, loading, error, pagination } = useClients({
-    page: 1,
-    limit: 100,
+    page: currentPage,
+    limit: pageSize,
     filters: computedFilters,
   })
 
@@ -70,11 +73,16 @@ export default function ClientsPage() {
   const clearFilters = () => {
     setPendingFilters(DEFAULT_FILTERS)
     setAppliedFilters(DEFAULT_FILTERS)
+    setCurrentPage(1)
   }
 
   const activeClients = clients.filter((client) => client.is_active).length
   const totalProjects = clients.reduce((sum, client) => sum + (client.project_count || 0), 0)
   const activeProjects = clients.reduce((sum, client) => sum + (client.active_project_count || 0), 0)
+  const totalCount = pagination.total ?? clients.length
+  const totalPages = pagination.total_pages ?? (pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1)
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const endItem = totalCount === 0 ? 0 : Math.min(currentPage * pageSize, totalCount)
 
   return (
     <MainLayout>
@@ -178,7 +186,13 @@ export default function ClientsPage() {
                   <Button variant="outline" onClick={clearFilters} disabled={!hasActiveFilters && !filtersChanged}>
                     フィルタクリア
                   </Button>
-                  <Button onClick={() => setAppliedFilters({ ...pendingFilters })} disabled={!filtersChanged}>
+                  <Button
+                    onClick={() => {
+                      setAppliedFilters({ ...pendingFilters })
+                      setCurrentPage(1)
+                    }}
+                    disabled={!filtersChanged}
+                  >
                     <Search className="mr-2 h-4 w-4" />検索
                   </Button>
                 </div>
@@ -187,9 +201,19 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
 
+        <ListPaginationSummary
+          totalCount={totalCount}
+          startItem={startItem}
+          endItem={endItem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          isLoading={loading}
+        />
+
         <Card>
           <CardHeader>
-            <CardTitle>クライアント一覧 ({pagination.total ?? clients.length}件)</CardTitle>
+            <CardTitle>クライアント一覧</CardTitle>
           </CardHeader>
           <CardContent>
             {error ? (
@@ -199,6 +223,19 @@ export default function ClientsPage() {
             )}
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <ListPaginationSummary
+            totalCount={totalCount}
+            startItem={startItem}
+            endItem={endItem}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => setCurrentPage(page)}
+            isLoading={loading}
+            className="mt-2"
+          />
+        )}
       </div>
     </MainLayout>
   )

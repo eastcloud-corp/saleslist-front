@@ -19,6 +19,7 @@ import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
 import { Download, Plus, Upload, Database } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog"
+import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
 import Link from "next/link"
 
 function CompaniesPageContent() {
@@ -47,6 +48,12 @@ function CompaniesPageContent() {
   const router = useRouter()
 
   const isAdmin = user?.role === 'admin'
+
+  const totalCount = pagination?.total ?? companies.length
+  const pageSize = pagination?.limit ?? (companies.length || 1)
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const endItem = totalCount === 0 ? 0 : Math.min(currentPage * pageSize, totalCount)
+  const totalPages = pagination?.total_pages ?? (pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1)
 
   useEffect(() => {
     setSelectedCompanyIds((prev) => prev.filter((id) => companies.some((company) => company.id === id)))
@@ -331,6 +338,16 @@ function CompaniesPageContent() {
           </div>
         )}
 
+        <ListPaginationSummary
+          totalCount={totalCount}
+          startItem={startItem}
+          endItem={endItem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          isLoading={isLoading}
+        />
+
         {/* Company Table */}
         <CompanyTable
           companies={companies}
@@ -341,37 +358,20 @@ function CompaniesPageContent() {
           onSelectChange={handleSelectChange}
           onSelectAllChange={handleSelectAllChange}
           onAddToProject={handleInlineAdd}
+          totalCount={totalCount}
         />
 
         {/* Pagination */}
-        {pagination && pagination.total_pages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {pagination.total}件中 {(currentPage - 1) * pagination.limit + 1}件目から{" "}
-              {Math.min(currentPage * pagination.limit, pagination.total)}件目を表示
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                前へ
-              </Button>
-              <span className="text-sm">
-                {currentPage} / {pagination.total_pages} ページ
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === pagination.total_pages}
-              >
-                次へ
-              </Button>
-            </div>
-          </div>
+        {totalPages > 1 && (
+          <ListPaginationSummary
+            totalCount={totalCount}
+            startItem={startItem}
+            endItem={endItem}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => setCurrentPage(page)}
+            isLoading={isLoading}
+          />
         )}
 
         {/* CSV Import Dialog */}

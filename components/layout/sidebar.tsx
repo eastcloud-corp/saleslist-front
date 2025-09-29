@@ -62,14 +62,14 @@ export function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex h-full flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-center h-16 px-4 border-b border-sidebar-border">
-            <h1 className="text-lg font-bold text-sidebar-foreground">セールスナビゲーター</h1>
+            <h1 className="text-lg font-bold text-sidebar-foreground">ソーシャルナビゲーター</h1>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 min-h-0 overflow-y-auto px-4 py-6 space-y-2">
             {navigation.map((item) => {
               const isActive = pathname.startsWith(item.href)
               return (
@@ -92,7 +92,7 @@ export function Sidebar() {
           </nav>
 
           {/* User info and logout */}
-          <div className="p-4 border-t border-sidebar-border space-y-3">
+          <div className="shrink-0 space-y-3 border-t border-sidebar-border p-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-sidebar-primary rounded-full flex items-center justify-center">
                 <span className="text-xs font-medium text-sidebar-primary-foreground">
@@ -125,10 +125,10 @@ export function Sidebar() {
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="w-full justify-center gap-2 text-sidebar-foreground hover:text-sidebar-accent-foreground"
+              className="w-full justify-start gap-2 overflow-hidden text-sidebar-foreground hover:text-sidebar-accent-foreground"
             >
               <LogOut className="h-4 w-4" />
-              ログアウト
+              <span className="truncate">ログアウト</span>
             </Button>
           </div>
         </div>

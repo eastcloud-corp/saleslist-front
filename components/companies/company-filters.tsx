@@ -9,21 +9,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, X } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
+import type { Company, CompanyFilter, PaginatedResponse } from "@/lib/types"
 
 interface CompanyFiltersProps {
-  filters: any
-  onFiltersChange: (filters: any) => void
+  filters: CompanyFilter
+  onFiltersChange: (filters: CompanyFilter) => void
   onClearFilters: () => void
   onApplyFilters: () => void
   filtersChanged: boolean
   hasAppliedFilters: boolean
 }
-
-const statuses = [
-  { value: "active", label: "アクティブ" },
-  { value: "prospect", label: "見込み客" },
-  { value: "inactive", label: "非アクティブ" },
-]
 
 export function CompanyFilters({
   filters,
@@ -40,73 +36,77 @@ export function CompanyFilters({
     // 実際のデータから業界一覧を取得
     const fetchIndustries = async () => {
       try {
-        const data = await apiClient.get<{results: {industry: string}[]}>('/companies/')
-        const uniqueIndustries = [...new Set(data.results.map((company) => company.industry).filter(Boolean))] as string[]
-        setIndustries(uniqueIndustries.sort())
-      } catch (error) {
-        console.error('API接続エラー:', error)
-        // エラー状態のまま（空配列）でUI上でエラー表示
+        const data = await apiClient.get<{ results?: { name?: string }[] }>(API_CONFIG.ENDPOINTS.MASTER_INDUSTRIES)
+        const uniqueIndustries = data.results
+          ?.map((item) => item.name)
+          .filter((name): name is string => Boolean(name)) || []
+        setIndustries(Array.from(new Set(uniqueIndustries)).sort())
+      } catch (primaryError) {
+        console.error('[filters] 業界候補取得に失敗しました:', primaryError)
+        try {
+          const fallback = await apiClient.get<PaginatedResponse<Company>>(API_CONFIG.ENDPOINTS.COMPANIES)
+          const uniqueIndustries = fallback.results
+            ?.map((company) => company.industry)
+            .filter((industry): industry is string => Boolean(industry)) || []
+          setIndustries(Array.from(new Set(uniqueIndustries)).sort())
+        } catch (secondaryError) {
+          console.error('[filters] 業界候補のフォールバック取得にも失敗しました:', secondaryError)
+          setIndustries([])
+        }
       }
     }
-    
+
     fetchIndustries()
   }, [])
 
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = (key: keyof CompanyFilter, value: CompanyFilter[keyof CompanyFilter]) => {
     onFiltersChange({ ...filters, [key]: value })
   }
 
-  const addArrayFilter = (key: string, value: string) => {
-    const currentArray = (filters[key] as string[]) || []
+  const toArray = (input: CompanyFilter[keyof CompanyFilter]): string[] => {
+    if (!input) return []
+    if (Array.isArray(input)) return input.filter((item): item is string => typeof item === "string")
+    if (typeof input === "string" && input.length > 0) return [input]
+    return []
+  }
+
+  const addArrayFilter = (key: keyof CompanyFilter, value: string) => {
+    const currentArray = toArray(filters[key])
     if (!currentArray.includes(value)) {
-      updateFilter(key, [...currentArray, value])
+      updateFilter(key, [...currentArray, value] as CompanyFilter[keyof CompanyFilter])
     }
   }
 
-  const removeArrayFilter = (key: string, value: string) => {
-    const currentArray = (filters[key] as string[]) || []
+  const removeArrayFilter = (key: keyof CompanyFilter, value: string) => {
+    const currentArray = toArray(filters[key])
     updateFilter(
       key,
-      currentArray.filter((item) => item !== value),
+      currentArray.filter((item) => item !== value) as CompanyFilter[keyof CompanyFilter],
     )
   }
 
-  const hasActiveFilters = Object.values(filters).some((value) =>
-    Array.isArray(value) ? value.length > 0 : value !== undefined && value !== "",
-  )
+  const hasActiveFilters = Object.values(filters).some((value) => {
+    if (Array.isArray(value)) {
+      return value.length > 0
+    }
+    if (typeof value === 'string') {
+      return value.trim().length > 0
+    }
+    return value !== undefined && value !== null
+  })
 
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Search className="h-5 w-5" />
             検索・フィルター
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearFilters}
-              className="text-xs bg-transparent"
-              disabled={!hasAppliedFilters && !filtersChanged}
-            >
-              <X className="h-3 w-3 mr-1" />
-              すべてクリア
-            </Button>
-            <Button
-              size="sm"
-              onClick={onApplyFilters}
-              disabled={!filtersChanged}
-              className="text-xs"
-            >
-              <Search className="h-3 w-3 mr-1" />検索
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
-              <Filter className="h-4 w-4 mr-1" />
-              {isExpanded ? "フィルターを隠す" : "フィルターを表示"}
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
+            <Filter className="h-4 w-4 mr-1" />
+            {isExpanded ? "フィルターを隠す" : "フィルターを表示"}
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -123,7 +123,7 @@ export function CompanyFilters({
 
         {/* Expanded Filters */}
         {isExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t">
+          <div className="grid grid-cols-1 gap-4 pt-4 border-t md:grid-cols-2 lg:grid-cols-3">
             {/* Industry Filter */}
             <div>
               <Label>業界</Label>
@@ -140,7 +140,7 @@ export function CompanyFilters({
                 </SelectContent>
               </Select>
               <div className="flex flex-wrap gap-1 mt-2">
-                {filters.industry?.map((industry: string) => (
+                {toArray(filters.industry).map((industry) => (
                   <Badge key={industry} variant="secondary" className="text-xs">
                     {industry}
                     <button
@@ -161,17 +161,23 @@ export function CompanyFilters({
                 <Input
                   placeholder="最小"
                   type="number"
-                  value={filters.employee_count_min || ""}
+                  value={filters.employee_min ?? ""}
                   onChange={(e) =>
-                    updateFilter("employee_count_min", e.target.value ? Number.parseInt(e.target.value) : undefined)
+                    updateFilter(
+                      "employee_min",
+                      e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+                    )
                   }
                 />
                 <Input
                   placeholder="最大"
                   type="number"
-                  value={filters.employee_count_max || ""}
+                  value={filters.employee_max ?? ""}
                   onChange={(e) =>
-                    updateFilter("employee_count_max", e.target.value ? Number.parseInt(e.target.value) : undefined)
+                    updateFilter(
+                      "employee_max",
+                      e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+                    )
                   }
                 />
               </div>
@@ -200,34 +206,35 @@ export function CompanyFilters({
               </div>
             </div>
 
-            {/* Status */}
-            <div>
-              <Label>ステータス</Label>
-              <Select onValueChange={(value) => addArrayFilter("status", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="ステータスを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {filters.status?.map((status: string) => (
-                  <Badge key={status} variant="secondary" className="text-xs">
-                    {statuses.find((s) => s.value === status)?.label || status}
-                    <button onClick={() => removeArrayFilter("status", status)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
           </div>
         )}
+
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {hasActiveFilters ? (
+              <>
+                <Filter className="h-3 w-3" />
+                <span>現在 {hasAppliedFilters ? '適用済みの' : ''}フィルターが有効です</span>
+              </>
+            ) : (
+              <span>フィルターは未選択です</span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearFilters}
+              disabled={!hasAppliedFilters && !filtersChanged}
+            >
+              <X className="h-3 w-3 mr-1" />
+              すべてクリア
+            </Button>
+            <Button size="sm" onClick={onApplyFilters} disabled={!filtersChanged}>
+              <Search className="h-3 w-3 mr-1" />検索
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

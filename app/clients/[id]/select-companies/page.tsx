@@ -42,24 +42,65 @@ export default function CompanySelectionPage() {
   const [isCreatingNewProject, setIsCreatingNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState("")
 
+  const industryValue = Array.isArray(filters.industry) ? filters.industry[0] : filters.industry
+
   const fetchCompanies = async () => {
     if (!clientId) return
 
     setIsLoading(true)
     try {
-      const queryParams = new URLSearchParams()
+      const params = new URLSearchParams()
+
+      const pageValue = filters.page ?? 1
+      const pageSizeValue = filters.page_size ?? filters.limit ?? 100
+      params.append('page', pageValue.toString())
+      params.append('page_size', pageSizeValue.toString())
+
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          queryParams.append(key, String(value))
+        if (['page', 'page_size', 'limit', 'random_seed'].includes(key)) {
+          return
+        }
+
+        if (value === undefined || value === null) return
+
+        if (Array.isArray(value)) {
+          value
+            .filter((item) => item !== undefined && item !== null && String(item).trim().length > 0)
+            .forEach((item) => params.append(key, String(item)))
+          return
+        }
+
+        if (typeof value === 'string') {
+          const trimmed = value.trim()
+          if (trimmed.length === 0 || trimmed === 'all') return
+          params.append(key, trimmed)
+          return
+        }
+
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          params.append(key, value.toString())
+          return
+        }
+
+        if (typeof value === 'boolean') {
+          params.append(key, value.toString())
         }
       })
 
-      const response = await apiClient.get(`/clients/${clientId}/available-companies?${queryParams.toString()}`)
+      const response = await apiClient.get(
+        `/clients/${clientId}/available-companies?${params.toString()}`,
+      )
       const data = await response.json()
 
-      if (data?.results) {
-        setCompanies(data.results)
-        setTotalCount(data.count || 0)
+      if (Array.isArray(data?.results)) {
+        setCompanies(data.results as Company[])
+        setTotalCount(typeof data?.count === 'number' ? data.count : data.results.length)
+      } else if (Array.isArray(data)) {
+        setCompanies(data as Company[])
+        setTotalCount(data.length)
+      } else {
+        setCompanies([])
+        setTotalCount(0)
       }
     } catch (error) {
       console.error("企業データの取得に失敗しました:", error)
@@ -93,12 +134,11 @@ export default function CompanySelectionPage() {
     }
   }, [clientId])
 
-  // フィルター変更時の再読み込み（初回を除く）
   useEffect(() => {
     if (clientId) {
       fetchCompanies()
     }
-  }, [filters.page, filters.page_size, filters.search, filters.industry, filters.exclude_ng])
+  }, [clientId, JSON.stringify(filters)])
 
   const handleCompanySelect = (companyId: number, isSelected: boolean) => {
     const company = companies.find((c) => c.id === companyId)
@@ -345,7 +385,7 @@ export default function CompanySelectionPage() {
               <div>
                 <Label>業界</Label>
                 <Select
-                  value={filters.industry || "all"}
+                  value={industryValue || "all"}
                   onValueChange={(value) =>
                     setFilters((prev) => ({ ...prev, industry: value === "all" ? undefined : value, page: 1 }))
                   }

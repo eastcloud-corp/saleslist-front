@@ -284,7 +284,7 @@ export interface NGImportResult {
 // Filter Types
 export interface CompanyFilter {
   search?: string
-  industry?: string
+  industry?: string | string[]
   employee_min?: number
   employee_max?: number
   revenue_min?: number

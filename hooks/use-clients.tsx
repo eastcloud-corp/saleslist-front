@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import type { Client } from "@/lib/types"
-import { apiClient } from "@/lib/api-config"
+import type { Client, Project } from "@/lib/types"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
 
 interface ClientFilters {
   search?: string
@@ -20,6 +21,7 @@ interface UseClientsOptions {
 }
 
 const isProduction = process.env.NODE_ENV === "production"
+const CLIENTS_ENDPOINT = API_CONFIG.ENDPOINTS.CLIENTS
 const debugLog = (...args: unknown[]) => {
   if (!isProduction) {
     console.log("[useClients]", ...args)
@@ -51,46 +53,49 @@ export function useClients(options: UseClientsOptions = {}) {
       const params = new URLSearchParams({
         page: page.toString(),
         page_size: limit.toString(),
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([key, value]) => 
-            value !== undefined && 
-            value !== "" && 
-            !(key === 'industry' && value === 'all') // 'all'は除外
-          )
-        ),
       })
 
-      const response = await apiClient.get(`/clients?${params}`);
-      debugLog("一覧レスポンス", response);
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value === undefined || value === "") return
+        if (key === "industry" && value === "all") return
+        params.append(key, String(value))
+      })
+
+      type ClientListResponse = { results?: Client[]; count?: number } | Client[]
+
+      const baseEndpoint = CLIENTS_ENDPOINT.endsWith("/")
+        ? CLIENTS_ENDPOINT.slice(0, -1)
+        : CLIENTS_ENDPOINT
+
+      const endpoint = `${baseEndpoint}?${params.toString()}`
+
+      const data = await apiClient.get<ClientListResponse>(endpoint)
+      debugLog("APIレスポンス構造", data)
       
-      const data = await response.json();
-      debugLog("APIレスポンス構造", data);
-      
-      if (data && typeof data === 'object') {
-        // Check multiple possible response formats
-        if (Array.isArray(data.results)) {
-          setClients(data.results);
-          setPagination({
-            page: page,
-            limit: limit,
-            total: data.count || 0,
-            total_pages: Math.ceil((data.count || 0) / limit),
-          });
-        } else if (Array.isArray(data)) {
-          // Direct array response
-          setClients(data);
-          setPagination({
-            page: page,
-            limit: limit,
-            total: data.length,
-            total_pages: Math.ceil(data.length / limit),
-          });
-        } else {
-          debugWarn("Unexpected response format", data);
-          setError("予期しないAPIレスポンス形式");
-        }
+      const isPaginatedResponse = (value: ClientListResponse): value is { results: Client[]; count?: number } => {
+        return !Array.isArray(value) && Array.isArray((value as { results?: Client[] }).results)
+      }
+
+      if (isPaginatedResponse(data)) {
+        setClients(data.results)
+        const total = typeof data.count === 'number' ? data.count : data.results.length
+        setPagination({
+          page,
+          limit,
+          total,
+          total_pages: Math.max(1, Math.ceil(total / limit)),
+        })
+      } else if (Array.isArray(data)) {
+        setClients(data)
+        setPagination({
+          page,
+          limit,
+          total: data.length,
+          total_pages: Math.max(1, Math.ceil(data.length / limit)),
+        })
       } else {
-        setError("APIからデータを取得できませんでした");
+        debugWarn("Unexpected response format", data)
+        setError("予期しないAPIレスポンス形式")
       }
     } catch (err) {
       console.error("[useClients] クライアント一覧取得エラー", err);
@@ -108,16 +113,9 @@ export function useClients(options: UseClientsOptions = {}) {
     try {
       debugLog("クライアント作成", clientData)
 
-      const response = await apiClient.post("/clients/", clientData)
-
-      if (response.ok) {
-        const newClient = await response.json()
-        debugLog("クライアント作成成功", newClient)
-        await fetchClients() // リストを再取得
-        return newClient
-      } else {
-        throw new Error("クライアントの作成に失敗しました")
-      }
+      const newClient = await apiClient.post<Client>(CLIENTS_ENDPOINT, clientData)
+      debugLog("クライアント作成成功", newClient)
+      await fetchClients() // リストを再取得
     } catch (err) {
       console.error("[useClients] クライアント作成エラー", err)
       throw err
@@ -128,16 +126,10 @@ export function useClients(options: UseClientsOptions = {}) {
     try {
       debugLog("クライアント更新", { id, clientData })
 
-      const response = await apiClient.put(`/clients/${id}/`, clientData)
-
-      if (response.ok) {
-        const updatedClient = await response.json()
-        debugLog("クライアント更新成功", updatedClient)
-        await fetchClients() // リストを再取得
-        return updatedClient
-      } else {
-        throw new Error("クライアントの更新に失敗しました")
-      }
+      const endpoint = `${CLIENTS_ENDPOINT}${id}/`
+      const updatedClient = await apiClient.put<Client>(endpoint, clientData)
+      debugLog("クライアント更新成功", updatedClient)
+      await fetchClients() // リストを再取得
     } catch (err) {
       console.error("[useClients] クライアント更新エラー", err)
       throw err
@@ -166,20 +158,14 @@ export function useClient(id: number) {
       setError(null)
 
       debugLog("クライアント詳細を取得", { id })
+      const endpoint = `${CLIENTS_ENDPOINT}${id}/`
+      const data = await apiClient.get<Client>(endpoint)
+      debugLog("クライアント詳細取得成功", data)
 
-      const response = await apiClient.get(`/clients/${id}`)
-
-      if (response.ok) {
-        const data = await response.json()
-        debugLog("クライアント詳細取得成功", data)
-
-        if (data && data.id) {
-          setClient(data)
-        } else {
-          setError("クライアント詳細データが見つかりません")
-        }
+      if (data && data.id) {
+        setClient(data)
       } else {
-        throw new Error("クライアント詳細の取得に失敗しました")
+        setError("クライアント詳細データが見つかりません")
       }
     } catch (err) {
       console.error("[useClients] クライアント詳細取得エラー", err)
@@ -222,18 +208,14 @@ export function useClientStats(id: number) {
 
       debugLog("クライアント統計情報を取得", { id })
 
-      const response = await apiClient.get(`/clients/${id}/stats`)
+      const endpoint = `${CLIENTS_ENDPOINT}${id}/stats`
+      const data = await apiClient.get<Record<string, unknown> | null>(endpoint)
+      debugLog("クライアント統計情報取得成功", data)
 
-      if (response.ok) {
-        const data = await response.json()
-        debugLog("クライアント統計情報取得成功", data)
-        if (data) {
-          setStats(data)
-        } else {
-          setError("統計情報が見つかりません")
-        }
+      if (data) {
+        setStats(data as any)
       } else {
-        throw new Error("統計情報の取得に失敗しました")
+        setError("統計情報が見つかりません")
       }
     } catch (err) {
       console.error("[useClients] クライアント統計情報取得エラー", err)
@@ -269,21 +251,17 @@ export function useClientProjects(id: number) {
 
       debugLog("クライアント関連案件を取得", { id })
 
-      const response = await apiClient.get(`/clients/${id}/projects`)
+      type ClientProjectsResponse = { results?: Project[] } | Project[]
+      const endpoint = `${CLIENTS_ENDPOINT}${id}/projects`
+      const data = await apiClient.get<ClientProjectsResponse>(endpoint)
+      debugLog("クライアント関連案件取得成功", data)
 
-      if (response.ok) {
-        const data = await response.json()
-        debugLog("クライアント関連案件取得成功", data)
-
-        if (data && Array.isArray(data.results)) {
-          setProjects(data.results)
-        } else if (data && Array.isArray(data)) {
-          setProjects(data)
-        } else {
-          setError("関連案件データが見つかりません")
-        }
+      if (!Array.isArray(data) && Array.isArray((data as { results?: Project[] }).results)) {
+        setProjects((data as { results: Project[] }).results)
+      } else if (Array.isArray(data)) {
+        setProjects(data)
       } else {
-        throw new Error("関連案件の取得に失敗しました")
+        setError("関連案件データが見つかりません")
       }
     } catch (err) {
       console.error("[useClients] クライアント関連案件取得エラー", err)

@@ -21,6 +21,7 @@ import { Plus, FolderOpen, Edit3, Search } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import ProjectTableRow, { STICKY_PROJECT_WIDTH } from "./components/project-table-row"
 import { ProjectHistoryDialog } from "./components/project-history-dialog"
+import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
 
 const pageLogger = createLogger("projects:page")
 
@@ -36,6 +37,8 @@ export default function ProjectsPage() {
   const [editMode, setEditMode] = useState(false)
   const [editData, setEditData] = useState<Record<number, Partial<Project>>>({})
   const [editVisibleCount, setEditVisibleCount] = useState<number>(Infinity)
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
   const [progressStatuses, setProgressStatuses] = useState<Array<{ id: number; name: string }>>([])
   const [serviceTypes, setServiceTypes] = useState<Array<{ id: number; name: string }>>([])
   const [meetingStatuses, setMeetingStatuses] = useState<Array<{ id: number; name: string }>>([])
@@ -81,6 +84,8 @@ export default function ProjectsPage() {
 
   const { projects, isLoading, error, createProject, refetch, pagination } = useProjects({
     filters: activeFilters,
+    page: currentPage,
+    limit: pageSize,
   })
   const { clients, loading: clientsLoading } = useClients({ limit: 200, filters: { is_active: true } })
   const { toast } = useToast()
@@ -90,8 +95,22 @@ export default function ProjectsPage() {
   const lockParamsRef = useRef({ page: 1, page_size: 20, filter_hash: "default" })
   const filtersDisabled = editMode
   const totalProjects = pagination?.total ?? projects.length
+  const effectivePageSize = (() => {
+    if (pagination?.limit && pagination.limit > 0) return pagination.limit
+    if (projects.length > 0) return projects.length
+    return pageSize
+  })()
+  const startItem = totalProjects === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1
+  const endItem = totalProjects === 0 ? 0 : Math.min(currentPage * effectivePageSize, totalProjects)
+  const totalPages = Math.max(1, Math.ceil(totalProjects / Math.max(effectivePageSize, 1)))
   const visibleProjects = editMode ? projects.slice(0, editVisibleCount) : projects
   const [isModePending, startModeTransition] = useTransition()
+
+  useEffect(() => {
+    if (pagination?.total_pages && currentPage > pagination.total_pages) {
+      setCurrentPage(pagination.total_pages)
+    }
+  }, [pagination?.total_pages, currentPage])
 
   // マスターデータ取得
   useEffect(() => {
@@ -136,6 +155,7 @@ export default function ProjectsPage() {
   const handleFilterReset = () => {
     setPendingFilters({ ...DEFAULT_FILTERS })
     setAppliedFilters({ ...DEFAULT_FILTERS })
+    setCurrentPage(1)
   }
 
   useEffect(() => {
@@ -417,45 +437,36 @@ export default function ProjectsPage() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">案件管理</h1>
-            <p className="text-muted-foreground">営業キャンペーンを管理し、進捗を追跡</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={editMode ? "default" : "outline"}
-              onClick={handleEditModeToggle}
-              disabled={isAcquiringLock || isModePending}
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              {isAcquiringLock ? 'ロック取得中...' : editMode ? '編集完了' : '編集モード'}
-              {!isAcquiringLock && (
-                <span className="ml-1 text-xs">({editMode ? 'OFF' : 'ON'})</span>
-              )}
-            </Button>
-            {!isAcquiringLock && lastLockDuration !== null && (
-              <span className="self-center text-xs text-muted-foreground">
-                直近ロック: {Math.round(lastLockDuration)}ms
-              </span>
-            )}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  新規案件
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>新規案件作成</DialogTitle>
-                </DialogHeader>
-                <ProjectForm onSave={handleCreateProject} onCancel={() => setIsCreateDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
+        <div className="sticky top-0 z-30 -mx-6 -mt-16 border-b bg-background/95 px-6 pb-4 pt-6 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:-mx-8 lg:-mt-8 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">案件管理</h1>
+              <p className="text-muted-foreground">営業キャンペーンを管理し、進捗を追跡</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={editMode ? "default" : "secondary"} className="uppercase tracking-wide">
+                編集モード {editMode ? "ON" : "OFF"}
+              </Badge>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    新規案件
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>新規案件作成</DialogTitle>
+                  </DialogHeader>
+                  <ProjectForm onSave={handleCreateProject} onCancel={() => setIsCreateDialogOpen(false)} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
+        {/* Main Content */}
+        <div className="space-y-6">
         {/* Error Message */}
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md">
@@ -595,7 +606,10 @@ export default function ProjectsPage() {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setAppliedFilters({ ...pendingFilters })}
+                  onClick={() => {
+                    setAppliedFilters({ ...pendingFilters })
+                    setCurrentPage(1)
+                  }}
                   disabled={!filtersChanged || filtersDisabled}
                 >
                   <Search className="mr-2 h-4 w-4" />検索
@@ -604,6 +618,50 @@ export default function ProjectsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Mode Controls */}
+        <Card className="border-dashed bg-muted/20">
+          <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Edit3 className="h-4 w-4" />
+                編集モード
+                <Badge variant={editMode ? 'default' : 'secondary'}>{editMode ? 'ON' : 'OFF'}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                一括編集を行う場合は編集モードをONにしてください。モード中はフィルターを変更できません。
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant={editMode ? "default" : "outline"}
+                onClick={handleEditModeToggle}
+                disabled={isAcquiringLock || isModePending}
+              >
+                {isAcquiringLock ? 'ロック取得中...' : editMode ? '編集完了' : '編集モード'}
+                {!isAcquiringLock && (
+                  <span className="ml-2 text-xs">({editMode ? 'OFF' : 'ON'})</span>
+                )}
+              </Button>
+              {!isAcquiringLock && lastLockDuration !== null && (
+                <span className="text-xs text-muted-foreground">
+                  直近ロック: {Math.round(lastLockDuration)}ms
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <ListPaginationSummary
+          totalCount={totalProjects}
+          startItem={startItem}
+          endItem={endItem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          isLoading={isLoading}
+          isDisabled={editMode || isLoading}
+        />
 
         {/* Projects Grid */}
         {!projects || projects.length === 0 ? (
@@ -710,6 +768,21 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <ListPaginationSummary
+          totalCount={totalProjects}
+          startItem={startItem}
+          endItem={endItem}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={(page) => setCurrentPage(page)}
+          isLoading={isLoading}
+          isDisabled={editMode}
+          className="mt-6"
+        />
+      )}
+
       <ProjectHistoryDialog
         project={historyProject}
         open={isHistoryOpen}
@@ -723,6 +796,7 @@ export default function ProjectsPage() {
           await refetch()
         }}
       />
+      </div>
     </MainLayout>
   )
 }

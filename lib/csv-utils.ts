@@ -169,7 +169,7 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
         case "city":
         case "phone":
         case "status":
-          ;(record as Record<string, string | undefined>)[key] = value
+          ;(record as unknown as Record<string, string | undefined>)[key] = value
           break
         case "website":
         case "website_url":
@@ -189,7 +189,7 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
           record.description = value
           break
         default:
-          ;(record as Record<string, string | undefined>)[key] = value
+          ;(record as unknown as Record<string, string | undefined>)[key] = value
       }
     })
 

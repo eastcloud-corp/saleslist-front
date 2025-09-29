@@ -50,29 +50,69 @@ export function useProjects(options: UseProjectsOptions = {}) {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString(),
+        page_size: limit.toString(),
         management_mode: 'true',
       })
 
       Object.entries(filters).forEach(([key, value]) => {
         if (value === undefined || value === null) return
-        if (typeof value === 'string' && value.trim() === '') return
-        params.append(key, String(value))
+
+        if (Array.isArray(value)) {
+          value
+            .filter((item) => item !== undefined && item !== null && String(item).trim().length > 0)
+            .forEach((item) => params.append(key, String(item)))
+          return
+        }
+
+        if (typeof value === 'string') {
+          const sanitized = value.trim()
+          if (sanitized.length === 0 || sanitized === 'all') return
+          params.append(key, sanitized)
+          return
+        }
+
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          params.append(key, value.toString())
+          return
+        }
+
+        if (typeof value === 'boolean') {
+          params.append(key, value.toString())
+        }
       })
 
-      projectsLogger.debug('fetchProjects: request', { params: params.toString() })
-      const data = await apiClient.get<{results: Project[], count: number}>(`/projects?${params.toString()}`)
-      projectsLogger.debug('fetchProjects: response', { count: data.count })
+      type ProjectListResponse = { results?: Project[]; count?: number } | Project[]
 
-      // 型安全になったので直接アクセス可能
-      setProjects(data.results || [])
+      const baseEndpoint = API_CONFIG.ENDPOINTS.PROJECTS.endsWith("/")
+        ? API_CONFIG.ENDPOINTS.PROJECTS.slice(0, -1)
+        : API_CONFIG.ENDPOINTS.PROJECTS
 
-      // Calculate pagination from API response
-      const totalPages = Math.ceil((data.count || 0) / limit)
+      const endpoint = `${baseEndpoint}?${params.toString()}`
+
+      projectsLogger.debug('fetchProjects: request', { endpoint })
+      const data = await apiClient.get<ProjectListResponse>(endpoint)
+      const responseCount = Array.isArray(data) ? data.length : data?.count
+      projectsLogger.debug('fetchProjects: response', { count: responseCount })
+
+      let results: Project[] = []
+      let totalCount = 0
+
+      if (!Array.isArray(data) && Array.isArray(data?.results)) {
+        results = data.results
+        totalCount = typeof data?.count === 'number' ? data.count : results.length
+      } else if (Array.isArray(data)) {
+        results = data as Project[]
+        totalCount = results.length
+      }
+
+      setProjects(results)
+
+      const responseLimit = results.length > 0 ? results.length : limit
+      const totalPages = responseLimit > 0 ? Math.max(1, Math.ceil(totalCount / responseLimit)) : 1
       setPagination({
-        page: page,
-        limit: limit,
-        total: data.count || 0,
+        page: Math.min(page, totalPages),
+        limit: responseLimit,
+        total: totalCount,
         total_pages: totalPages,
       })
     } catch (err) {

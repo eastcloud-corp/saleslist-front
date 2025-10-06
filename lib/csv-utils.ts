@@ -336,7 +336,6 @@ function normalizeHeader(header: string): string {
     email: "contact_email",
     e_mail: "contact_email",
     description: "description",
-    notes: "description",
     business_description: "business_description",
     status: "status",
     state: "status",

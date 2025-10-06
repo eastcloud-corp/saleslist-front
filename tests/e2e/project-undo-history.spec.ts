@@ -6,6 +6,7 @@ import {
   deleteResource,
   fetchProject,
   attachConsoleErrorInspector,
+  loginViaApiAndRestoreSession,
 } from './helpers'
 
 type SnapshotSummary = {
@@ -34,13 +35,11 @@ async function listSnapshots(api: APIRequestContext, projectId: number, pageSize
 }
 
 async function login(page: Page) {
-  await page.goto('/login')
-  await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-  await page.getByRole('button', { name: 'ログイン' }).click()
-  await page.waitForLoadState('networkidle', { timeout: 30000 })
-  if (!/\/projects\/?$/.test(page.url())) {
-    await page.goto('/projects', { waitUntil: 'networkidle' })
-  }
+  await loginViaApiAndRestoreSession(page, {
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    redirectPath: '/projects',
+  })
 }
 
 test.describe('Project Undo & History', () => {
@@ -70,60 +69,80 @@ test.describe('Project Undo & History', () => {
 
     try {
       await login(page)
-            await page.goto('/projects', { waitUntil: 'networkidle' })
+      await page.goto('/projects', { waitUntil: 'networkidle' })
 
-      const row = page.locator(`tr[data-project-id="${projectId}"]`).first()
-      await expect(row).toBeVisible({ timeout: 20000 })
+      const searchInput = page.getByPlaceholder('案件名・クライアント名で検索')
+      await expect(searchInput).toBeVisible({ timeout: 20000 })
+      await searchInput.fill(project.name)
 
-      const editableRow = page.locator('div.flex-1').locator(`tr[data-project-id="${projectId}"]`).first()
-      await expect(editableRow).toBeVisible({ timeout: 20000 })
+      const searchButton = page.getByRole('button', { name: /^検索$/ })
+      await expect(searchButton).toBeEnabled({ timeout: 10000 })
+      await Promise.all([
+        page.waitForResponse((response) =>
+          response.url().includes('/api/v1/projects')
+            && response.request().method() === 'GET'
+            && response.url().includes(encodeURIComponent(project.name))
+        ),
+        searchButton.click(),
+      ])
+
+      let row = page.locator(`tr[data-project-id="${projectId}"]`).first()
+      await expect(row).toBeVisible({ timeout: 30000 })
 
       // 編集モード開始
       await page.getByRole('button', { name: '編集モード' }).click()
-      await expect(page.getByText('編集モードを開始しました')).toBeVisible({ timeout: 10000 })
+      const editModeToast = page.locator('[role="status"]').filter({ hasText: '編集モードを開始しました' })
+      await expect(editModeToast.first()).toBeVisible({ timeout: 10000 })
 
-      const appointmentInput = editableRow.locator('input[type="number"]').first()
+      row = page.locator(`tr[data-project-id="${projectId}"]`).first()
+      const appointmentInput = row.getByRole('spinbutton').first()
       await appointmentInput.scrollIntoViewIfNeeded()
-      await expect(appointmentInput).toBeVisible()
-            await appointmentInput.fill('')
+      await expect(appointmentInput).toBeVisible({ timeout: 20000 })
+      await appointmentInput.fill('')
       await appointmentInput.fill(String(updatedValue))
 
       // 保存（編集完了）
       await Promise.all([
         page.waitForResponse((response) =>
-          response.url().includes('/api/v1/projects') && response.request().method() === 'PATCH'
+          response.url().includes('/bulk-partial-update')
+            && response.request().method() === 'POST'
         ),
         page.getByRole('button', { name: '編集完了' }).click(),
       ])
-      await expect(page.getByText('保存しました')).toBeVisible({ timeout: 10000 })
-      
+      await expect(page.locator('text=編集モード OFF').first()).toBeVisible({ timeout: 10000 })
+
       const afterSave = await fetchProject(adminApi, projectId, { management_mode: 'true' })
-            expect(afterSave.appointment_count).toBe(updatedValue)
+      expect(afterSave.appointment_count).toBe(updatedValue)
 
       // Undo via API (restore to previous snapshot)
       const snapshotsAfterSave = await listSnapshots(adminApi, projectId, 5)
-            expect(snapshotsAfterSave.length).toBeGreaterThan(0)
+      expect(snapshotsAfterSave.length).toBeGreaterThan(0)
       const undoTargetSnapshot = snapshotsAfterSave[0]
 
-      const undoResponse = await adminApi.post(`/api/v1/projects/${projectId}/snapshots/${undoTargetSnapshot.id}/restore/`, { data: {} })
-            
-      
+      const undoResponse = await adminApi.post(
+        `/api/v1/projects/${projectId}/snapshots/${undoTargetSnapshot.id}/restore/`,
+        { data: {} },
+      )
+      expect(undoResponse.ok()).toBeTruthy()
+
       const afterUndo = await fetchProject(adminApi, projectId, { management_mode: 'true' })
-            expect(afterUndo.appointment_count).toBe(originalValue)
+      expect(afterUndo.appointment_count).toBe(originalValue)
 
       // Redo via API (restore the automatically created undo snapshot)
       const snapshotsAfterUndo = await listSnapshots(adminApi, projectId, 5)
-            const redoTargetSnapshot = snapshotsAfterUndo.find((item) => item.source === 'undo')
+      const redoTargetSnapshot = snapshotsAfterUndo.find((item) => item.source === 'undo')
       expect(redoTargetSnapshot).toBeDefined()
 
-      const redoResponse = await adminApi.post(`/api/v1/projects/${projectId}/snapshots/${redoTargetSnapshot!.id}/restore/`, { data: {} })
-            
-      
+      const redoResponse = await adminApi.post(
+        `/api/v1/projects/${projectId}/snapshots/${redoTargetSnapshot!.id}/restore/`,
+        { data: {} },
+      )
+      expect(redoResponse.ok()).toBeTruthy()
+
       const afterRedo = await fetchProject(adminApi, projectId, { management_mode: 'true' })
-            expect(afterRedo.appointment_count).toBe(updatedValue)
-      
+      expect(afterRedo.appointment_count).toBe(updatedValue)
     } finally {
-            await deleteResource(adminApi, `/projects/${projectId}/`)
+      await deleteResource(adminApi, `/projects/${projectId}/`)
       await deleteResource(adminApi, `/clients/${client.id}/`)
       await adminApi.dispose()
     }

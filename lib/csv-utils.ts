@@ -17,6 +17,13 @@ export interface CSVCompanyData {
   description?: string
   business_description?: string
   status?: string
+  contact_person_name?: string
+  contact_person_position?: string
+  facebook_url?: string
+  tob_toc_type?: string
+  capital?: string
+  established_year?: string
+  notes?: string
 }
 
 export const CSV_HEADERS = [
@@ -64,6 +71,13 @@ export const CSV_FIELD_DISPLAY_NAMES: Record<string, string> = {
   description: "備考",
   business_description: "事業内容",
   status: "ステータス",
+  contact_person_name: "担当者名",
+  contact_person_position: "担当者役職",
+  facebook_url: "Facebookリンク",
+  tob_toc_type: "toB/toC区分",
+  capital: "資本金",
+  established_year: "設立年",
+  notes: "備考",
 }
 
 export function exportCompaniesToCSV(companies: Company[]): string {
@@ -152,6 +166,13 @@ export function parseCSV(csvText: string): CSVCompanyData[] {
       description: "",
       business_description: "",
       status: "",
+      contact_person_name: "",
+      contact_person_position: "",
+      facebook_url: "",
+      tob_toc_type: "",
+      capital: "",
+      established_year: "",
+      notes: "",
     }
 
     headersRaw.forEach((originalHeader, i) => {
@@ -249,7 +270,14 @@ function parseCSVRows(csvText: string): string[][] {
 
 function normalizeHeader(header: string): string {
   const directMap: Record<string, string> = {
-    名前: "name",
+    名前: "contact_person_name",
+    担当者名: "contact_person_name",
+    役職: "contact_person_position",
+    Facebookリンク: "facebook_url",
+    'toB toC': "tob_toc_type",
+    資本金: "capital",
+    設立年: "established_year",
+    アポ実績: "notes",
     会社名: "name",
     企業名: "name",
     業種: "industry",
@@ -280,6 +308,14 @@ function normalizeHeader(header: string): string {
     company_name: "name",
     company: "name",
     name: "name",
+    contact_person_name: "contact_person_name",
+    contact_name: "contact_person_name",
+    contact_person_position: "contact_person_position",
+    facebook_url: "facebook_url",
+    tob_toc_type: "tob_toc_type",
+    capital: "capital",
+    established_year: "established_year",
+    notes: "notes",
     industry: "industry",
     employee_count: "employee_count",
     employees: "employee_count",
@@ -358,6 +394,10 @@ export function validateCSVData(data: CSVCompanyData[]): CSVValidationError[] {
       addError("website", row.website, "http:// または https:// から始まるURLを入力してください")
     }
 
+    if (row.facebook_url && row.facebook_url.trim() && !/^https?:\/\/.+/.test(row.facebook_url)) {
+      addError("facebook_url", row.facebook_url, "http:// または https:// から始まるURLを入力してください")
+    }
+
     // Validate status
     const validStatuses = ["active", "prospect", "inactive"]
     if (row.status && !validStatuses.includes(row.status.toLowerCase())) {
@@ -366,6 +406,22 @@ export function validateCSVData(data: CSVCompanyData[]): CSVValidationError[] {
         row.status,
         `次のいずれかの値を指定してください: ${validStatuses.join(", ")}`,
       )
+    }
+
+    if (row.capital && isNaN(Number(row.capital))) {
+      addError("capital", row.capital, "数値で入力してください")
+    }
+
+    if (row.established_year && isNaN(Number(row.established_year))) {
+      addError("established_year", row.established_year, "数値で入力してください")
+    }
+
+    if (row.tob_toc_type) {
+      const normalized = row.tob_toc_type.trim().toUpperCase()
+      const allowed = new Set(["TOB", "TOC", "B", "C", "BOTH", "B2B", "B2C", "B2B2C", "B&C", "B/C"])
+      if (!allowed.has(normalized)) {
+        addError("tob_toc_type", row.tob_toc_type, "toB、toC、Bothなどの区分を入力してください")
+      }
     }
 
     if (row.corporate_number && row.corporate_number.trim().length > 0) {
@@ -391,27 +447,38 @@ export function convertCSVToCompanyData(
     const fallbackName = `インポート企業（行${index + 2}）`
     const sanitizedCorporateNumber = (row.corporate_number ?? "").replace(/[^0-9]/g, "")
 
+    const normalizedTobToc = (() => {
+      if (!row.tob_toc_type) return ''
+      const value = row.tob_toc_type.trim().toUpperCase()
+      if (['B', 'TOB', 'B2B'].includes(value)) return 'toB'
+      if (['C', 'TOC', 'B2C'].includes(value)) return 'toC'
+      if (['BOTH', 'B2B2C', 'B&C', 'B/C'].includes(value)) return 'Both'
+      return ''
+    })()
+
     return {
       name: sanitizedName && sanitizedName.length > 0 ? sanitizedName : fallbackName,
       corporate_number: sanitizedCorporateNumber,
-      industry: row.industry?.trim() || "",
+      industry: row.industry?.trim() || '',
       employee_count: Number(row.employee_count) || 0,
       revenue: Number(row.revenue) || 0,
-      location: row.location?.trim() || "",
-      website: (row.website_url ?? row.website ?? "").trim() || "",
-      phone: row.phone?.trim() || "",
-      email: (row.contact_email ?? row.email ?? "").trim() || "",
-      description: (row.description ?? row.business_description ?? "").trim() || "",
-      status: (row.status?.toLowerCase() as "active" | "prospect" | "inactive") || "prospect",
-      // Company型に必要な追加フィールド
-      established_year: new Date().getFullYear(),
-      prefecture: row.prefecture?.trim() || "",
-      city: row.city?.trim() || "",
-      website_url: (row.website_url ?? row.website ?? "").trim() || "",
-      contact_email: (row.contact_email ?? row.email ?? "").trim() || "",
-      notes: (row.description ?? "").trim(),
+      location: row.location?.trim() || '',
+      prefecture: row.prefecture?.trim() || '',
+      city: row.city?.trim() || '',
+      website_url: (row.website_url ?? row.website ?? '').trim() || '',
+      contact_email: (row.contact_email ?? row.email ?? '').trim() || '',
+      phone: row.phone?.trim() || '',
+      description: (row.description ?? row.business_description ?? row.notes ?? '').trim() || '',
+      business_description: row.business_description?.trim() || '',
+      status: (row.status?.toLowerCase() as Company['status']) || 'prospect',
+      contact_person_name: row.contact_person_name?.trim() || '',
+      contact_person_position: row.contact_person_position?.trim() || '',
+      facebook_url: row.facebook_url?.trim() || '',
+      tob_toc_type: normalizedTobToc as Company['tob_toc_type'],
+      capital: Number(row.capital) || 0,
+      established_year: Number(row.established_year) || 0,
+      notes: (row.notes ?? row.description ?? '').trim(),
       is_global_ng: false,
-      capital: 0,
     }
   })
 }

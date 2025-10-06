@@ -23,7 +23,10 @@ interface CompanyTableProps {
   totalCount?: number
 }
 
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
   return new Intl.NumberFormat("ja-JP", {
     style: "currency",
     currency: "JPY",
@@ -31,7 +34,10 @@ const formatCurrency = (amount: number) => {
   }).format(amount)
 }
 
-const formatEmployeeCount = (count: number) => {
+const formatEmployeeCount = (count?: number | null) => {
+  if (count === null || count === undefined || Number.isNaN(Number(count))) {
+    return "-"
+  }
   return new Intl.NumberFormat("ja-JP").format(count)
 }
 
@@ -120,6 +126,8 @@ export function CompanyTable({
                   </TableHead>
                 )}
                 <TableHead>企業名</TableHead>
+                <TableHead>担当者</TableHead>
+                <TableHead>Facebook</TableHead>
                 <TableHead>業界</TableHead>
                 <TableHead>従業員数</TableHead>
                 <TableHead>売上</TableHead>
@@ -131,7 +139,7 @@ export function CompanyTable({
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={selectable ? 8 : 7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={selectable ? 10 : 9} className="text-center py-8 text-muted-foreground">
                     企業が見つかりません。検索条件を調整してください。
                   </TableCell>
                 </TableRow>
@@ -226,6 +234,33 @@ export function CompanyTable({
                             </TooltipProvider>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {company.contact_person_name ? (
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-medium">{company.contact_person_name}</p>
+                            {company.contact_person_position && (
+                              <p className="text-xs text-muted-foreground">{company.contact_person_position}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">未設定</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {company.facebook_url ? (
+                          <a
+                            href={company.facebook_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            Facebook
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">未設定</span>
+                        )}
                       </TableCell>
                       <TableCell>{company.industry}</TableCell>
                       <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>

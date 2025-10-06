@@ -1,11 +1,15 @@
 import { test, expect, type Page } from '@playwright/test'
+import { loginViaApiAndRestoreSession } from './helpers'
+
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'salesnav_admin@budget-sales.com'
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'salesnav20250901'
 
 async function login(page: Page) {
-  await page.goto('/login')
-  await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-  await page.getByRole('button', { name: 'ログイン' }).click()
-  await page.waitForURL(/\/companies/, { timeout: 10000 })
-  await page.waitForLoadState('networkidle')
+  await loginViaApiAndRestoreSession(page, {
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    redirectPath: '/companies',
+  })
 }
 
 test.describe('Settings E2E', () => {

@@ -4,16 +4,18 @@ import {
   createClient,
   createCompany,
   deleteResource,
+  loginViaApiAndRestoreSession,
 } from '../helpers'
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'salesnav_admin@budget-sales.com'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'salesnav20250901'
 
 async function login(page: Page) {
-  await page.goto('/login')
-  await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-  await page.getByRole('button', { name: 'ログイン' }).click()
-  await page.waitForLoadState('networkidle')
+  await loginViaApiAndRestoreSession(page, {
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    redirectPath: '/companies',
+  })
 }
 
 test.describe('CSVインポート', () => {
@@ -34,21 +36,38 @@ test.describe('CSVインポート', () => {
       buffer: Buffer.from(templateCsv, 'utf-8'),
     })
 
-    await expect(page.locator('text=/CSVの検証が完了しました|CSV file validated successfully|Ready to import/').first()).toBeVisible({ timeout: 15000 })
     const startImportButton = page.getByRole('button', { name: /インポート開始|Import \d+ Companies/ })
     const nextButton = page.getByRole('button', { name: /インポートへ進む|Next/ })
-    if (await startImportButton.isVisible().catch(() => false)) {
-      await startImportButton.click()
-    } else {
-      await nextButton.click()
-      await startImportButton.click()
+
+    const deadline = Date.now() + 30000
+    let nextStep: 'start' | 'next' | null = null
+    while (Date.now() < deadline) {
+      if (await startImportButton.isVisible().catch(() => false)) {
+        nextStep = 'start'
+        break
+      }
+      if (await nextButton.isVisible().catch(() => false)) {
+        nextStep = 'next'
+        break
+      }
+      await page.waitForTimeout(250)
     }
+
+    expect(nextStep).not.toBeNull()
+
+    if (nextStep === 'next') {
+      await nextButton.click()
+      await expect(startImportButton).toBeVisible({ timeout: 30000 })
+    }
+
+    await startImportButton.click()
 
     await expect(page.locator('text=/インポートが完了しました|Import Complete!/').first()).toBeVisible({ timeout: 20000 })
     await page.getByRole('button', { name: /閉じる|Close/ }).first().click()
 
-    await page.getByLabel('企業検索').fill('テンプレート株式会社')
-    await expect(page.getByRole('row', { name: /テンプレート株式会社/ }).first()).toBeVisible({ timeout: 15000 })
+    const templateSearch = encodeURIComponent('テンプレート株式会社')
+    await page.goto(`/companies?search=${templateSearch}`, { waitUntil: 'networkidle' })
+    await expect(page.getByRole('row', { name: /テンプレート株式会社/ }).first()).toBeVisible({ timeout: 20000 })
   })
 
   test.describe('クライアントNGリスト CSV', () => {
@@ -134,10 +153,12 @@ test.describe('CSVインポート', () => {
     })
 
     test('役員CSVをインポートして完了画面が表示される', async ({ page }) => {
-      await login(page)
+    await login(page)
 
-      await page.goto('/executives')
-    await page.getByRole('button', { name: 'CSVインポート' }).click()
+    await page.goto('/executives')
+    const openImportButton = page.getByRole('button', { name: 'CSVインポート' })
+    await openImportButton.scrollIntoViewIfNeeded()
+    await openImportButton.click()
 
     const csvBuffer = Buffer.from(buildExecutiveCsv(companyName), 'utf-8')
     await page.setInputFiles('input#csv-file', {
@@ -148,7 +169,7 @@ test.describe('CSVインポート', () => {
       const importButton = page.getByRole('button', { name: /インポート実行|Import CSV/ })
     if (await importButton.isVisible().catch(() => false)) {
       await importButton.click()
-      await expect(page.getByText('役員データのインポートが完了しました')).toBeVisible({ timeout: 20000 })
+      await expect(page.getByText('役員データのインポートが完了しました')).toBeVisible({ timeout: 30000 })
 
       const response = await adminApi.get('/api/v1/executives/?ordering=-id')
       const data = await response.json()

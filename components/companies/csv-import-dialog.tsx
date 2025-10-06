@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { UploadStep } from "./csv-steps/upload-step"
 import { ValidationStep } from "./csv-steps/validation-step"
-import { parseCSV, validateCSVData, convertCSVToCompanyData, type CSVValidationError } from "@/lib/csv-utils"
+import { parseCSV, validateCSVData, type CSVValidationError, type CSVCompanyData } from "@/lib/csv-utils"
+import { ApiError } from "@/lib/api-client"
 import { Upload, CheckCircle } from "lucide-react"
 
 export type ImportErrorCategory = "duplicate" | "validation" | "api" | "unknown"
@@ -22,24 +23,26 @@ interface CSVImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onImport: (
-    companies: any[],
+    file: File,
+    context: { rowCount: number },
     onProgress: (progress: number) => void,
-  ) => Promise<{
-    successCount: number
-    errorItems: ImportErrorItem[]
-    missingCorporateNumberCount: number
-  }>
+  ) => Promise<ImportSummary>
 }
 
 type ImportSummary = {
   successCount: number
+  companyUpdatedCount: number
+  executiveCreatedCount: number
+  executiveUpdatedCount: number
   errorItems: ImportErrorItem[]
   missingCorporateNumberCount: number
+  duplicateCount: number
+  totalRows: number
 }
 
 export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialogProps) {
   const [file, setFile] = useState<File | null>(null)
-  const [csvData, setCsvData] = useState<any[]>([])
+  const [csvData, setCsvData] = useState<CSVCompanyData[]>([])
   const [validationErrors, setValidationErrors] = useState<CSVValidationError[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -83,15 +86,14 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
   }
 
   const handleImport = async () => {
-    if (validationErrors.length > 0) return
+    if (!file || validationErrors.length > 0) return
 
     setIsImporting(true)
     setImportProgress(0)
     setImportSummary(null)
 
     try {
-      const companies = convertCSVToCompanyData(csvData)
-      const result = await onImport(companies, (progress) => {
+      const result = await onImport(file, { rowCount: csvData.length }, (progress) => {
         setImportProgress(Math.min(100, Math.max(progress, 0)))
       })
 
@@ -100,14 +102,41 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
       setStep("complete")
     } catch (error) {
       console.error("Import failed:", error)
-      setValidationErrors([
-        {
-          row: 0,
-          field: "import",
-          value: "",
-          message: "インポート処理でエラーが発生しました。内容を確認して再度お試しください。",
-        },
-      ])
+
+      if (error instanceof ApiError) {
+        const data = error.data as { error?: string; errors?: Array<{ row?: number; field?: string; value?: string; message?: string }> } | undefined
+        if (Array.isArray(data?.errors) && data!.errors.length > 0) {
+          setValidationErrors(
+            data!.errors.map((err) => ({
+              row: err.row ?? 0,
+              field: err.field ?? "import",
+              value: err.value ?? "",
+              message: err.message ?? (data?.error || error.message || "インポート処理でエラーが発生しました"),
+            })),
+          )
+          setStep("validate")
+          return
+        }
+
+        const message = data?.error || error.message || "インポート処理でエラーが発生しました。内容を確認して再度お試しください。"
+        setValidationErrors([
+          {
+            row: 0,
+            field: "import",
+            value: "",
+            message,
+          },
+        ])
+      } else {
+        setValidationErrors([
+          {
+            row: 0,
+            field: "import",
+            value: "",
+            message: "インポート処理でエラーが発生しました。内容を確認して再度お試しください。",
+          },
+        ])
+      }
     } finally {
       setIsImporting(false)
     }
@@ -137,6 +166,9 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
             <Upload className="h-5 w-5" />
             CSVから企業データをインポート
           </DialogTitle>
+          <DialogDescription>
+            企業CSVファイルをアップロードし、内容を検証してからインポートする操作を行います。
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -157,7 +189,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
             <div className="space-y-4">
               <Alert>
                 <AlertDescription>
-          {csvData.length}件の企業データをインポートします。この操作により新しい企業が登録されます。
+          {csvData.length}件の企業データをインポートします。この操作により新しい企業が登録・更新されます。
         </AlertDescription>
       </Alert>
 
@@ -195,10 +227,11 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
               {importSummary && (
                 <div className="space-y-5 text-sm">
                   <div className="grid gap-2">
-                    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-muted-foreground">
-                      <span>登録成功: {importSummary.successCount}件</span>
-                      <span>処理対象: {importSummary.successCount + importSummary.errorItems.length}件</span>
-                      <span>エラー: {importSummary.errorItems.length}件</span>
+                    <div className="grid gap-1 text-sm text-muted-foreground text-center">
+                      <span>処理対象: {importSummary.totalRows}件</span>
+                      <span>新規登録: {importSummary.successCount}件 / 更新: {importSummary.companyUpdatedCount}件</span>
+                      <span>役員登録: {importSummary.executiveCreatedCount}件 / 更新: {importSummary.executiveUpdatedCount}件</span>
+                      <span>重複によるスキップ: {importSummary.duplicateCount}件 / エラー: {importSummary.errorItems.length}件</span>
                     </div>
                     {importSummary.missingCorporateNumberCount > 0 && (
                       <p className="text-xs text-amber-600 text-center">

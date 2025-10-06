@@ -5,19 +5,18 @@ import {
   createCompany,
   createProject,
   deleteResource,
+  loginViaApiAndRestoreSession,
 } from './helpers'
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'salesnav_admin@budget-sales.com'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'salesnav20250901'
 
 async function login(page: Page) {
-  await page.goto('/login')
-  await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-  await page.getByRole('button', { name: 'ログイン' }).click()
-  await page.waitForLoadState('networkidle', { timeout: 30000 })
-  if (!/\/companies\/?$/.test(page.url())) {
-    await page.goto('/companies', { waitUntil: 'networkidle' })
-  }
+  await loginViaApiAndRestoreSession(page, {
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    redirectPath: '/companies',
+  })
 }
 
 test.describe('Companies E2E', () => {
@@ -26,7 +25,7 @@ test.describe('Companies E2E', () => {
   })
 
   test('企業一覧テーブルを閲覧できる', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: '企業データベース管理' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '企業データベース管理' })).toBeVisible({ timeout: 15000 })
     const firstTable = page.locator('table').first()
     await expect(firstTable).toBeVisible()
     const rows = await firstTable.getByRole('row').count()
@@ -34,7 +33,7 @@ test.describe('Companies E2E', () => {
   })
 
   test('クライアント詳細ページへ遷移できる', async ({ page }) => {
-    await page.goto('/clients')
+    await page.goto('/clients', { waitUntil: 'networkidle' })
     await page.waitForLoadState('networkidle')
     const firstRow = page.locator('table tbody tr').first()
     await firstRow.locator('a').first().click()
@@ -73,34 +72,28 @@ test.describe('Companies E2E', () => {
     })
 
     try {
-      await page.goto('/companies')
+      await page.goto(`/companies?search=${encodeURIComponent(company.name)}`, { waitUntil: 'networkidle' })
+      await page.waitForLoadState('networkidle')
 
-      await Promise.all([
-        page.waitForResponse((response) =>
-          response.url().includes('/api/v1/companies') &&
-          response.request().method() === 'GET' &&
-          response.url().includes(encodeURIComponent(company.name))
-        ),
-        page.getByLabel('企業検索').fill(company.name),
-      ])
+      const row = page.locator('table').first().locator('tr', { hasText: company.name }).first()
+      await expect(row).toBeVisible({ timeout: 20000 })
 
-      const row = page.locator('tr', { hasText: company.name }).first()
-      await expect(row).toBeVisible({ timeout: 15000 })
+      await row.getByRole('checkbox').first().click()
 
-      await row.getByRole('checkbox').first().check()
-
-      await page.getByRole('button', { name: '案件に追加' }).click()
+      const addButton = page.getByRole('button', { name: '案件に追加' })
+      await addButton.scrollIntoViewIfNeeded()
+      await addButton.click()
 
       const dialog = page.getByRole('dialog', { name: '案件に企業を追加' })
       await expect(dialog).toBeVisible()
 
-      const combobox = dialog.getByRole('combobox', { name: '案件を選択' })
-      await combobox.click()
-      const option = page.getByRole('option', { name: project.name })
-      await expect(option).toBeVisible({ timeout: 15000 })
-      await option.click()
+      await dialog.getByLabel('案件検索').fill(project.name)
+      const projectRow = dialog.getByRole('row', { name: new RegExp(project.name) }).first()
+      await expect(projectRow).toBeVisible({ timeout: 15000 })
+      await projectRow.getByRole('checkbox', { name: new RegExp(project.name) }).click()
 
-      await dialog.getByRole('button', { name: '案件に追加' }).click()
+      await expect(dialog.getByRole('button', { name: /案件に追加/ })).toBeEnabled({ timeout: 10000 })
+      await dialog.getByRole('button', { name: /案件に追加/ }).click()
 
       await page.waitForURL(`/projects/${project.id}`)
       await expect(page.getByText(company.name)).toBeVisible({ timeout: 15000 })

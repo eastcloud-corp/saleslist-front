@@ -9,6 +9,7 @@ import {
   deleteResource,
   updateUser,
   attachConsoleErrorInspector,
+  loginViaApiAndRestoreSession,
 } from './helpers'
 
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'salesnav_admin@budget-sales.com'
@@ -44,18 +45,9 @@ test.describe.serial('NGリストと案件管理フロー', () => {
   })
 
   async function loginUI(page: Page, credentials?: { email: string; password: string }) {
-    await page.goto('/login')
-
-    if (credentials) {
-      await page.getByLabel('メールアドレス').fill(credentials.email)
-      await page.getByLabel('パスワード').fill(credentials.password)
-    } else {
-      await page.getByRole('button', { name: 'デバッグ情報を自動入力' }).click()
-    }
-
-    await page.getByRole('button', { name: 'ログイン' }).click()
-    await page.waitForURL(/\/companies/, { timeout: 15000 })
-    await page.waitForLoadState('networkidle')
+    const email = credentials?.email ?? ADMIN_EMAIL
+    const password = credentials?.password ?? ADMIN_PASSWORD
+    await loginViaApiAndRestoreSession(page, { email, password, redirectPath: '/companies' })
   }
 
   test.beforeAll(async () => {

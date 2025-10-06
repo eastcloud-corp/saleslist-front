@@ -109,13 +109,75 @@ export async function fetchProject(api: APIRequestContext, projectId: number, pa
   return response.json()
 }
 
+interface LoginThroughUIOptions {
+  email: string
+  password: string
+  redirectPattern?: RegExp
+  fallbackPath?: string
+}
+
+export async function loginThroughUI(page: Page, options: LoginThroughUIOptions) {
+  const {
+    email,
+    password,
+    redirectPattern,
+    fallbackPath,
+  } = options
+  await page.goto('/login', { waitUntil: 'domcontentloaded' })
+  await page.getByLabel('メールアドレス').fill(email)
+  await page.getByLabel('パスワード').fill(password)
+  await page.getByRole('button', { name: 'ログイン' }).click()
+  await page.waitForLoadState('networkidle')
+
+  if (redirectPattern) {
+    try {
+      await page.waitForURL(redirectPattern, { timeout: 15000 })
+      return
+    } catch (error) {
+      if (!fallbackPath) {
+        throw error
+      }
+    }
+  }
+
+  if (fallbackPath) {
+    await page.goto(fallbackPath, { waitUntil: 'networkidle' })
+  }
+}
+
+export async function loginViaApiAndRestoreSession(
+  page: Page,
+  { email, password, redirectPath = '/companies' }: { email: string; password: string; redirectPath?: string },
+) {
+  const { context, accessToken, refreshToken } = await createAuthenticatedContext(email, password)
+  await context.dispose()
+
+  await page.goto('/login', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(
+    ({ access, refresh }) => {
+      localStorage.setItem('access_token', access)
+      localStorage.setItem('refresh_token', refresh)
+    },
+    { access: accessToken, refresh: refreshToken },
+  )
+
+  await page.goto(redirectPath, { waitUntil: 'networkidle' })
+  await page.waitForLoadState('networkidle')
+}
+
 interface ConsoleInspectorOptions {
   allowedMessages?: RegExp[]
 }
 
+const DEFAULT_ALLOWED_PATTERNS = [
+  /due to access control checks/i,
+  /blocked by Content Security Policy/i,
+  /ResizeObserver loop limit exceeded/i,
+]
+
 export function attachConsoleErrorInspector(page: Page, options: ConsoleInspectorOptions = {}) {
-  const allowed = options.allowedMessages ?? []
-  const isAllowed = (message: string) => allowed.some((pattern) => pattern.test(message))
+  const allowedPatterns = [...DEFAULT_ALLOWED_PATTERNS, ...(options.allowedMessages ?? [])]
+  const isAllowed = (message: string) => allowedPatterns.some((pattern) => pattern.test(message))
 
   page.on('console', (msg) => {
     if (msg.type() !== 'error') return

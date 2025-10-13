@@ -19,7 +19,7 @@ if (cliArgs.length === 0) {
 const targetDir = cliArgs[0]
 const passthroughArgs = cliArgs.length > 1 ? cliArgs.slice(1).filter((arg) => arg !== '--') : []
 const shouldUseDocker = process.env.PLAYWRIGHT_USE_DOCKER !== 'false'
-const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3009'
+const baseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3010'
 const keepDockerUp = ['1', 'true', 'yes', 'on'].includes((process.env.PLAYWRIGHT_KEEP_DOCKER_UP || '').toLowerCase())
 let basePort = 80
 try {

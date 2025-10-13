@@ -33,12 +33,109 @@ test.describe('Companies E2E', () => {
   })
 
   test('クライアント詳細ページへ遷移できる', async ({ page }) => {
-    await page.goto('/clients', { waitUntil: 'networkidle' })
-    await page.waitForLoadState('networkidle')
-    const firstRow = page.locator('table tbody tr').first()
-    await firstRow.locator('a').first().click()
-    await page.waitForURL(/\/clients\//)
-    await expect(page.getByRole('button', { name: 'クライアント一覧へ' })).toBeVisible()
+    const adminAuth = await createAuthenticatedContext(ADMIN_EMAIL, ADMIN_PASSWORD)
+    const adminApi = adminAuth.context
+
+    const unique = Date.now()
+    const client = await createClient(adminApi, {
+      name: `クライアントE2E-${unique}`,
+      industry: 'IT・ソフトウェア',
+      contact_email: `client-e2e-${unique}@example.com`,
+      phone: '03-5555-6666',
+      address: '東京都港区1-1-1',
+    })
+
+    try {
+      await page.goto('/clients?page=1&page_size=20', { waitUntil: 'networkidle' })
+      await page.waitForLoadState('networkidle')
+
+      const targetRow = page.locator('table tbody tr').filter({ hasText: client.name }).first()
+      await expect(targetRow).toBeVisible({ timeout: 15000 })
+      await targetRow.locator('a').first().click()
+
+      await page.waitForURL(new RegExp(`/clients/${client.id}`), { timeout: 15000 })
+      await expect(page.getByRole('button', { name: 'クライアント一覧へ' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: client.name })).toBeVisible()
+    } finally {
+      await deleteResource(adminApi, `/clients/${client.id}/`)
+      await adminApi.dispose()
+    }
+  })
+
+  test('業界フィルターで選択した業界の企業のみを表示できる', async ({ page }) => {
+    const adminAuth = await createAuthenticatedContext(ADMIN_EMAIL, ADMIN_PASSWORD)
+    const adminApi = adminAuth.context
+
+    const unique = Date.now()
+    const targetIndustry = 'IT・ソフトウェア'
+    const otherIndustry = '製造業'
+
+    const targetCompany = await createCompany(adminApi, {
+      name: `フィルター対象企業-${unique}`,
+      industry: targetIndustry,
+      prefecture: '東京都',
+      city: '千代田区',
+      employee_count: 120,
+      revenue: 150000000,
+      established_year: 2015,
+      website_url: 'https://filter-target.example.com',
+      contact_email: `filter-target-${unique}@example.com`,
+      phone: '03-1111-2222',
+    })
+
+    const otherCompany = await createCompany(adminApi, {
+      name: `フィルター除外企業-${unique}`,
+      industry: otherIndustry,
+      prefecture: '大阪府',
+      city: '大阪市',
+      employee_count: 80,
+      revenue: 90000000,
+      established_year: 2012,
+      website_url: 'https://filter-other.example.com',
+      contact_email: `filter-other-${unique}@example.com`,
+      phone: '06-3333-4444',
+    })
+
+    try {
+      await page.goto('/companies', { waitUntil: 'networkidle' })
+      await page.waitForLoadState('networkidle')
+
+      const filterToggle = page.getByRole('button', { name: /フィルターを/ })
+      const toggleText = await filterToggle.textContent()
+      if (toggleText?.includes('表示')) {
+        await filterToggle.click()
+      }
+
+      const industrySelect = page.locator('[role="combobox"][data-state]').first()
+      await industrySelect.click()
+      await expect
+        .poll(
+          async () =>
+            await page.evaluate(() => document.querySelectorAll('[role="option"]').length),
+          {
+            message: '業界フィルターの候補が表示されません',
+            timeout: 5000,
+          },
+        )
+        .toBeGreaterThan(0)
+      const industryOption = page.locator('[role="option"]').filter({ hasText: targetIndustry }).first()
+      await expect(industryOption).toBeVisible()
+      await industryOption.click()
+      await expect(industrySelect).toHaveText(new RegExp(targetIndustry))
+
+      const searchButton = page.getByRole('button', { name: /^検索$/ })
+      await expect(searchButton).toBeEnabled()
+      await searchButton.click()
+      await page.waitForLoadState('networkidle')
+
+      const table = page.locator('table').first()
+      await expect(table.locator('tr', { hasText: targetCompany.name })).toBeVisible({ timeout: 20000 })
+      await expect(table.locator('tr', { hasText: otherCompany.name })).toHaveCount(0)
+    } finally {
+      await deleteResource(adminApi, `/companies/${targetCompany.id}/`)
+      await deleteResource(adminApi, `/companies/${otherCompany.id}/`)
+      await adminApi.dispose()
+    }
   })
 
   test('企業一覧から既存案件に企業を追加できる', async ({ page }) => {

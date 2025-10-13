@@ -45,6 +45,7 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
     contact_person_name: company?.contact_person_name || "",
     contact_person_position: company?.contact_person_position || "",
     facebook_url: company?.facebook_url || "",
+    facebook_page_id: company?.facebook_page_id || "",
     tob_toc_type: company?.tob_toc_type || "",
     business_description: company?.business_description || "",
     prefecture: company?.prefecture || "",
@@ -180,6 +181,18 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
                 value={formData.facebook_url}
                 onChange={(e) => updateField("facebook_url", e.target.value)}
                 placeholder="https://facebook.com/username"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Facebook Page ID */}
+            <div>
+              <Label htmlFor="facebook_page_id">FacebookページID</Label>
+              <Input
+                id="facebook_page_id"
+                value={formData.facebook_page_id}
+                onChange={(e) => updateField("facebook_page_id", e.target.value)}
+                placeholder="例: 123456789012345"
                 disabled={isLoading}
               />
             </div>

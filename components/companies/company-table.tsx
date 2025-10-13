@@ -34,6 +34,15 @@ const formatCurrency = (amount?: number | null) => {
   }).format(amount)
 }
 
+const formatDateTime = (value?: string | null) => {
+  if (!value) return "-"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+  return new Intl.DateTimeFormat('ja-JP', { dateStyle: 'short', timeStyle: 'short' }).format(date)
+}
+
 const formatEmployeeCount = (count?: number | null) => {
   if (count === null || count === undefined || Number.isNaN(Number(count))) {
     return "-"
@@ -128,6 +137,7 @@ export function CompanyTable({
                 <TableHead>企業名</TableHead>
                 <TableHead>担当者</TableHead>
                 <TableHead>Facebook</TableHead>
+                <TableHead>最新の更新</TableHead>
                 <TableHead>業界</TableHead>
                 <TableHead>従業員数</TableHead>
                 <TableHead>売上</TableHead>
@@ -139,7 +149,7 @@ export function CompanyTable({
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={selectable ? 10 : 9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={selectable ? 11 : 10} className="text-center py-8 text-muted-foreground">
                     企業が見つかりません。検索条件を調整してください。
                   </TableCell>
                 </TableRow>
@@ -261,6 +271,22 @@ export function CompanyTable({
                         ) : (
                           <span className="text-xs text-muted-foreground">未設定</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <p className="text-sm">{formatDateTime(company.latest_activity_at)}</p>
+                          <div className="flex flex-col text-[11px] text-muted-foreground">
+                            {company.facebook_friend_count !== undefined && company.facebook_friend_count !== null && (
+                              <span>友だち {company.facebook_friend_count.toLocaleString()}人</span>
+                            )}
+                            {company.facebook_latest_post_at && (
+                              <span>投稿 {formatDateTime(company.facebook_latest_post_at)}</span>
+                            )}
+                            {company.facebook_data_synced_at && (
+                              <span className="text-[10px]">同期 {formatDateTime(company.facebook_data_synced_at)}</span>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>{company.industry}</TableCell>
                       <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>

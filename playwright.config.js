@@ -9,7 +9,7 @@ module.exports = defineConfig({
   reporter: 'list',
   
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3009',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3010',
     trace: 'on-first-retry',
     headless: true,
   },

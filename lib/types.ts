@@ -65,7 +65,8 @@ export interface Company {
   contact_person_name?: string
   contact_person_position?: string
   facebook_url?: string
-  
+  facebook_page_id?: string
+ 
   // 事業情報
   tob_toc_type?: string
   business_description?: string
@@ -93,6 +94,10 @@ export interface Company {
   notes: string
   status?: "active" | "prospect" | "inactive"
   is_global_ng: boolean
+  facebook_friend_count?: number | null
+  facebook_latest_post_at?: string | null
+  facebook_data_synced_at?: string | null
+  latest_activity_at?: string | null
   created_at: string
   updated_at: string
   executives?: Executive[]
@@ -318,6 +323,8 @@ export interface CompanyFormData {
   prefecture: string
   city: string
   established_year: number
+  facebook_url?: string
+  facebook_page_id?: string
   website_url?: string
   contact_email?: string
   phone?: string

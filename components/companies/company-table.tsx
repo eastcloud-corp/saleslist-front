@@ -81,6 +81,9 @@ export function CompanyTable({
   onAddToProject,
   totalCount,
 }: CompanyTableProps) {
+  const showFacebookActivity = process.env.NEXT_PUBLIC_SHOW_FACEBOOK_ACTIVITY === 'true'
+  const emptyStateColSpan = (selectable ? 1 : 0) + 9 + (showFacebookActivity ? 1 : 0)
+
   if (isLoading) {
     return (
       <Card>
@@ -137,7 +140,7 @@ export function CompanyTable({
                 <TableHead>企業名</TableHead>
                 <TableHead>担当者</TableHead>
                 <TableHead>Facebook</TableHead>
-                <TableHead>最新の更新</TableHead>
+                {showFacebookActivity && <TableHead>最新の更新</TableHead>}
                 <TableHead>業界</TableHead>
                 <TableHead>従業員数</TableHead>
                 <TableHead>売上</TableHead>
@@ -149,7 +152,7 @@ export function CompanyTable({
             <TableBody>
               {companies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={selectable ? 11 : 10} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={emptyStateColSpan} className="text-center py-8 text-muted-foreground">
                     企業が見つかりません。検索条件を調整してください。
                   </TableCell>
                 </TableRow>
@@ -272,6 +275,7 @@ export function CompanyTable({
                           <span className="text-xs text-muted-foreground">未設定</span>
                         )}
                       </TableCell>
+                    {showFacebookActivity && (
                       <TableCell>
                         <div className="space-y-1">
                           <p className="text-sm">{formatDateTime(company.latest_activity_at)}</p>
@@ -288,6 +292,7 @@ export function CompanyTable({
                           </div>
                         </div>
                       </TableCell>
+                    )}
                       <TableCell>{company.industry}</TableCell>
                       <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>
                       <TableCell>{formatCurrency(company.revenue)}</TableCell>

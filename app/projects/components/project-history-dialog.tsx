@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
+import { Fragment, useCallback, useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -11,8 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import type { Project, ProjectSnapshot } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-const HISTORY_PAGE_SIZE = 25
-const HISTORY_DAYS = 7
+const HISTORY_PAGE_SIZE = 50
 
 const OVERVIEW_LABELS: Record<string, string> = {
   name: "案件名",
@@ -75,12 +74,20 @@ function formatDateTime(value: string): string {
   }
 }
 
-function formatOverviewEntries(overview: ProjectSnapshot["project_overview"]): Array<{ key: string; label: string; value: string }> {
+function formatOverviewEntries(
+  overview: ProjectSnapshot["project_overview"],
+): Array<{ key: string; label: string; value: string }> {
   if (!overview) return []
 
   return Object.entries(overview)
     .map(([key, rawValue]) => {
       const label = OVERVIEW_LABELS[key] ?? key
+      const normalizedKey = key.replace(/[\s_-]/g, "").toLowerCase()
+      const normalizedLabel = label.replace(/[\s_-]/g, "").toLowerCase()
+
+      if (normalizedKey === "servicecoverage" || normalizedLabel === "servicecoverage") {
+        return null
+      }
       let value: string
 
       if (rawValue == null || rawValue === "") {
@@ -95,6 +102,7 @@ function formatOverviewEntries(overview: ProjectSnapshot["project_overview"]): A
 
       return { key, label, value }
     })
+    .filter((entry): entry is { key: string; label: string; value: string } => entry !== null)
 }
 
 export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }: ProjectHistoryDialogProps) {
@@ -145,20 +153,6 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
     }
   }, [open, projectId, fetchSnapshots])
 
-  const recentSnapshots = useMemo(() => {
-    if (!snapshots.length) return []
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - HISTORY_DAYS)
-    return snapshots.filter((snapshot) => {
-      if (!snapshot.created_at) return false
-      const createdAt = new Date(snapshot.created_at)
-      return !Number.isNaN(createdAt.getTime()) && createdAt >= cutoff
-    })
-  }, [snapshots])
-
-  const displaySnapshots = recentSnapshots.length > 0 ? recentSnapshots : snapshots
-  const showFallbackNotice = recentSnapshots.length === 0 && snapshots.length > 0
-
   const handleRestore = useCallback(
     async (snapshotId: number) => {
       if (!projectId) return
@@ -206,7 +200,7 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
         <DialogHeader>
           <DialogTitle>{projectLabel} の履歴</DialogTitle>
           <DialogDescription>
-            過去{HISTORY_DAYS}日以内に保存されたスナップショットを表示します。必要に応じて復元操作を行うことができます。
+            最新{HISTORY_PAGE_SIZE}件の履歴を表示します。必要に応じて復元操作を行うことができます。
           </DialogDescription>
         </DialogHeader>
 
@@ -218,17 +212,10 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
           <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
-        ) : displaySnapshots.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            過去{HISTORY_DAYS}日以内の履歴は見つかりませんでした。
-          </p>
+        ) : snapshots.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">履歴が見つかりませんでした。</p>
         ) : (
-          <div className="max-h-[520px] overflow-y-auto overflow-x-auto pr-2">
-            {showFallbackNotice && (
-              <p className="mb-3 text-xs text-muted-foreground">
-                過去{HISTORY_DAYS}日以内の履歴が無かったため、取得できる最新の履歴を表示しています。
-              </p>
-            )}
+          <div className="max-h-[70vh] min-h-[360px] overflow-y-auto overflow-x-auto pr-2">
             <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
@@ -241,7 +228,7 @@ export function ProjectHistoryDialog({ project, open, onOpenChange, onRestored }
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {displaySnapshots.map((snapshot) => {
+                {snapshots.map((snapshot) => {
                   const changed = extractChangedFields(snapshot)
                   const overviewEntries = formatOverviewEntries(snapshot.project_overview)
                   const summaryEntries = overviewEntries.slice(0, 6)

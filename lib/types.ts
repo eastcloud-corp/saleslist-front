@@ -290,6 +290,7 @@ export interface NGImportResult {
 export interface CompanyFilter {
   search?: string
   industry?: string | string[]
+  role_category?: string | string[]
   employee_min?: number
   employee_max?: number
   revenue_min?: number

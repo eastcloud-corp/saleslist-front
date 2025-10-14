@@ -12,6 +12,15 @@ import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
 import type { Company, CompanyFilter, PaginatedResponse } from "@/lib/types"
 
+const ROLE_CATEGORIES = [
+  { value: "leadership", label: "代表・CEO" },
+  { value: "board", label: "取締役・ボード" },
+  { value: "executive", label: "執行役員・本部長" },
+  { value: "c_suite", label: "CxO・経営陣" },
+  { value: "advisor", label: "顧問・アドバイザー" },
+  { value: "other", label: "その他" },
+]
+
 interface CompanyFiltersProps {
   filters: CompanyFilter
   onFiltersChange: (filters: CompanyFilter) => void
@@ -151,6 +160,39 @@ export function CompanyFilters({
                     </button>
                   </Badge>
                 ))}
+              </div>
+            </div>
+
+            {/* Role Category */}
+            <div>
+              <Label>役職カテゴリ</Label>
+              <Select onValueChange={(value) => addArrayFilter("role_category", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="役職カテゴリを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_CATEGORIES.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {toArray(filters.role_category).map((category) => {
+                  const label = ROLE_CATEGORIES.find((item) => item.value === category)?.label || category
+                  return (
+                    <Badge key={category} variant="secondary" className="text-xs">
+                      {label}
+                      <button
+                        onClick={() => removeArrayFilter("role_category", category)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )
+                })}
               </div>
             </div>
 

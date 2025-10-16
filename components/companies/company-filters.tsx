@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Filter, X } from "lucide-react"
+import { Search, Filter, X, Plus } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
 import type { Company, CompanyFilter, PaginatedResponse } from "@/lib/types"
+import { INDUSTRY_SUGGESTIONS } from "@/constants/industry-options"
 
 const ROLE_CATEGORIES = [
   { value: "leadership", label: "代表・CEO" },
@@ -40,6 +40,8 @@ export function CompanyFilters({
 }: CompanyFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [industries, setIndustries] = useState<string[]>([])
+  const [industryQuery, setIndustryQuery] = useState("")
+  const [isIndustryFocused, setIsIndustryFocused] = useState(false)
 
   useEffect(() => {
     // 実際のデータから業界一覧を取得
@@ -94,6 +96,38 @@ export function CompanyFilters({
     )
   }
 
+  const combinedIndustryOptions = useMemo(() => {
+    const dynamicOptions = industries.filter((option): option is string => Boolean(option))
+    const merged = [...INDUSTRY_SUGGESTIONS, ...dynamicOptions]
+    return Array.from(new Set(merged))
+  }, [industries])
+
+  const selectedIndustries = toArray(filters.industry)
+  const availableIndustryOptions = useMemo(
+    () => combinedIndustryOptions.filter((option) => !selectedIndustries.includes(option)),
+    [combinedIndustryOptions, selectedIndustries],
+  )
+
+  const filteredIndustryOptions = useMemo(() => {
+    const normalizedQuery = industryQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return availableIndustryOptions.slice(0, 15)
+    }
+    return availableIndustryOptions
+      .filter((option) => option.toLowerCase().includes(normalizedQuery))
+      .slice(0, 15)
+  }, [availableIndustryOptions, industryQuery])
+
+  const handleIndustrySelect = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return
+    }
+    addArrayFilter("industry", trimmed)
+    setIndustryQuery("")
+    setIsIndustryFocused(false)
+  }
+
   const hasActiveFilters = Object.values(filters).some((value) => {
     if (Array.isArray(value)) {
       return value.length > 0
@@ -103,6 +137,8 @@ export function CompanyFilters({
     }
     return value !== undefined && value !== null
   })
+
+  const showIndustryDropdown = (isIndustryFocused || Boolean(industryQuery.trim())) && filteredIndustryOptions.length > 0
 
   return (
     <Card className="mb-6">
@@ -136,18 +172,59 @@ export function CompanyFilters({
             {/* Industry Filter */}
             <div>
               <Label>業界</Label>
-              <Select onValueChange={(value) => addArrayFilter("industry", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="業界を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {industries.map((industry) => (
-                    <SelectItem key={industry} value={industry}>
-                      {industry}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-start gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    value={industryQuery}
+                    placeholder="業界を入力または選択..."
+                    onChange={(event) => setIndustryQuery(event.target.value)}
+                    onFocus={() => setIsIndustryFocused(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setIsIndustryFocused(false), 120)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        handleIndustrySelect(industryQuery)
+                      }
+                      if (event.key === "Escape") {
+                        setIndustryQuery("")
+                        setIsIndustryFocused(false)
+                      }
+                    }}
+                  />
+                  {showIndustryDropdown && (
+                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
+                      <ul className="max-h-56 overflow-auto py-1 text-sm">
+                        {filteredIndustryOptions.map((option) => (
+                          <li key={option}>
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                handleIndustrySelect(option)
+                              }}
+                            >
+                              {option}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleIndustrySelect(industryQuery)}
+                  disabled={!industryQuery.trim()}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  追加
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 {toArray(filters.industry).map((industry) => (
                   <Badge key={industry} variant="secondary" className="text-xs">

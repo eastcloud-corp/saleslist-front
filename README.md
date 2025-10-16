@@ -2,6 +2,12 @@
 
 Next.js + React による BtoB営業支援プラットフォームのフロントエンドアプリケーション
 
+## 📄 設計ドキュメント
+
+設計書や運用ルール（`AGENTS.md` など）はリポジトリ `saleslist-docs` で一元管理しています。
+詳細は以下をご確認ください。
+- https://github.com/eastcloud-corp/saleslist-docs
+
 ## 🚀 起動手順
 
 ### **1. 依存関係のインストール**

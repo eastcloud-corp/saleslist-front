@@ -43,6 +43,11 @@ export default function CompanySelectionPage() {
   const [newProjectName, setNewProjectName] = useState("")
 
   const industryValue = Array.isArray(filters.industry) ? filters.industry[0] : filters.industry
+  const formatErrorMessages = (messages: string[]) =>
+    messages
+      .filter((message) => typeof message === "string" && message.trim().length > 0)
+      .map((message) => `・${message}`)
+      .join("\n")
 
   const fetchCompanies = async () => {
     if (!clientId) return
@@ -210,7 +215,7 @@ export default function CompanySelectionPage() {
       if (errors.length > 0) {
         toast({
           title: "一部の企業を追加できませんでした",
-          description: errors.join("\n"),
+          description: formatErrorMessages(errors),
           variant: "destructive",
         })
       }
@@ -295,7 +300,7 @@ export default function CompanySelectionPage() {
       if (errors.length > 0) {
         toast({
           title: "一部の企業を追加できませんでした",
-          description: errors.join("\n"),
+          description: formatErrorMessages(errors),
           variant: "destructive",
         })
       }

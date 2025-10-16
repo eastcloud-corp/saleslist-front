@@ -11,6 +11,7 @@ export const API_CONFIG = {
     // Clients
     CLIENTS: "/clients/",
     CLIENT_DETAIL: (id: string) => `/clients/${id}/`,
+    CLIENT_EXPORT_COMPANIES: (id: string | number) => `/clients/${id}/export-companies/`,
 
     // Companies
     COMPANIES: "/companies/",

@@ -184,22 +184,45 @@ export default function CompanySelectionPage() {
       const response = await apiClient.post(`/projects/${selectedProjectId}/add-companies/`, {
         company_ids: Array.from(selectedCompanies),
       })
-
-      if (!response.ok) {
-        throw new Error("Failed to add companies")
+      let data: any = null
+      try {
+        data = await response.json()
+      } catch {
+        data = null
       }
 
-      toast({
-        title: "成功",
-        description: `${selectedCompanies.size}社を案件に追加しました`,
-      })
+      if (!response.ok) {
+        const message =
+          (data && typeof data.error === "string" && data.error) || "企業追加に失敗しました"
+        throw new Error(message)
+      }
 
-      router.push(`/projects/${selectedProjectId}`)
+      const addedCount = typeof data?.added_count === "number" ? data.added_count : 0
+      const errors = Array.isArray(data?.errors) ? data.errors.filter(Boolean) : []
+
+      if (addedCount > 0) {
+        toast({
+          title: "成功",
+          description: `${addedCount}社を案件に追加しました`,
+        })
+      }
+
+      if (errors.length > 0) {
+        toast({
+          title: "一部の企業を追加できませんでした",
+          description: errors.join("\n"),
+          variant: "destructive",
+        })
+      }
+
+      if (addedCount > 0) {
+        router.push(`/projects/${selectedProjectId}`)
+      }
     } catch (error) {
       console.error("企業追加に失敗しました:", error)
       toast({
         title: "エラー",
-        description: "企業追加に失敗しました",
+        description: error instanceof Error ? error.message : "企業追加に失敗しました",
         variant: "destructive",
       })
     } finally {
@@ -247,22 +270,42 @@ export default function CompanySelectionPage() {
       const addResponse = await apiClient.post(`/projects/${newProjectId}/add-companies/`, {
         company_ids: Array.from(selectedCompanies),
       })
+      let addData: any = null
+      try {
+        addData = await addResponse.json()
+      } catch {
+        addData = null
+      }
 
       if (!addResponse.ok) {
-        throw new Error("Failed to add companies to project")
+        const message =
+          (addData && typeof addData.error === "string" && addData.error) ||
+          "企業追加に失敗しました"
+        throw new Error(message)
       }
+
+      const addedCount = typeof addData?.added_count === "number" ? addData.added_count : 0
+      const errors = Array.isArray(addData?.errors) ? addData.errors.filter(Boolean) : []
 
       toast({
         title: "成功",
-        description: `新規案件「${newProjectName}」を作成し、${selectedCompanies.size}社を追加しました`,
+        description: `新規案件「${newProjectName}」を作成し、${addedCount}社を追加しました`,
       })
+
+      if (errors.length > 0) {
+        toast({
+          title: "一部の企業を追加できませんでした",
+          description: errors.join("\n"),
+          variant: "destructive",
+        })
+      }
 
       router.push(`/projects/${newProjectId}`)
     } catch (error) {
       console.error("新規案件作成に失敗しました:", error)
       toast({
         title: "エラー",
-        description: "新規案件作成に失敗しました",
+        description: error instanceof Error ? error.message : "新規案件作成に失敗しました",
         variant: "destructive",
       })
     } finally {

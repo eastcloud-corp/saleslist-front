@@ -11,7 +11,7 @@ import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
 import { ClientForm } from "@/components/clients/client-form"
 import { NGListTab } from "@/components/clients/ng-list-tab"
-import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users } from "lucide-react"
+import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users, Download } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
+import { downloadCSV } from "@/lib/csv-utils"
+import { useToast } from "@/hooks/use-toast"
 
 interface ClientDetailPageProps {
   params: Promise<{
@@ -39,11 +41,13 @@ function ClientDetailContent({ id }: { id: number }) {
   const [newProjectName, setNewProjectName] = useState("")
   const [newProjectDescription, setNewProjectDescription] = useState("")
   const [newProjectManager, setNewProjectManager] = useState("")
+  const [isExporting, setIsExporting] = useState(false)
 
   const { client, loading: clientLoading, error: clientError } = useClient(id)
   const { stats, loading: statsLoading } = useClientStats(id)
   const { projects, loading: projectsLoading, refetch: refetchProjects } = useClientProjects(id)
   const { updateClient } = useClients()
+  const { toast } = useToast()
   
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) return
@@ -89,6 +93,42 @@ function ClientDetailContent({ id }: { id: number }) {
     )
   }
 
+  const handleExportCompanies = async () => {
+    if (!client) return
+
+    setIsExporting(true)
+    try {
+      const csvContent = await apiClient.get<string>(
+        API_CONFIG.ENDPOINTS.CLIENT_EXPORT_COMPANIES(client.id.toString()),
+        {
+          headers: {
+            Accept: "text/csv",
+          },
+        }
+      )
+
+      downloadCSV(
+        typeof csvContent === "string" ? csvContent : String(csvContent),
+        `client-${client.id}-companies.csv`
+      )
+
+      toast({
+        title: "エクスポート完了",
+        description: "企業リストのCSVをダウンロードしました。",
+      })
+    } catch (error) {
+      console.error("企業リストのエクスポートに失敗しました:", error)
+      const message = error instanceof Error ? error.message : "企業リストのエクスポートに失敗しました"
+      toast({
+        title: "エラー",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -110,6 +150,10 @@ function ClientDetailContent({ id }: { id: number }) {
             <Badge variant={client.is_active ? "default" : "secondary"}>
               {client.is_active ? "アクティブ" : "非アクティブ"}
             </Badge>
+            <Button variant="outline" onClick={handleExportCompanies} disabled={isExporting}>
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "エクスポート中..." : "企業リストをエクスポート"}
+            </Button>
             <Link href={`/clients/${id}/select-companies`}>
               <Button variant="outline">
                 <Users className="h-4 w-4 mr-2" />

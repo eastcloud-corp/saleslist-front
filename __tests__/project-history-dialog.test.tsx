@@ -82,7 +82,7 @@ describe('ProjectHistoryDialog', () => {
     )
 
     await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith('/projects/1/snapshots/?page_size=25')
+      expect(mockGet).toHaveBeenCalledWith('/projects/1/snapshots/?page_size=50')
       expect(screen.getByText('一括編集')).toBeInTheDocument()
     })
 
@@ -158,7 +158,7 @@ describe('ProjectHistoryDialog', () => {
     })
   })
 
-  it('displays fallback notice when only older snapshots exist', async () => {
+  it('shows available snapshots even when only older entries exist', async () => {
     const olderSnapshot = createSnapshot({
       id: 202,
       created_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
@@ -181,9 +181,8 @@ describe('ProjectHistoryDialog', () => {
     )
 
     await waitFor(() => {
-      expect(
-        screen.getByText('過去7日以内の履歴が無かったため、取得できる最新の履歴を表示しています。'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('完了')).toBeInTheDocument()
+      expect(screen.getByText('詳細を見る')).toBeInTheDocument()
     })
   })
 

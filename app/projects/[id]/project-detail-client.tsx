@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Edit, Trash2, Calendar, FolderOpen, Loader2 } from "lucide-react"
+import { ArrowLeft, Edit, Trash2, Calendar, FolderOpen, Loader2, Download } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
+import { API_CONFIG } from "@/lib/api-config"
+import { downloadCSV } from "@/lib/csv-utils"
+import { useToast } from "@/hooks/use-toast"
 
 interface ProjectDetailClientProps {
   projectId: string
@@ -20,7 +24,9 @@ interface ProjectDetailClientProps {
 export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const { project, isLoading, error, updateProject, updateCompanyStatus, removeCompany } = useProject(projectId)
 
@@ -74,6 +80,33 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
     } catch (error) {
       console.error(`[v0] 企業アクティブ状態更新エラー:`, error)
       throw error
+    }
+  }
+
+  const handleExportCompanies = async () => {
+    if (!project) return
+
+    setIsExporting(true)
+    try {
+      const blob = await apiClient.downloadFile(API_CONFIG.ENDPOINTS.PROJECT_EXPORT(project.id.toString()))
+      const csvContent = await blob.text()
+
+      downloadCSV(csvContent, `project-${project.id}-companies.csv`)
+
+      toast({
+        title: "エクスポート完了",
+        description: "案件の企業リストをダウンロードしました。",
+      })
+    } catch (error) {
+      console.error("[ProjectDetail] 企業リストのエクスポートに失敗しました:", error)
+      const message = error instanceof Error ? error.message : "企業リストのエクスポートに失敗しました"
+      toast({
+        title: "エラー",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -151,6 +184,10 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
         <div className="flex items-center gap-2">
           {!isEditing && (
             <>
+              <Button variant="outline" onClick={handleExportCompanies} disabled={isExporting}>
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "エクスポート中..." : "企業リストをエクスポート"}
+              </Button>
               <Button variant="outline" onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 編集

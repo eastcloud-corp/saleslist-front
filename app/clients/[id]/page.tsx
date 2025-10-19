@@ -98,19 +98,12 @@ function ClientDetailContent({ id }: { id: number }) {
 
     setIsExporting(true)
     try {
-      const csvContent = await apiClient.get<string>(
-        API_CONFIG.ENDPOINTS.CLIENT_EXPORT_COMPANIES(client.id.toString()),
-        {
-          headers: {
-            Accept: "text/csv",
-          },
-        }
+      const blob = await apiClient.downloadFile(
+        API_CONFIG.ENDPOINTS.CLIENT_EXPORT_COMPANIES(client.id.toString())
       )
+      const csvContent = await blob.text()
 
-      downloadCSV(
-        typeof csvContent === "string" ? csvContent : String(csvContent),
-        `client-${client.id}-companies.csv`
-      )
+      downloadCSV(csvContent, `client-${client.id}-companies.csv`)
 
       toast({
         title: "エクスポート完了",

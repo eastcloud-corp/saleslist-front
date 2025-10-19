@@ -127,6 +127,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
             message,
           },
         ])
+        setStep("validate")
       } else {
         setValidationErrors([
           {
@@ -136,6 +137,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
             message: "インポート処理でエラーが発生しました。内容を確認して再度お試しください。",
           },
         ])
+        setStep("validate")
       }
     } finally {
       setIsImporting(false)

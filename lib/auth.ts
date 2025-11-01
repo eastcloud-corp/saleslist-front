@@ -1,6 +1,6 @@
 //\`\`\`tsx file="lib/auth.ts"
-import { apiClient, API_CONFIG } from "./api-config"
-import type { User, ApiResponse } from "./types"
+import { resolveApiBaseUrl } from "./api-base"
+import type { User } from "./types"
 
 export interface LoginCredentials {
   email: string
@@ -11,6 +11,22 @@ export interface AuthResponse {
   user: User
   access_token: string
   refresh_token: string
+  mfa_required?: false
+}
+
+export interface LoginPendingResponse {
+  mfa_required: true
+  pending_auth_id: string
+  email: string
+  expires_in: number
+  resend_interval: number
+}
+
+export type LoginResult = AuthResponse | LoginPendingResponse
+
+export interface VerifyMfaPayload {
+  pending_auth_id: string
+  token: string
 }
 
 class AuthService {
@@ -33,11 +49,12 @@ class AuthService {
     return AuthService.instance
   }
 
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+  async login(credentials: LoginCredentials): Promise<LoginResult> {
     console.log("[v0] Login attempt with credentials:", { email: credentials.email })
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login/`, {
+      const baseUrl = resolveApiBaseUrl()
+      const response = await fetch(`${baseUrl}/api/v1/auth/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -52,16 +69,31 @@ class AuthService {
         throw new Error("ログインに失敗しました")
       }
 
-      const data: AuthResponse = await response.json()
+      const data: any = await response.json()
       console.log("[v0] Login response data:", data)
 
-      if (data.access_token && data.refresh_token) {
-        console.log("[v0] Login successful, setting tokens")
-        this.setTokens(data.access_token, data.refresh_token)
-        return data
+      const mfaRequired =
+        data?.mfa_required === true ||
+        (typeof data === "object" && data !== null && "pending_auth_id" in data && Boolean(data.pending_auth_id))
+
+      if (mfaRequired) {
+        console.log("[v0] MFA required, returning pending challenge")
+        return {
+          mfa_required: true,
+          pending_auth_id: data.pending_auth_id,
+          email: data.email,
+          expires_in: data.expires_in,
+          resend_interval: data.resend_interval,
+        }
       }
 
-      console.log("[v0] Login failed - missing tokens in response")
+      if (data?.access_token && data?.refresh_token && data?.user) {
+        console.log("[v0] Login successful, setting tokens")
+        this.setTokens(data.access_token, data.refresh_token)
+        return data as AuthResponse
+      }
+
+      console.log("[v0] Login failed - missing expected fields in response")
       throw new Error("ログインに失敗しました - 無効なレスポンス形式")
     } catch (error) {
       console.error("[v0] Login error:", error)
@@ -69,10 +101,71 @@ class AuthService {
     }
   }
 
+  async verifyMfa(payload: VerifyMfaPayload): Promise<AuthResponse> {
+    console.log('[v0] Verifying MFA token', { pending_auth_id: payload.pending_auth_id })
+
+    try {
+      const baseUrl = resolveApiBaseUrl()
+      const response = await fetch(`${baseUrl}/api/v1/auth/mfa/verify/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pending_auth_id: payload.pending_auth_id,
+          token: payload.token,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ }))
+        console.log('[v0] MFA verify failed - response not ok', errorData)
+        throw new Error(errorData.error || '確認コードの検証に失敗しました')
+      }
+
+      const data: AuthResponse = await response.json()
+      if (data?.access_token && data?.refresh_token && data?.user) {
+        this.setTokens(data.access_token, data.refresh_token)
+        console.log('[v0] MFA verification succeeded')
+        return data
+      }
+
+      throw new Error('確認コードの検証に失敗しました - 無効なレスポンス形式')
+    } catch (error) {
+      console.error('[v0] MFA verify error:', error)
+      throw error
+    }
+  }
+
+  async resendMfa(pendingAuthId: string): Promise<void> {
+    console.log('[v0] Resending MFA token', { pending_auth_id: pendingAuthId })
+
+    try {
+      const baseUrl = resolveApiBaseUrl()
+      const response = await fetch(`${baseUrl}/api/v1/auth/mfa/resend/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pending_auth_id: pendingAuthId }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ }))
+        console.log('[v0] MFA resend failed - response not ok', errorData)
+        throw new Error(errorData.error || '確認コードの再送に失敗しました')
+      }
+    } catch (error) {
+      console.error('[v0] MFA resend error:', error)
+      throw error
+    }
+  }
+
   async logout(): Promise<void> {
     try {
       const refreshToken = this.getRefreshToken()
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout/`, {
+      const baseUrl = resolveApiBaseUrl()
+      await fetch(`${baseUrl}/api/v1/auth/logout/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,7 +185,8 @@ class AuthService {
       throw new Error("リフレッシュトークンが利用できません")
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh/`, {
+    const baseUrl = resolveApiBaseUrl()
+    const response = await fetch(`${baseUrl}/api/v1/auth/refresh/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
@@ -70,6 +70,9 @@ export function ProjectCSVImportDialog({ open, onOpenChange, onImport }: Project
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>案件CSVインポート</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            案件情報が含まれる CSV ファイルをアップロードし、内容を確認してインポートします。
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

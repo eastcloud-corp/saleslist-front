@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
@@ -58,6 +58,9 @@ export function AddToNGDialog({ open, onOpenChange, company, onSuccess }: AddToN
             <Shield className="h-5 w-5 text-amber-600" />
             NG企業として登録
           </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            選択した企業をクライアントのNGリストに追加し、理由を記録します。
+          </DialogDescription>
         </DialogHeader>
 
         {company && (

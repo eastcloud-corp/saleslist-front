@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import type { Executive } from "@/lib/types"
 import { Plus, Edit, Trash2, ExternalLink, User } from "lucide-react"
 
@@ -183,6 +183,9 @@ export function ExecutiveList({ executives, onAdd, onEdit, onDelete, isLoading =
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>新しい役員を追加</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  役員の氏名や役職、連絡先情報を入力して保存してください。
+                </DialogDescription>
               </DialogHeader>
               <ExecutiveForm />
             </DialogContent>
@@ -276,6 +279,9 @@ export function ExecutiveList({ executives, onAdd, onEdit, onDelete, isLoading =
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>役員を編集</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                選択した役員の情報を更新し、変更内容を保存します。
+              </DialogDescription>
             </DialogHeader>
             <ExecutiveForm isEdit />
           </DialogContent>

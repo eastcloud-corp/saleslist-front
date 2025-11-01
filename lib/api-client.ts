@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from "./api-base"
 import { API_CONFIG } from "./api-config"
 
 class ApiError extends Error {
@@ -100,9 +101,7 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
-    const baseUrl = (typeof window === "undefined"
-      ? process.env.NEXT_INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL
-      : process.env.NEXT_PUBLIC_API_URL) + "/api/v1"
+    const baseUrl = `${resolveApiBaseUrl()}/api/v1`
     return `${baseUrl}${endpoint}`
   }
 

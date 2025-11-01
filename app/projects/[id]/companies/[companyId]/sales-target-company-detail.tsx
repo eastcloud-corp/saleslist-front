@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ArrowLeft, Building2, ExternalLink, Calendar, History, Plus, TrendingUp, Edit, Trash2, Shield, ShieldOff } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-config"
@@ -344,6 +344,9 @@ export function SalesTargetCompanyDetail({ projectId, companyId }: SalesTargetCo
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>営業履歴追加</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      ステータスや日付、メモを入力して新しい営業履歴を追加します。
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -491,6 +494,9 @@ export function SalesTargetCompanyDetail({ projectId, companyId }: SalesTargetCo
           <DialogContent>
             <DialogHeader>
               <DialogTitle>営業履歴編集</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                選択した履歴の内容を修正し、保存します。
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>

@@ -11,7 +11,7 @@ import type { Project } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -457,6 +457,9 @@ export default function ProjectsPage() {
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>新規案件作成</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      案件名や概要を入力し、新しい案件を登録します。
+                    </DialogDescription>
                   </DialogHeader>
                   <ProjectForm onSave={handleCreateProject} onCancel={() => setIsCreateDialogOpen(false)} />
                 </DialogContent>
@@ -680,6 +683,9 @@ export default function ProjectsPage() {
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>新規案件作成</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      案件名と概要、担当者を入力して新しい案件を登録します。
+                    </DialogDescription>
                   </DialogHeader>
                   <ProjectForm onSave={handleCreateProject} onCancel={() => setIsCreateDialogOpen(false)} />
                 </DialogContent>

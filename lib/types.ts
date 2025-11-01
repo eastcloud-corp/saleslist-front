@@ -35,6 +35,45 @@ export interface ApiErrorResponse {
   message?: string
 }
 
+export type DataCollectionStatus = "QUEUED" | "RUNNING" | "SUCCESS" | "FAILURE"
+
+export interface DataCollectionRun {
+  execution_uuid: string
+  job_name: string
+  data_source: string[]
+  status: DataCollectionStatus
+  started_at: string | null
+  finished_at: string | null
+  duration_seconds: number
+  input_count: number
+  inserted_count: number
+  skipped_count: number
+  error_count: number
+  skip_breakdown?: Record<string, number> | null
+  error_summary?: string | null
+  metadata?: Record<string, unknown> | null
+  next_scheduled_for?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DataCollectionRunListResponse {
+  next_scheduled_for: string | null
+  schedules: Record<string, string | null>
+  count: number
+  next: string | null
+  previous: string | null
+  results: DataCollectionRun[]
+}
+
+export interface DataCollectionTriggerResponse {
+  execution_uuid: string
+  task_id: string | null
+  next_scheduled_for: string | null
+  run: DataCollectionRun
+  schedules: Record<string, string | null>
+}
+
 // Client Types
 export interface Client {
   id: number
@@ -379,6 +418,82 @@ export interface CSVImportResult {
     field: string
     message: string
   }>
+}
+
+// Company Review Types
+export type CompanyReviewDecision =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "updated"
+
+export type CompanyReviewBatchStatus =
+  | "pending"
+  | "in_review"
+  | "approved"
+  | "rejected"
+  | "partial"
+
+export type CompanyReviewSourceType = "RULE" | "AI" | "MANUAL"
+
+export interface CompanyReviewItem {
+  id: number
+  batch_id: number
+  candidate_id: number
+  field: string
+  current_value: string | null
+  candidate_value: string
+  confidence: number
+  source_type: CompanyReviewSourceType
+  source_detail?: string | null
+  collected_at?: string | null
+  block_reproposal: boolean
+  rejection_reason_code?: string | null
+  rejection_reason_detail?: string | null
+  source_company_name?: string | null
+  source_corporate_number?: string | null
+  decision: CompanyReviewDecision
+  comment?: string
+  decided_by?: number | null
+  decided_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CompanyReviewBatch {
+  id: number
+  company_id: number
+  company_name: string
+  status: CompanyReviewBatchStatus
+  pending_items: number
+  total_items: number
+  latest_collected_at?: string | null
+  sources: CompanyReviewSourceType[]
+  candidate_fields: string[]
+  assigned_to_id?: number | null
+  assigned_to_name?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CompanyReviewBatchDetail extends CompanyReviewBatch {
+  items: CompanyReviewItem[]
+}
+
+export type CompanyReviewDecisionAction = "approve" | "reject" | "update"
+
+export interface CompanyReviewDecisionItemPayload {
+  id: number
+  decision: CompanyReviewDecisionAction
+  comment?: string
+  new_value?: string
+  block_reproposal?: boolean
+  rejection_reason_code?: string
+  rejection_reason_detail?: string
+}
+
+export interface CompanyReviewDecisionPayload {
+  items: CompanyReviewDecisionItemPayload[]
 }
 
 // Error Types

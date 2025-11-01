@@ -15,8 +15,8 @@ import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
 import { API_CONFIG } from "@/lib/api-config"
 import { apiClient, ApiError } from "@/lib/api-client"
 import { useAuth } from "@/hooks/use-auth"
-import type { CompanyFilter as CompanyFiltersType } from "@/lib/types"
-import { Download, Plus, Upload, Database } from "lucide-react"
+import type { CompanyFilter as CompanyFiltersType, CompanyReviewBatch } from "@/lib/types"
+import { Download, Plus, Upload, Database, Building2, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog"
 import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
@@ -46,6 +46,47 @@ function CompaniesPageContent() {
   const { companies, pagination, isLoading, error, refetch } = useCompanies(appliedFilters, currentPage, 100)
   const { toast } = useToast()
   const router = useRouter()
+  const [isCorporateSummaryLoading, setIsCorporateSummaryLoading] = useState(true)
+  const [corporateSummaryError, setCorporateSummaryError] = useState<string | null>(null)
+  const [corporateReviewSummary, setCorporateReviewSummary] = useState<{
+    pendingItems: number
+    batchCount: number
+  } | null>(null)
+
+  const fetchCorporateReviewSummary = useCallback(async () => {
+    setIsCorporateSummaryLoading(true)
+    setCorporateSummaryError(null)
+    try {
+      const params = new URLSearchParams({ field: "corporate_number", status: "pending" })
+      const endpoint = `${API_CONFIG.ENDPOINTS.COMPANY_REVIEW_BATCHES}?${params.toString()}`
+      type ReviewResponse = { results?: CompanyReviewBatch[] } | CompanyReviewBatch[]
+      const data = await apiClient.get<ReviewResponse>(endpoint)
+      const maybeResults = (data as { results?: CompanyReviewBatch[] })?.results
+      const batches: CompanyReviewBatch[] = Array.isArray(data)
+        ? data
+        : Array.isArray(maybeResults)
+          ? maybeResults
+          : []
+      const pendingItems = batches.reduce((sum, batch) => sum + (batch.pending_items ?? 0), 0)
+      setCorporateReviewSummary({
+        pendingItems,
+        batchCount: batches.length,
+      })
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "自動取得レビュー状況の取得に失敗しました"
+      console.error("[companies] failed to load corporate review summary", err)
+      setCorporateSummaryError(message)
+      setCorporateReviewSummary(null)
+    } finally {
+      setIsCorporateSummaryLoading(false)
+    }
+  }, [])
+
+  const refreshCompanies = useCallback(async () => {
+    await refetch()
+    await fetchCorporateReviewSummary()
+  }, [refetch, fetchCorporateReviewSummary])
 
   const isAdmin = user?.role === 'admin'
 
@@ -59,6 +100,10 @@ function CompaniesPageContent() {
     setSelectedCompanyIds((prev) => prev.filter((id) => companies.some((company) => company.id === id)))
   }, [companies])
 
+  useEffect(() => {
+    fetchCorporateReviewSummary()
+  }, [fetchCorporateReviewSummary])
+
   const selectedCompanySet = useMemo(() => new Set(selectedCompanyIds), [selectedCompanyIds])
   const selectedCompanies = useMemo(
     () => companies.filter((company) => selectedCompanySet.has(company.id)),
@@ -69,11 +114,11 @@ function CompaniesPageContent() {
   useEffect(() => {
     if (searchParams?.get('refresh') === 'true') {
       console.log("[v0] Auto-refreshing companies list after creation")
-      refetch()
+      refreshCompanies()
       // Clean up URL parameter
       window.history.replaceState(null, '', '/companies')
     }
-  }, [searchParams, refetch])
+  }, [searchParams, refreshCompanies])
 
   const handleFiltersChange = (newFilters: CompanyFiltersType) => {
     setPendingFilters(newFilters)
@@ -139,9 +184,9 @@ function CompaniesPageContent() {
         router.push(`/projects/${results[0].projectId}`)
       }
 
-      refetch()
+      void refreshCompanies()
     },
-    [refetch, router, toast]
+    [refreshCompanies, router, toast]
   )
 
   const handleExport = async () => {
@@ -221,7 +266,7 @@ function CompaniesPageContent() {
           (summary.duplicateCount ? ` 重複によるスキップ: ${summary.duplicateCount}件。` : ''),
       })
 
-      await refetch()
+      await refreshCompanies()
 
       return summary
     } catch (error) {
@@ -245,34 +290,34 @@ function CompaniesPageContent() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button asChild variant="secondary" className="flex items-center gap-2">
+              <Link href="/companies/reviews?field=corporate_number&status=pending">
+                <Building2 className="h-4 w-4" />
+                会社情報自動取得レビュー
+                <span className="ml-1 flex items-center gap-1">
+                  {isCorporateSummaryLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : corporateSummaryError ? (
+                    <Badge variant="destructive" className="pointer-events-none">
+                      取得失敗
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant={(corporateReviewSummary?.pendingItems ?? 0) > 0 ? "destructive" : "outline"}
+                      className="pointer-events-none"
+                    >
+                      未レビュー {corporateReviewSummary?.pendingItems ?? 0}
+                    </Badge>
+                  )}
+                </span>
+              </Link>
+            </Button>
             {isAdmin && (
               <Button variant="outline" onClick={handleExport} disabled={isExporting}>
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? "エクスポート中..." : "CSV エクスポート"}
               </Button>
             )}
-            <Button
-              variant="outline"
-              disabled={companies.length === 0}
-              onClick={() => setSelectedCompanyIds(companies.map((company) => company.id))}
-            >
-              表示中を全選択
-            </Button>
-            <Button
-              variant="outline"
-              disabled={selectedCompanyIds.length === 0}
-              onClick={() => setSelectedCompanyIds([])}
-            >
-              選択を解除
-            </Button>
-            <Button
-              variant="default"
-              disabled={selectedCompanyIds.length === 0}
-              onClick={() => setIsAddDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              案件に追加
-            </Button>
             <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               CSV インポート
@@ -296,6 +341,32 @@ function CompaniesPageContent() {
           hasAppliedFilters={hasAppliedFilters}
         />
 
+        {/* Selection actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={companies.length === 0}
+            onClick={() => setSelectedCompanyIds(companies.map((company) => company.id))}
+          >
+            表示中を全選択
+          </Button>
+          <Button
+            variant="outline"
+            disabled={selectedCompanyIds.length === 0}
+            onClick={() => setSelectedCompanyIds([])}
+          >
+            選択を解除
+          </Button>
+          <Button
+            variant="default"
+            disabled={selectedCompanyIds.length === 0}
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            案件に追加
+          </Button>
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md">
@@ -317,7 +388,7 @@ function CompaniesPageContent() {
         <CompanyTable
           companies={companies}
           isLoading={isLoading}
-          onRefresh={refetch}
+          onRefresh={refreshCompanies}
           selectable
           selectedIds={selectedCompanyIds}
           onSelectChange={handleSelectChange}

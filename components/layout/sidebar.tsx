@@ -6,10 +6,31 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
-import { Building2, FolderOpen, LogOut, Menu, BarChart3, X, Settings, Users, Edit3 } from "lucide-react"
+import {
+  Building2,
+  FolderOpen,
+  LogOut,
+  Menu,
+  BarChart3,
+  X,
+  Settings,
+  Users,
+  BookOpen,
+  ClipboardList,
+  History,
+  type LucideIcon,
+} from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-const navigation = [
+type NavigationItem = {
+  name: string
+  href: string
+  icon: LucideIcon
+  adminOnly?: boolean
+  match?: (pathname: string) => boolean
+}
+
+const navigation: NavigationItem[] = [
   {
     name: "ダッシュボード",
     href: "/dashboard",
@@ -29,11 +50,34 @@ const navigation = [
     name: "企業管理",
     href: "/companies",
     icon: Building2,
+    match: (pathname) =>
+      pathname === "/companies" ||
+      (pathname.startsWith("/companies/") && !pathname.startsWith("/companies/reviews")),
+  },
+  {
+    name: "会社情報自動取得レビュー",
+    href: "/companies/reviews",
+    icon: ClipboardList,
+    adminOnly: true,
+    match: (pathname) =>
+      pathname === "/companies/reviews" || pathname.startsWith("/companies/reviews/"),
+  },
+  {
+    name: "データ収集履歴",
+    href: "/data-collection/history",
+    icon: History,
+    adminOnly: true,
+    match: (pathname) => pathname.startsWith("/data-collection"),
   },
   {
     name: "設定",
     href: "/settings",
     icon: Settings,
+  },
+  {
+    name: "ユーザーガイド",
+    href: "/user-guide",
+    icon: BookOpen,
   },
 ]
 
@@ -71,7 +115,12 @@ export function Sidebar() {
           {/* Navigation */}
           <nav className="flex-1 min-h-0 overflow-y-auto px-4 py-6 space-y-2">
             {navigation.map((item) => {
-              const isActive = pathname.startsWith(item.href)
+              if (item.adminOnly && user?.role !== "admin") {
+                return null
+              }
+              const isActive = item.match
+                ? item.match(pathname)
+                : pathname === item.href || pathname.startsWith(`${item.href}/`)
               return (
                 <Link
                   key={item.name}

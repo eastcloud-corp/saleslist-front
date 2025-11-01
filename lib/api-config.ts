@@ -1,5 +1,14 @@
+import { resolveApiBaseUrl } from "./api-base"
+
+const normalizedBaseUrl = (): string => {
+  const base = resolveApiBaseUrl().replace(/\/+$/, "")
+  return `${base}/api/v1`
+}
+
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL + "/api/v1",
+  get BASE_URL() {
+    return normalizedBaseUrl()
+  },
   ENDPOINTS: {
     // Authentication
     LOGIN: "/auth/login",
@@ -22,6 +31,11 @@ export const API_CONFIG = {
     COMPANY_IMPORT: "/companies/import/",
     COMPANY_BULK_IMPORT: "/companies/bulk-import/",
     COMPANY_BULK_ADD_TO_PROJECTS: "/companies/bulk-add-to-projects/",
+    COMPANY_REVIEW_BATCHES: "/companies/reviews/",
+    COMPANY_REVIEW_BATCH_DETAIL: (id: string | number) => `/companies/reviews/${id}/`,
+    COMPANY_REVIEW_DECIDE: (id: string | number) => `/companies/reviews/${id}/decide/`,
+    COMPANY_REVIEW_RUN_CORPORATE_IMPORT: "/companies/reviews/run-corporate-number-import/",
+    COMPANY_REVIEW_RUN_OPENDATA_INGESTION: "/companies/reviews/run-opendata-ingestion/",
 
     // Projects
     PROJECTS: "/projects/",
@@ -42,6 +56,10 @@ export const API_CONFIG = {
     NG_COMPANY_PROJECT: (projectId: string) => `/ng-companies/project/${projectId}/`,
     NG_COMPANY_IMPORT: (clientId: string) => `/clients/${clientId}/ng-companies/import`,
     NG_COMPANY_TEMPLATE: "/ng-companies/template/",
+
+    // Data Collection
+    DATA_COLLECTION_RUNS: "/data-collection/runs/",
+    DATA_COLLECTION_TRIGGER: "/data-collection/trigger",
 
     // Executives
     EXECUTIVES: "/executives/",

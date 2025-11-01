@@ -13,7 +13,7 @@ import { ClientForm } from "@/components/clients/client-form"
 import { NGListTab } from "@/components/clients/ng-list-tab"
 import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users, Download } from "lucide-react"
 import Link from "next/link"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -262,6 +262,9 @@ function ClientDetailContent({ id }: { id: number }) {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>新規案件作成</DialogTitle>
+                          <DialogDescription className="text-muted-foreground">
+                            案件名と概要、担当者を入力して新しい案件を作成します。
+                          </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div>
@@ -356,6 +359,9 @@ function ClientDetailContent({ id }: { id: number }) {
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>新規案件作成</DialogTitle>
+                            <DialogDescription className="text-muted-foreground">
+                              初めての案件を登録し、クライアントとの活動を開始します。
+                            </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>

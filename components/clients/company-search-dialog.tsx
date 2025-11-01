@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, Building2, Plus, Loader2 } from "lucide-react"
 import { useCompanies } from "@/hooks/use-companies"
 import { useToast } from "@/hooks/use-toast"
@@ -98,6 +98,9 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, clientI
             <Search className="h-5 w-5" />
             企業検索からNG企業追加
           </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            企業を検索し、NG 登録する企業を選択して理由を入力します。
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">

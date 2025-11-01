@@ -8,7 +8,7 @@ const parseOrigin = (value) => {
   }
 }
 
-const apiOrigin = parseOrigin(process.env.NEXT_PUBLIC_API_URL)
+const apiOrigin = parseOrigin(process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_INTERNAL_API_URL)
 const connectSources = ["'self'"]
 if (apiOrigin) {
   connectSources.push(apiOrigin)

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
 import type {
+  AiUsageMetrics,
   DataCollectionRun,
   DataCollectionRunListResponse,
   DataCollectionTriggerResponse,
@@ -38,6 +39,7 @@ export function useDataCollectionRuns({ page = 1, filters = {} }: UseDataCollect
   const [error, setError] = useState<string | null>(null)
   const [nextScheduledFor, setNextScheduledFor] = useState<string | null>(null)
   const [schedules, setSchedules] = useState<Record<string, string | null>>({})
+  const [aiUsage, setAiUsage] = useState<AiUsageMetrics | null>(null)
   const [pagination, setPagination] = useState<PaginationState>({
     page,
     pageSize: PAGE_SIZE,
@@ -66,6 +68,7 @@ export function useDataCollectionRuns({ page = 1, filters = {} }: UseDataCollect
       setRuns(data.results || [])
       setNextScheduledFor(data.next_scheduled_for ?? null)
       setSchedules(data.schedules || {})
+      setAiUsage(data.ai_usage ?? null)
       const total = typeof data.count === "number" ? data.count : data.results?.length ?? 0
       setPagination({
         page,
@@ -92,7 +95,9 @@ export function useDataCollectionRuns({ page = 1, filters = {} }: UseDataCollect
         job_name: jobName,
         options,
       }
-      return await apiClient.post<DataCollectionTriggerResponse>(API_CONFIG.ENDPOINTS.DATA_COLLECTION_TRIGGER, payload)
+      const result = await apiClient.post<DataCollectionTriggerResponse>(API_CONFIG.ENDPOINTS.DATA_COLLECTION_TRIGGER, payload)
+      setAiUsage(result.ai_usage ?? null)
+      return result
     } catch (err) {
       console.error("[useDataCollectionRuns] trigger error", err)
       const message = err instanceof Error ? err.message : "ジョブの起動に失敗しました"
@@ -109,5 +114,6 @@ export function useDataCollectionRuns({ page = 1, filters = {} }: UseDataCollect
     nextScheduledFor,
     refetch: fetchRuns,
     triggerJob,
+    aiUsage,
   }
 }

@@ -64,6 +64,7 @@ export interface DataCollectionRunListResponse {
   next: string | null
   previous: string | null
   results: DataCollectionRun[]
+  ai_usage?: AiUsageMetrics | null
 }
 
 export interface DataCollectionTriggerResponse {
@@ -72,6 +73,18 @@ export interface DataCollectionTriggerResponse {
   next_scheduled_for: string | null
   run: DataCollectionRun
   schedules: Record<string, string | null>
+  ai_usage?: AiUsageMetrics | null
+}
+
+export interface AiUsageMetrics {
+  calls_this_month: number
+  cost_this_month: number
+  remaining_calls: number
+  remaining_cost: number
+  call_limit: number
+  cost_limit: number
+  cost_per_request: number
+  daily_record_limit: number
 }
 
 // Client Types

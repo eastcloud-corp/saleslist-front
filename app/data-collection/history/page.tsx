@@ -39,6 +39,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+const numberFormatter = new Intl.NumberFormat("ja-JP")
+const currencyFormatter = new Intl.NumberFormat("ja-JP", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 const JOB_DEFINITIONS = [
   {
     value: "clone.corporate_number",
@@ -65,7 +73,7 @@ const JOB_DEFINITIONS = [
     value: "ai.enrich",
     label: "AI補完（PowerPlexy）",
     description: "PowerPlexy API を用いて不足項目を補完します",
-    supportsCompanyIds: false,
+    supportsCompanyIds: true,
     supportsSourceKeys: false,
   },
 ] as const
@@ -136,7 +144,7 @@ export default function DataCollectionHistoryPage() {
 
   const { toast } = useToast()
 
-  const { runs, loading, error, pagination, schedules, nextScheduledFor, refetch, triggerJob } =
+  const { runs, loading, error, pagination, schedules, nextScheduledFor, refetch, triggerJob, aiUsage } =
     useDataCollectionRuns({ page, filters })
 
   const selectedJobDefinition = useMemo(
@@ -202,6 +210,43 @@ export default function DataCollectionHistoryPage() {
   }
   const startItem = runs.length === 0 ? 0 : (pagination.page - 1) * PAGE_SIZE + 1
   const endItem = runs.length === 0 ? 0 : startItem + runs.length - 1
+
+  const aiUsageContent = () => {
+    if (selectedJob !== "ai.enrich") return null
+
+    if (!aiUsage) {
+      return (
+        <Alert className="mt-4" variant="default">
+          <AlertTitle>AI補完の利用状況</AlertTitle>
+          <AlertDescription>利用状況を取得しています...</AlertDescription>
+        </Alert>
+      )
+    }
+
+    return (
+      <Alert className="mt-4" variant="default">
+        <AlertTitle>AI補完の利用状況</AlertTitle>
+        <AlertDescription>
+          <div className="space-y-1 text-sm">
+            <p>
+                今月の実行: {numberFormatter.format(aiUsage.calls_this_month)} / {numberFormatter.format(aiUsage.call_limit)} 回
+                （残り {numberFormatter.format(aiUsage.remaining_calls)} 回）
+             </p>
+             <p>
+              今月の概算コスト: {currencyFormatter.format(aiUsage.cost_this_month)} / {currencyFormatter.format(aiUsage.cost_limit)}
+              （残額 {currencyFormatter.format(aiUsage.remaining_cost)}）
+             </p>
+             <p>
+              1リクエストあたり: {currencyFormatter.format(aiUsage.cost_per_request)}（USD） / 1 件
+             </p>
+             <p>
+              1 回の手動実行で最大 {numberFormatter.format(aiUsage.daily_record_limit)} 件まで補完します。
+             </p>
+          </div>
+        </AlertDescription>
+      </Alert>
+    )
+  }
 
   return (
     <MainLayout>
@@ -332,6 +377,12 @@ export default function DataCollectionHistoryPage() {
               <p className="text-sm text-muted-foreground">{selectedJobDefinition.description}</p>
             </div>
 
+            {selectedJob === "ai.enrich" ? (
+              <p className="text-xs text-muted-foreground md:col-span-2">
+                AI補完は PowerPlexy API を使用します。なるべく `企業ID` を指定して必要な企業だけを補完し、リクエスト消費を抑えてください。
+              </p>
+            ) : null}
+
             {selectedJobDefinition.supportsCompanyIds ? (
               <div className="space-y-2">
                 <Label htmlFor="company-ids">企業ID (カンマ区切り)</Label>
@@ -341,6 +392,11 @@ export default function DataCollectionHistoryPage() {
                   value={companyIdsInput}
                   onChange={(event) => setCompanyIdsInput(event.target.value)}
                 />
+                {selectedJob === "ai.enrich" ? (
+                  <p className="text-xs text-muted-foreground">
+                    未指定の場合は、不足項目のある企業を最大 {aiUsage ? numberFormatter.format(aiUsage.daily_record_limit) : "500"} 件まで補完します。
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
@@ -361,6 +417,8 @@ export default function DataCollectionHistoryPage() {
             {isTriggering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             ジョブを起動
           </Button>
+
+          {aiUsageContent()}
         </CardContent>
       </Card>
 

@@ -62,9 +62,9 @@ const JOB_DEFINITIONS = [
     supportsSourceKeys: false,
   },
   {
-    value: "clone.ai_stub",
-    label: "AI補完スタブ",
-    description: "AI連携のテスト用タスク",
+    value: "ai.enrich",
+    label: "AI補完（PowerPlexy）",
+    description: "PowerPlexy API を用いて不足項目を補完します",
     supportsCompanyIds: false,
     supportsSourceKeys: false,
   },

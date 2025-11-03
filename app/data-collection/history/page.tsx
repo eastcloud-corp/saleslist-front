@@ -29,7 +29,7 @@ import { ListPaginationSummary } from "@/components/common/list-pagination-summa
 import type { DataCollectionFilters } from "@/hooks/use-data-collection"
 import { useDataCollectionRuns } from "@/hooks/use-data-collection"
 import { useToast } from "@/hooks/use-toast"
-import { ChevronDown, ChevronRight, Loader2, RefreshCw } from "lucide-react"
+import { ChevronDown, ChevronRight, ChevronUp, Loader2, RefreshCw } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,23 @@ const currencyFormatter = new Intl.NumberFormat("ja-JP", {
   currency: "USD",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+})
+const currencyPreciseFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+})
+const dateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZoneName: "short",
 })
 
 const JOB_DEFINITIONS = [
@@ -103,7 +120,7 @@ function formatDateTime(value: string | null | undefined): string {
   if (!value) return "-"
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+  return dateTimeFormatter.format(date)
 }
 
 function formatDuration(value: number): string {
@@ -141,6 +158,7 @@ export default function DataCollectionHistoryPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isNotReadyDialogOpen, setIsNotReadyDialogOpen] = useState(false)
   const [notReadyJobLabel, setNotReadyJobLabel] = useState<string>("")
+  const [aiUsageExpanded, setAiUsageExpanded] = useState(false)
 
   const { toast } = useToast()
 
@@ -211,43 +229,6 @@ export default function DataCollectionHistoryPage() {
   const startItem = runs.length === 0 ? 0 : (pagination.page - 1) * PAGE_SIZE + 1
   const endItem = runs.length === 0 ? 0 : startItem + runs.length - 1
 
-  const aiUsageContent = () => {
-    if (selectedJob !== "ai.enrich") return null
-
-    if (!aiUsage) {
-      return (
-        <Alert className="mt-4" variant="default">
-          <AlertTitle>AI補完の利用状況</AlertTitle>
-          <AlertDescription>利用状況を取得しています...</AlertDescription>
-        </Alert>
-      )
-    }
-
-    return (
-      <Alert className="mt-4" variant="default">
-        <AlertTitle>AI補完の利用状況</AlertTitle>
-        <AlertDescription>
-          <div className="space-y-1 text-sm">
-            <p>
-                今月の実行: {numberFormatter.format(aiUsage.calls_this_month)} / {numberFormatter.format(aiUsage.call_limit)} 回
-                （残り {numberFormatter.format(aiUsage.remaining_calls)} 回）
-             </p>
-             <p>
-              今月の概算コスト: {currencyFormatter.format(aiUsage.cost_this_month)} / {currencyFormatter.format(aiUsage.cost_limit)}
-              （残額 {currencyFormatter.format(aiUsage.remaining_cost)}）
-             </p>
-             <p>
-              1リクエストあたり: {currencyFormatter.format(aiUsage.cost_per_request)}（USD） / 1 件
-             </p>
-             <p>
-              1 回の手動実行で最大 {numberFormatter.format(aiUsage.daily_record_limit)} 件まで補完します。
-             </p>
-          </div>
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
   return (
     <MainLayout>
       <div className="container mx-auto py-6 space-y-6">
@@ -260,104 +241,186 @@ export default function DataCollectionHistoryPage() {
           </div>
         </div>
         <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>データ収集履歴</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 max-w-4xl lg:grid-cols-3">
-            <div className="rounded-lg border p-4 bg-muted/40">
-              <p className="text-sm text-muted-foreground">次回実行予定</p>
-              <p className="mt-1 text-lg font-semibold">
-                {nextScheduledFor ? formatDateTime(nextScheduledFor) : "スケジュールなし"}
-              </p>
-            </div>
-            <div className="rounded-lg border p-4 bg-muted/40 lg:col-span-2">
-              <p className="text-sm text-muted-foreground">ジョブ別スケジュール</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {JOB_DEFINITIONS.map((job) => (
-                  <div key={job.value} className="text-sm">
-                    <p className="text-muted-foreground">{job.label}</p>
-                    <p className="font-medium">
-                      {schedules?.[job.value] ? formatDateTime(schedules[job.value]) : "スケジュールなし"}
-                    </p>
-                  </div>
-                ))}
+          {aiUsage ? (
+            <Card className="border-border/60 shadow-sm">
+            <CardHeader className="flex flex-col gap-2 border-b border-border/60 bg-muted/30 md:flex-row md:items-start md:justify-between md:gap-4">
+              <div className="space-y-1">
+                <CardTitle className="text-lg font-semibold text-foreground">PowerPlexy 利用状況</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  月次の上限に達すると AI 補完ジョブは自動的にスキップされます。
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  今月の実行 {numberFormatter.format(aiUsage.calls_this_month)} / {numberFormatter.format(aiUsage.call_limit)} 回 ・ 残り {numberFormatter.format(aiUsage.remaining_calls)} 回
+                </p>
               </div>
-            </div>
-          </div>
-
-          <div className="rounded-lg border p-4">
-            <h2 className="text-base font-semibold">フィルター</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="filter-job">ジョブ</Label>
-                <Select
-                  value={filters.job_name ?? "all"}
-                  onValueChange={(value) => handleFilterChange("job_name", value)}
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="w-fit text-xs">
+                  月間上限 {numberFormatter.format(aiUsage.call_limit)} コール / {currencyFormatter.format(aiUsage.cost_limit)}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => setAiUsageExpanded((prev) => !prev)}
                 >
-                  <SelectTrigger id="filter-job">
-                    <SelectValue placeholder="すべて" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">すべて</SelectItem>
+                  {aiUsageExpanded ? (
+                    <>
+                      折りたたむ
+                      <ChevronUp className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      詳細
+                      <ChevronDown className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            {aiUsageExpanded ? (
+              <CardContent className="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-[13px] text-muted-foreground">今月の実行回数</p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {numberFormatter.format(aiUsage.calls_this_month)}{" "}
+                    <span className="text-sm text-muted-foreground">
+                      / {numberFormatter.format(aiUsage.call_limit)}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    残り {numberFormatter.format(aiUsage.remaining_calls)} 回
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[13px] text-muted-foreground">今月のコスト</p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {currencyFormatter.format(aiUsage.cost_this_month)}{" "}
+                    <span className="text-sm text-muted-foreground">
+                      / {currencyFormatter.format(aiUsage.cost_limit)}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    残額 {currencyFormatter.format(aiUsage.remaining_cost)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[13px] text-muted-foreground">1リクエストあたり</p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {currencyPreciseFormatter.format(aiUsage.cost_per_request)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    最大 {numberFormatter.format(aiUsage.daily_record_limit)} 件／日（約 {(aiUsage.cost_per_request * 100).toFixed(1)} セント）
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[13px] text-muted-foreground">残りコスト</p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {currencyFormatter.format(aiUsage.remaining_cost)}
+                  </p>
+                </div>
+              </CardContent>
+            ) : null}
+            </Card>
+          ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>データ収集履歴</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 max-w-4xl lg:grid-cols-3">
+                <div className="rounded-lg border p-4 bg-muted/40">
+                  <p className="text-sm text-muted-foreground">次回実行予定</p>
+                  <p className="mt-1 text-lg font-semibold">
+                    {nextScheduledFor ? formatDateTime(nextScheduledFor) : "スケジュールなし"}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-4 bg-muted/40 lg:col-span-2">
+                  <p className="text-sm text-muted-foreground">ジョブ別スケジュール</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {JOB_DEFINITIONS.map((job) => (
-                      <SelectItem key={job.value} value={job.value}>
-                        {job.label}
-                      </SelectItem>
+                      <div key={job.value} className="text-sm">
+                        <p className="text-muted-foreground">{job.label}</p>
+                        <p className="font-medium">
+                          {schedules?.[job.value] ? formatDateTime(schedules[job.value]) : "スケジュールなし"}
+                        </p>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="filter-status">ステータス</Label>
-                <Select
-                  value={filters.status ?? "all"}
-                  onValueChange={(value) => handleFilterChange("status", value)}
-                >
-                  <SelectTrigger id="filter-status">
-                    <SelectValue placeholder="すべて" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">すべて</SelectItem>
-                    {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="rounded-lg border p-4">
+                <h2 className="text-base font-semibold">フィルター</h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="filter-job">ジョブ</Label>
+                    <Select
+                      value={filters.job_name ?? "all"}
+                      onValueChange={(value) => handleFilterChange("job_name", value)}
+                    >
+                      <SelectTrigger id="filter-job">
+                        <SelectValue placeholder="すべて" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">すべて</SelectItem>
+                        {JOB_DEFINITIONS.map((job) => (
+                          <SelectItem key={job.value} value={job.value}>
+                            {job.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="filter-started-after">開始日時 (From)</Label>
-                <Input
-                  id="filter-started-after"
-                  type="datetime-local"
-                  value={filters.started_after || ""}
-                  onChange={(event) => handleFilterChange("started_after", event.target.value)}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="filter-status">ステータス</Label>
+                    <Select
+                      value={filters.status ?? "all"}
+                      onValueChange={(value) => handleFilterChange("status", value)}
+                    >
+                      <SelectTrigger id="filter-status">
+                        <SelectValue placeholder="すべて" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">すべて</SelectItem>
+                        {Object.entries(STATUS_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="filter-started-before">開始日時 (To)</Label>
-                <Input
-                  id="filter-started-before"
-                  type="datetime-local"
-                  value={filters.started_before || ""}
-                  onChange={(event) => handleFilterChange("started_before", event.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="filter-started-after">開始日時 (From)</Label>
+                    <Input
+                      id="filter-started-after"
+                      type="datetime-local"
+                      value={filters.started_after || ""}
+                      onChange={(event) => handleFilterChange("started_after", event.target.value)}
+                    />
+                  </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>手動トリガー</CardTitle>
-        </CardHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="filter-started-before">開始日時 (To)</Label>
+                    <Input
+                      id="filter-started-before"
+                      type="datetime-local"
+                      value={filters.started_before || ""}
+                      onChange={(event) => handleFilterChange("started_before", event.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>手動トリガー</CardTitle>
+            </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -418,7 +481,18 @@ export default function DataCollectionHistoryPage() {
             ジョブを起動
           </Button>
 
-          {aiUsageContent()}
+          {selectedJob === "ai.enrich" && aiUsage ? (
+            <p className="text-xs text-muted-foreground">
+              ※ 最新の残量はページ上部の「PowerPlexy 利用状況」を参照してください。
+            </p>
+          ) : null}
+
+          {selectedJob === "ai.enrich" && !aiUsage ? (
+            <Alert variant="default">
+              <AlertTitle>AI補完の利用状況</AlertTitle>
+              <AlertDescription>利用状況を取得しています...</AlertDescription>
+            </Alert>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -588,8 +662,8 @@ export default function DataCollectionHistoryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-        </div>
-      </div>
-    </MainLayout>
+    </div>
+  </div>
+</MainLayout>
   )
 }

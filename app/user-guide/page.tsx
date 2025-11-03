@@ -10,16 +10,18 @@ import { BookOpen, ShieldCheck } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const GENERAL_GUIDE_PATHS = [
-  path.join(process.cwd(), "saleslist-docs", "user-guide-general.md"),
   path.join(process.cwd(), "..", "saleslist-docs", "user-guide-general.md"),
+  path.join(process.cwd(), "saleslist-docs", "user-guide-general.md"),
   path.join(process.cwd(), "user-guide-general.md"),
 ]
 
 const ADMIN_GUIDE_PATHS = [
-  path.join(process.cwd(), "saleslist-docs", "user-guide-admin.md"),
   path.join(process.cwd(), "..", "saleslist-docs", "user-guide-admin.md"),
+  path.join(process.cwd(), "saleslist-docs", "user-guide-admin.md"),
   path.join(process.cwd(), "user-guide-admin.md"),
 ]
+
+export const dynamic = "force-dynamic"
 
 function loadGuide(paths: string[]): string {
   for (const filePath of paths) {

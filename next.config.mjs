@@ -70,8 +70,14 @@ const nextConfig = {
     unoptimized: true,
   },
   async rewrites() {
-    // Django API用プロキシ（不要だが念のため保持）
-    return []
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/:path*`
+          : 'http://backend:8000/api/v1/:path*',
+      },
+    ]
   },
   async headers() {
     return [

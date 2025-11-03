@@ -81,7 +81,7 @@ class ApiClient {
   }
 
   private async handleUnauthorized(status: number) {
-    if (status !== 401 && status !== 403) return
+    if (status !== 401) return
     if (typeof window === "undefined") return
     if (this.isHandlingUnauthorized) return
     this.isHandlingUnauthorized = true

@@ -49,11 +49,12 @@ export function LoginForm() {
 
   // Environment-based configuration
   const inferredEnvironment = process.env.NODE_ENV === 'production' ? 'prd' : 'dev'
-  const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || inferredEnvironment
-  const normalizedEnvironment = environment ? environment.toLowerCase() : ''
-  const isProductionLike = ['prd', 'prod', 'production'].includes(normalizedEnvironment)
-  const isStaging = normalizedEnvironment === 'stg'
-  const showDebugInfo = process.env.NODE_ENV !== 'production' && !isProductionLike
+  const rawEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT
+  const normalizedEnvironment = rawEnvironment ? rawEnvironment.trim().toLowerCase() : ''
+  const effectiveEnvironment = normalizedEnvironment || inferredEnvironment
+  const isProductionLike = ['prd', 'prod', 'production'].includes(effectiveEnvironment)
+  const isStaging = effectiveEnvironment === 'stg'
+  const showDebugInfo = ['dev', 'development', 'local'].includes(effectiveEnvironment)
 
   const getEnvironmentBadge = () => {
     if (isProductionLike) {

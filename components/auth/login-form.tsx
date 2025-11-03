@@ -50,11 +50,13 @@ export function LoginForm() {
   // Environment-based configuration
   const inferredEnvironment = process.env.NODE_ENV === 'production' ? 'prd' : 'dev'
   const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || inferredEnvironment
-  const showDebugInfo = !['prd', 'stg'].includes(environment)
+  const showDebugInfo = !['prd', 'prod', 'stg', 'production'].includes(environment)
 
   const getEnvironmentBadge = () => {
     switch (environment) {
       case 'prd':
+    case 'prod':
+    case 'production':
         return { label: '本番', variant: 'destructive' as const }
       case 'stg':
         return { label: 'ステージング', variant: 'secondary' as const }

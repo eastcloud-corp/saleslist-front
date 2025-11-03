@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -66,6 +66,22 @@ const STATUS_BADGE_VARIANT: Record<string, "default" | "secondary" | "destructiv
 }
 
 export default function CompanyReviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <MainLayout>
+          <div className="p-6 text-muted-foreground">
+            レビュー候補を読み込んでいます...
+          </div>
+        </MainLayout>
+      }
+    >
+      <CompanyReviewContent />
+    </Suspense>
+  )
+}
+
+function CompanyReviewContent() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const initialStatusParam = searchParams?.get("status") ?? "pending"

@@ -166,7 +166,7 @@ export function LoginForm() {
   }
 
   const badgeConfig = getEnvironmentBadge()
-  const shouldShowBadge = environment !== 'prd'
+  const shouldShowBadge = !isProductionLike
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

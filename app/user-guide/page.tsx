@@ -9,22 +9,44 @@ import { Badge } from "@/components/ui/badge"
 import { BookOpen, ShieldCheck } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-const GENERAL_GUIDE_PATHS = [
-  path.join(process.cwd(), "..", "saleslist-docs", "user-guide-general.md"),
-  path.join(process.cwd(), "saleslist-docs", "user-guide-general.md"),
-  path.join(process.cwd(), "user-guide-general.md"),
-]
+const GUIDE_BASE_PATHS = Array.from(
+  new Set(
+    [
+      process.cwd(),
+      path.join(process.cwd(), ".."),
+      path.join(process.cwd(), "..", ".."),
+      path.join(process.cwd(), ".next"),
+      path.join(process.cwd(), ".next", "standalone"),
+      __dirname,
+      path.join(__dirname, ".."),
+      path.join(__dirname, "..", ".."),
+      "/app",
+      "/app/.next",
+      "/app/.next/standalone",
+    ]
+      .map((p) => path.resolve(p))
+      .filter(Boolean),
+  ),
+)
 
-const ADMIN_GUIDE_PATHS = [
-  path.join(process.cwd(), "..", "saleslist-docs", "user-guide-admin.md"),
-  path.join(process.cwd(), "saleslist-docs", "user-guide-admin.md"),
-  path.join(process.cwd(), "user-guide-admin.md"),
-]
+function buildGuidePaths(filename: string): string[] {
+  const candidates = new Set<string>()
+  for (const base of GUIDE_BASE_PATHS) {
+    candidates.add(path.join(base, filename))
+    candidates.add(path.join(base, "saleslist-docs", filename))
+  }
+  return Array.from(candidates)
+}
 
 export const dynamic = "force-dynamic"
 
-function loadGuide(paths: string[]): string {
-  for (const filePath of paths) {
+function loadGuide(primaryFilename: string, fallbackFilenames: string[]): string {
+  const candidatePaths = [
+    ...buildGuidePaths(primaryFilename),
+    ...fallbackFilenames.flatMap((name) => buildGuidePaths(name)),
+  ]
+
+  for (const filePath of candidatePaths) {
     try {
       if (fs.existsSync(filePath)) {
         return fs.readFileSync(filePath, "utf-8")
@@ -102,8 +124,8 @@ const markdownComponents = {
 }
 
 export default function UserGuidePage() {
-  const generalGuide = loadGuide(GENERAL_GUIDE_PATHS)
-  const adminGuide = loadGuide(ADMIN_GUIDE_PATHS)
+  const generalGuide = loadGuide("user-guide-general.md", ["user-guide.md"])
+  const adminGuide = loadGuide("user-guide-admin.md", ["user-guide-general.md", "user-guide.md"])
 
   return (
     <MainLayout>

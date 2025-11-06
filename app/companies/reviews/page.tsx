@@ -98,6 +98,8 @@ function CompanyReviewContent() {
     process.env.NEXT_PUBLIC_COMPANY_REVIEW_FORCE === "true"
   const canRunCorporateImport = isTestEnvironment || shouldForceCorporateImport
   const canRunOpenDataIngestion = isTestEnvironment
+  const canGenerateSample =
+    isTestEnvironment || process.env.NEXT_PUBLIC_ENABLE_REVIEW_SAMPLE === "true"
   const {
     batches,
     isLoading,
@@ -281,39 +283,41 @@ function CompanyReviewContent() {
                 )}
               </Button>
             )}
-            <Button
-              variant="default"
-              onClick={async () => {
-                try {
-                  const result = await generateSample(
-                    activeField !== "all" ? { fields: [activeField] } : undefined,
-                  )
-                  toast({
-                    title: "サンプル候補を生成しました",
-                    description: `${result.created_count ?? 0} 件の候補がレビュー待ちに追加されました。`,
-                  })
-                } catch (err) {
-                  toast({
-                    title: "サンプル生成に失敗しました",
-                    description: err instanceof Error ? err.message : "不明なエラーが発生しました",
-                    variant: "destructive",
-                  })
-                }
-              }}
-              disabled={isGeneratingSample || isLoading}
-            >
-              {isGeneratingSample ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  サンプル候補生成
-                </>
-              )}
-            </Button>
+            {canGenerateSample ? (
+              <Button
+                variant="default"
+                onClick={async () => {
+                  try {
+                    const result = await generateSample(
+                      activeField !== "all" ? { fields: [activeField] } : undefined,
+                    )
+                    toast({
+                      title: "サンプル候補を生成しました",
+                      description: `${result.created_count ?? 0} 件の候補がレビュー待ちに追加されました。`,
+                    })
+                  } catch (err) {
+                    toast({
+                      title: "サンプル生成に失敗しました",
+                      description: err instanceof Error ? err.message : "不明なエラーが発生しました",
+                      variant: "destructive",
+                    })
+                  }
+                }}
+                disabled={isGeneratingSample || isLoading}
+              >
+                {isGeneratingSample ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    サンプル候補生成
+                  </>
+                )}
+              </Button>
+            ) : null}
           </div>
         </div>
 

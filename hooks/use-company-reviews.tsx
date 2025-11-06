@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { API_CONFIG } from "@/lib/api-config"
-import { apiClient } from "@/lib/api-client"
+import { apiClient, ApiError } from "@/lib/api-client"
 import { createLogger } from "@/lib/logger"
 import type {
   CompanyReviewBatch,
@@ -229,6 +229,13 @@ export function useCompanyReviewBatch(batchId: number | null) {
         const data = await apiClient.get<CompanyReviewBatchDetail>(endpoint)
         setBatch(data)
       } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+            const message = "対象のレビューが見つかりません。"
+            reviewLogger.warn("fetchBatch: not found", { batchId: id })
+            setError(message)
+            setBatch(null)
+            return
+        }
         const message = err instanceof Error ? err.message : "レビュー詳細の取得に失敗しました"
         reviewLogger.error("fetchBatch: error", { message, batchId: id })
         setError(message)
@@ -265,6 +272,18 @@ export function useCompanyReviewBatch(batchId: number | null) {
         setBatch(data)
         return data
       } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+            const message = "対象のレビューが見つかりません。"
+            reviewLogger.warn("decide: not found", { batchId })
+            setError(message)
+            throw new Error(message)
+        }
+        if (err instanceof ApiError && err.status === 409) {
+            const message = "このレビューは既に処理されています。最新の内容を確認してください。"
+            reviewLogger.info("decide: conflict", { batchId })
+            setError(message)
+            throw new Error(message)
+        }
         const message = err instanceof Error ? err.message : "レビュー結果の反映に失敗しました"
         reviewLogger.error("decide: error", { message, batchId })
         setError(message)

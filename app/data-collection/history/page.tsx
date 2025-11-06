@@ -1,6 +1,7 @@
 
 "use client"
 
+import Link from "next/link"
 import { Fragment, useMemo, useState } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Badge } from "@/components/ui/badge"
@@ -553,6 +554,13 @@ export default function DataCollectionHistoryPage() {
                 ) : (
                   runs.map((run) => {
                     const isExpanded = expandedRow === run.execution_uuid
+                    const metadata = run.metadata
+                    const processedCount =
+                      typeof metadata?.processed_count === "number" ? metadata.processed_count : null
+                    const processedIds = Array.isArray(metadata?.processed_company_ids)
+                      ? metadata.processed_company_ids
+                      : []
+                    const processedTruncated = Boolean(metadata?.processed_company_ids_truncated)
                     return (
                       <Fragment key={run.execution_uuid}>
                         <TableRow className="cursor-pointer" onClick={() => setExpandedRow(isExpanded ? null : run.execution_uuid)}>
@@ -577,6 +585,9 @@ export default function DataCollectionHistoryPage() {
                               <div>投入: {run.inserted_count.toLocaleString()}</div>
                               <div>スキップ: {run.skipped_count.toLocaleString()}</div>
                               <div>エラー: {run.error_count.toLocaleString()}</div>
+                              {processedCount !== null ? (
+                                <div>対象企業: {processedCount.toLocaleString()}</div>
+                              ) : null}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -615,6 +626,35 @@ export default function DataCollectionHistoryPage() {
                                   </div>
                                 </div>
                               </div>
+                              {processedCount !== null || processedIds.length > 0 ? (
+                                <div className="mt-4 space-y-2">
+                                  <h3 className="text-sm font-semibold">処理対象企業</h3>
+                                  <div className="rounded-md border bg-background p-3 text-sm space-y-2">
+                                    <div>
+                                      対象件数:{" "}
+                                      {(processedCount !== null ? processedCount : processedIds.length).toLocaleString()}
+                                    </div>
+                                    {processedIds.length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {processedIds.map((id) => (
+                                          <Link key={id} href={`/companies/${id}`} className="transition-opacity hover:opacity-80">
+                                            <Badge variant="secondary" className="font-mono">
+                                              #{id}
+                                            </Badge>
+                                          </Link>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div>-</div>
+                                    )}
+                                    {processedTruncated ? (
+                                      <div className="text-xs text-muted-foreground">
+                                        100件を超えるため一部のみ表示しています。
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              ) : null}
                               <div className="mt-4 space-y-2">
                                 <h3 className="text-sm font-semibold">メタデータ</h3>
                                 <div className="rounded-md border bg-background">

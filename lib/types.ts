@@ -37,6 +37,13 @@ export interface ApiErrorResponse {
 
 export type DataCollectionStatus = "QUEUED" | "RUNNING" | "SUCCESS" | "FAILURE"
 
+export interface DataCollectionRunMetadata {
+  processed_count?: number
+  processed_company_ids?: number[]
+  processed_company_ids_truncated?: boolean
+  [key: string]: unknown
+}
+
 export interface DataCollectionRun {
   execution_uuid: string
   job_name: string
@@ -51,7 +58,7 @@ export interface DataCollectionRun {
   error_count: number
   skip_breakdown?: Record<string, number> | null
   error_summary?: string | null
-  metadata?: Record<string, unknown> | null
+  metadata?: DataCollectionRunMetadata | null
   next_scheduled_for?: string | null
   created_at: string
   updated_at: string

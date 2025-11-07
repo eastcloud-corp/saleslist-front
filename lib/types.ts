@@ -364,6 +364,7 @@ export interface CompanyFilter {
   page_size?: number
   limit?: number
   random_seed?: string
+  ordering?: string
 }
 
 export interface SavedFilter {

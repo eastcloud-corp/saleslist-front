@@ -34,6 +34,7 @@ export default function CompanySelectionPage() {
     page: 1,
     page_size: 100,
     exclude_ng: false,
+    ordering: 'name',
   })
   const [totalCount, setTotalCount] = useState(0)
   const [projects, setProjects] = useState([])
@@ -43,6 +44,11 @@ export default function CompanySelectionPage() {
   const [newProjectName, setNewProjectName] = useState("")
 
   const industryValue = Array.isArray(filters.industry) ? filters.industry[0] : filters.industry
+  const sortValue = filters.ordering === '-name' ? '-name' : 'name'
+  const pageSizeValue = filters.page_size ?? 100
+  const currentPage = filters.page ?? 1
+  const rangeStart = companies.length === 0 ? 0 : (currentPage - 1) * pageSizeValue + 1
+  const rangeEnd = companies.length === 0 ? 0 : rangeStart + companies.length - 1
   const formatErrorMessages = (messages: string[]) =>
     messages
       .filter((message) => typeof message === "string" && message.trim().length > 0)
@@ -163,6 +169,14 @@ export default function CompanySelectionPage() {
       newSelected.delete(companyId)
     }
     setSelectedCompanies(newSelected)
+  }
+
+  const handleSortChange = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      ordering: value,
+      page: 1,
+    }))
   }
 
   const handleAddToProject = async () => {
@@ -326,18 +340,18 @@ export default function CompanySelectionPage() {
     <MainLayout>
       <TooltipProvider>
         <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">営業対象企業を選択</h1>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">営業対象企業を選択</h1>
               <p className="text-muted-foreground">{client?.name} 様の案件用企業選択</p>
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
+            </div>
+            <div className="flex items-center space-x-2">
             <Badge variant="secondary">{selectedCompanies.size}社選択中</Badge>
             
             {/* 既存案件への追加 */}
@@ -417,7 +431,7 @@ export default function CompanySelectionPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
               <div>
                 <Label>企業名検索</Label>
                 <div className="relative">
@@ -471,20 +485,20 @@ export default function CompanySelectionPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setFilters({
-                      page: 1,
-                      page_size: 100,
-                      exclude_ng: false,
-                    })
-                  }
-                >
-                  クリア
-                </Button>
+              <div>
+                <Label>並び替え</Label>
+                <Select value={sortValue} onValueChange={handleSortChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="並び替え" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">社名（昇順）</SelectItem>
+                    <SelectItem value="-name">社名（降順）</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="exclude-ng"
@@ -501,6 +515,19 @@ export default function CompanySelectionPage() {
                   NG企業を除外
                 </Label>
               </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setFilters({
+                    page: 1,
+                    page_size: 100,
+                    exclude_ng: false,
+                    ordering: 'name',
+                  })
+                }
+              >
+                クリア
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -508,7 +535,12 @@ export default function CompanySelectionPage() {
         {/* Company Table */}
         <Card>
           <CardHeader>
-            <CardTitle>企業一覧 ({totalCount.toLocaleString()}社)</CardTitle>
+            <CardTitle>企業一覧</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {totalCount > 0
+                ? `${rangeStart.toLocaleString()} - ${rangeEnd.toLocaleString()} 件 / ${totalCount.toLocaleString()} 件`
+                : '0 件'}
+            </p>
           </CardHeader>
           <CardContent>
             {isLoading ? (

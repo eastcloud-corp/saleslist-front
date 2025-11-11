@@ -39,7 +39,7 @@ module.exports = defineConfig({
 
   // Next.js開発サーバー自動起動
   webServer: {
-    command: 'PORT=3002 npm run dev',
+    command: 'PORT=3002 pnpm run dev',
     url: 'http://localhost:3002',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

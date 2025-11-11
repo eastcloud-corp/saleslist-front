@@ -1,7 +1,7 @@
 export function resolveApiBaseUrl(): string {
   if (typeof window !== "undefined") {
-    // ローカル開発時はフロント 3010 → バックエンド 8010 に固定
-    if (window.location.hostname === "localhost" && window.location.port === "3010") {
+    // ローカル開発時はフロント 3010/3020 → バックエンド 8010 に固定
+    if (window.location.hostname === "localhost" && (window.location.port === "3010" || window.location.port === "3020")) {
       return "http://localhost:8010"
     }
 

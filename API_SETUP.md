@@ -78,7 +78,7 @@ const projects = await apiClient.get(API_CONFIG.ENDPOINTS.PROJECTS)
 
 ### 問題: CORSエラー
 **解決方法:**
-1. 開発環境で実行: `npm run dev`
+1. 開発環境で実行: `pnpm run dev`
 2. `.env.development` が存在することを確認
 3. ブラウザのキャッシュをクリア
 
@@ -99,12 +99,12 @@ const projects = await apiClient.get(API_CONFIG.ENDPOINTS.PROJECTS)
 
 1. 依存関係のインストール
 \`\`\`bash
-npm install
+pnpm install
 \`\`\`
 
 2. 開発サーバーの起動
 \`\`\`bash
-npm run dev
+pnpm run dev
 \`\`\`
 
 3. ブラウザで確認

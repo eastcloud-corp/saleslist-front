@@ -12,7 +12,7 @@ Next.js + React による BtoB営業支援プラットフォームのフロン�
 
 ### **1. 依存関係のインストール**
 ```bash
-npm install
+pnpm install
 ```
 
 ### **2. 環境変数の設定**
@@ -27,7 +27,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
 ### **3. 開発サーバーの起動**
 ```bash
 # 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # アプリケーションが http://localhost:3000 で起動
 ```
@@ -57,35 +57,35 @@ docker-compose -f saleslist-backend/docker/docker-compose.yml up
 
 ```bash
 # 単体テスト
-npm run test
+pnpm run test
 
 # 単体テスト（ウォッチモード）
-npm run test:watch
+pnpm run test:watch
 
 # 統合テスト
-npm run test:integration
+pnpm run test:integration
 
 # E2Eテスト
-npm run test:e2e
+pnpm run test:e2e
 
 # 全テスト実行
-npm run test:all
+pnpm run test:all
 ```
 
 ## 🛠️ 開発コマンド
 
 ```bash
 # 開発サーバー起動
-npm run dev
+pnpm run dev
 
 # 本番ビルド
-npm run build
+pnpm run build
 
 # 本番サーバー起動
-npm run start
+pnpm run start
 
 # Linting
-npm run lint
+pnpm run lint
 ```
 
 ## 📱 主要機能
@@ -138,7 +138,7 @@ saleslist-front/
 
 ```bash
 # 本番ビルド
-npm run build
+pnpm run build
 
 # Docker経由でのデプロイ
 # docker-compose.yml で設定済み

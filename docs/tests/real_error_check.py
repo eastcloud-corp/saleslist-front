@@ -39,7 +39,7 @@ def check_nextjs_build():
     
     try:
         result = subprocess.run(
-            ['npm', 'run', 'build'],
+            ['pnpm', 'run', 'build'],
             cwd='/mnt/c/Users/user/environment/budget_sales_list/saleslist-front',
             capture_output=True,
             text=True,

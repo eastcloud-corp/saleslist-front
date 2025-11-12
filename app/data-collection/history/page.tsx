@@ -558,7 +558,7 @@ export default function DataCollectionHistoryPage() {
                     const processedCount =
                       typeof metadata?.processed_count === "number" ? metadata.processed_count : null
                     const processedIds = Array.isArray(metadata?.processed_company_ids)
-                      ? metadata.processed_company_ids
+                      ? metadata?.processed_company_ids ?? []
                       : []
                     const processedTruncated = Boolean(metadata?.processed_company_ids_truncated)
                     return (

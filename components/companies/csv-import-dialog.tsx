@@ -111,7 +111,7 @@ export function CSVImportDialog({ open, onOpenChange, onImport }: CSVImportDialo
               row: err.row ?? 0,
               field: err.field ?? "import",
               value: err.value ?? "",
-              message: err.message ?? (data?.error || error.message || "インポート処理でエラーが発生しました"),
+              message: err.message ?? (data?.error || (error instanceof Error ? error.message : String(error)) || "インポート処理でエラーが発生しました"),
             })),
           )
           setStep("validate")

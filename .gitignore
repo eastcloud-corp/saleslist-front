@@ -25,3 +25,31 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pnpm
+.pnpm-store/
+.pnpm-debug.log*
+
+# testing
+coverage/
+test-results/
+playwright-report/
+*.log
+test-output.log
+test-results.json
+full-test-results.log
+auth-test.log
+build.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# user guide (symlink target)
+user-guide.md

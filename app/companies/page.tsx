@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth"
 import type { CompanyFilter as CompanyFiltersType, CompanyReviewBatch } from "@/lib/types"
 import { Download, Plus, Upload, Database, Building2, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog"
 import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
 import Link from "next/link"
@@ -171,6 +172,7 @@ function CompaniesPageContent() {
       const totalAdded = results.reduce((sum, item) => sum + (item.addedCount ?? 0), 0)
       const totalErrors = results.reduce((sum, item) => sum + (item.errors?.length ?? 0), 0)
       const targetLabel = results.length === 1 ? results[0].projectName : `${results.length}件の案件`
+      const hasSingleSuccessfulTarget = results.length === 1 && results[0].addedCount > 0
 
       toast({
         title: '案件に追加しました',
@@ -178,11 +180,16 @@ function CompaniesPageContent() {
           totalErrors > 0
             ? `${targetLabel} に ${totalAdded}社を追加。${totalErrors}件は除外されました。`
             : `${targetLabel} に ${totalAdded}社を追加しました。`,
+        action:
+          hasSingleSuccessfulTarget ? (
+            <ToastAction
+              altText={`${results[0].projectName}を開く`}
+              onClick={() => router.push(`/projects/${results[0].projectId}`)}
+            >
+              案件を表示
+            </ToastAction>
+          ) : undefined,
       })
-
-      if (results.length === 1 && results[0].addedCount > 0) {
-        router.push(`/projects/${results[0].projectId}`)
-      }
 
       void refreshCompanies()
     },

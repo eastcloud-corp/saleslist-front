@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import type { ProjectCompany } from "@/lib/types"
-import { Building2, Plus, ExternalLink, Calendar } from "lucide-react"
+import { Building2, Plus, ExternalLink, Calendar, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMasterData } from "@/hooks/use-master-data"
 
@@ -41,6 +42,9 @@ export function ProjectCompanies({
   const [editingCompany, setEditingCompany] = useState<ProjectCompany | null>(null)
   const [newStatus, setNewStatus] = useState("")
   const [newNotes, setNewNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [companyToDelete, setCompanyToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // 営業ステータス用のマスターデータ（フォールバック付き）
   const statusOptions = statuses.length > 0 ? statuses.map(status => ({
@@ -103,6 +107,35 @@ export function ProjectCompanies({
     setEditingCompany(company)
     setNewStatus(company.status)
     setNewNotes(company.notes || "")
+  }
+
+  const handleDeleteClick = (company: ProjectCompany) => {
+    const companyId = company.company_id?.toString() || company.id.toString()
+    setCompanyToDelete(companyId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!companyToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await onRemoveCompany(companyToDelete)
+      toast({
+        title: "削除成功",
+        description: "企業を案件から削除しました",
+      })
+      setDeleteDialogOpen(false)
+      setCompanyToDelete(null)
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: error instanceof Error ? error.message : "企業の削除に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -204,9 +237,20 @@ export function ProjectCompanies({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/projects/${projectId}/companies/${projectCompany.company_id || projectCompany.company?.id}`}>営業詳細</Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/projects/${projectId}/companies/${projectCompany.company_id || projectCompany.company?.id}`}>営業詳細</Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteClick(projectCompany)}
+                          disabled={isLoading || isDeleting}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                     </TableRow>
                   )
@@ -217,6 +261,17 @@ export function ProjectCompanies({
         )}
 
       </CardContent>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="企業を削除"
+        description={`この企業を案件から削除してもよろしいですか？この操作は取り消せません。`}
+        confirmText="削除"
+        cancelText="キャンセル"
+        onConfirm={handleDeleteConfirm}
+        variant="destructive"
+      />
     </Card>
   )
 }

@@ -28,11 +28,13 @@ export interface CSVCompanyData {
 
 export const CSV_HEADERS = [
   "name",
-  "corporate_number",
+  "contact_person_name",
+  "contact_person_position",
+  "facebook_url",
   "industry",
   "employee_count",
   "revenue",
-  "location",
+  "prefecture",
   "website",
   "phone",
   "email",
@@ -41,17 +43,19 @@ export const CSV_HEADERS = [
 ] as const
 
 export const CSV_HEADER_LABELS = {
-  name: "Company Name",
-  corporate_number: "Corporate Number",
-  industry: "Industry",
-  employee_count: "Employee Count",
-  revenue: "Revenue (¥)",
-  location: "Location",
-  website: "Website",
-  phone: "Phone",
-  email: "Email",
-  description: "Description",
-  status: "Status",
+  name: "企業名",
+  contact_person_name: "担当者名",
+  contact_person_position: "担当者役職",
+  facebook_url: "Facebook",
+  industry: "業界",
+  employee_count: "従業員数",
+  revenue: "売上",
+  prefecture: "所在地",
+  website: "Webサイト",
+  phone: "電話番号",
+  email: "メールアドレス",
+  description: "備考",
+  status: "ステータス",
 } as const
 
 export const CSV_FIELD_DISPLAY_NAMES: Record<string, string> = {
@@ -85,7 +89,16 @@ export function exportCompaniesToCSV(companies: Company[]): string {
 
   const rows = companies.map((company) => {
     return CSV_HEADERS.map((header) => {
-      let value = company[header as keyof Company]?.toString() || ""
+      let value: string = ""
+      
+      // フィールドマッピング
+      if (header === "website") {
+        value = company.website_url || company.website || ""
+      } else if (header === "email") {
+        value = company.contact_email || company.email || ""
+      } else {
+        value = company[header as keyof Company]?.toString() || ""
+      }
 
       // Handle special formatting
       if (header === "employee_count" || header === "revenue") {

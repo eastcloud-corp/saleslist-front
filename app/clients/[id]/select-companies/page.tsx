@@ -12,12 +12,51 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Search, Filter, Plus, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Search, Filter, Plus, AlertTriangle, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClient } from "@/hooks/use-clients"
 import type { Company, CompanyFilter } from "@/lib/types"
 import { apiClient } from "@/lib/api-config"
 import { Switch } from "@/components/ui/switch"
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP", {
+    style: "currency",
+    currency: "JPY",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatEmployeeCount = (count?: number | null) => {
+  if (count === null || count === undefined || Number.isNaN(Number(count))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP").format(count)
+}
+
+const getStatusBadge = (status?: string) => {
+  const variants = {
+    active: "default",
+    prospect: "secondary",
+    inactive: "outline",
+  } as const
+
+  const statusLabels = {
+    active: "アクティブ",
+    prospect: "見込み客",
+    inactive: "非アクティブ",
+  } as const
+
+  const statusValue = status || "active"
+  return (
+    <Badge variant={variants[statusValue as keyof typeof variants] || "outline"}>
+      {statusLabels[statusValue as keyof typeof statusLabels] || statusValue}
+    </Badge>
+  )
+}
 
 export default function CompanySelectionPage() {
   const params = useParams()
@@ -551,9 +590,13 @@ export default function CompanySelectionPage() {
                   <TableRow>
                     <TableHead className="w-12">選択</TableHead>
                     <TableHead>企業名</TableHead>
-                    <TableHead>業界</TableHead>
+                    <TableHead data-testid="table-header-contact">担当者</TableHead>
+                    <TableHead data-testid="table-header-facebook">Facebook</TableHead>
+                    <TableHead data-testid="table-header-industry">業界</TableHead>
                     <TableHead>従業員数</TableHead>
-                    <TableHead>都道府県</TableHead>
+                    <TableHead data-testid="table-header-revenue">売上</TableHead>
+                    <TableHead>所在地</TableHead>
+                    <TableHead data-testid="table-header-status">ステータス</TableHead>
                     <TableHead>NG状態</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -596,11 +639,47 @@ export default function CompanySelectionPage() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className={isNG ? "text-muted-foreground" : ""}>{company.industry}</TableCell>
-                        <TableCell className={isNG ? "text-muted-foreground" : ""}>
-                          {company.employee_count?.toLocaleString()}人
+                        <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-contact`}>
+                          {company.contact_person_name ? (
+                            <div className="space-y-0.5">
+                              <p className="text-sm font-medium">{company.contact_person_name}</p>
+                              {company.contact_person_position && (
+                                <p className="text-xs text-muted-foreground">{company.contact_person_position}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">未設定</span>
+                          )}
                         </TableCell>
-                        <TableCell className={isNG ? "text-muted-foreground" : ""}>{company.prefecture}</TableCell>
+                        <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-facebook`}>
+                          {company.facebook_url ? (
+                            <a
+                              href={company.facebook_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              data-testid={`company-${company.id}-facebook-link`}
+                            >
+                              Facebook
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">未設定</span>
+                          )}
+                        </TableCell>
+                        <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-industry`}>{company.industry}</TableCell>
+                        <TableCell className={isNG ? "text-muted-foreground" : ""}>
+                          {formatEmployeeCount(company.employee_count)}
+                        </TableCell>
+                        <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-revenue`}>
+                          {formatCurrency(company.revenue)}
+                        </TableCell>
+                        <TableCell className={isNG ? "text-muted-foreground" : ""}>
+                          {company.prefecture || "-"}
+                        </TableCell>
+                        <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-status`}>
+                          {getStatusBadge(company.status)}
+                        </TableCell>
                         <TableCell>
                           {isNG ? <Badge variant="destructive">NG</Badge> : <Badge variant="secondary">選択可能</Badge>}
                         </TableCell>

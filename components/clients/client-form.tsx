@@ -40,10 +40,15 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
   const [formData, setFormData] = useState({
     name: client?.name || "",
     contact_person: client?.contact_person || "",
+    contact_person_position: client?.contact_person_position || "",
     email: client?.email || "",
     phone: client?.phone || "",
     industry: client?.industry || "",
     notes: client?.notes || "",
+    facebook_url: client?.facebook_url || "",
+    employee_count: client?.employee_count?.toString() || "",
+    revenue: client?.revenue?.toString() || "",
+    prefecture: client?.prefecture || "",
     is_active: client?.is_active ?? true,
   })
 
@@ -61,6 +66,8 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
 
       await onSubmit({
         ...formData,
+        employee_count: formData.employee_count ? parseInt(formData.employee_count, 10) : null,
+        revenue: formData.revenue ? parseInt(formData.revenue, 10) : null,
         projects: [],
         project_count: 0,
         active_project_count: 0,
@@ -112,6 +119,28 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="contact_person_position">担当者役職</Label>
+              <Input
+                id="contact_person_position"
+                value={formData.contact_person_position}
+                onChange={(e) => handleChange("contact_person_position", e.target.value)}
+                placeholder="営業部長"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="facebook_url">Facebook URL</Label>
+              <Input
+                id="facebook_url"
+                value={formData.facebook_url}
+                onChange={(e) => handleChange("facebook_url", e.target.value)}
+                placeholder="https://facebook.com/..."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="email">メールアドレス</Label>
               <Input
                 id="email"
@@ -134,20 +163,56 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="industry">業界</Label>
-            <Select value={formData.industry} onValueChange={(value) => handleChange("industry", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="業界を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {industryOptions.map((industry) => (
-                  <SelectItem key={industry} value={industry}>
-                    {industry}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="industry">業界</Label>
+              <Select value={formData.industry} onValueChange={(value) => handleChange("industry", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="業界を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {industryOptions.map((industry) => (
+                    <SelectItem key={industry} value={industry}>
+                      {industry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="prefecture">都道府県</Label>
+              <Input
+                id="prefecture"
+                value={formData.prefecture}
+                onChange={(e) => handleChange("prefecture", e.target.value)}
+                placeholder="東京都"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="employee_count">従業員数</Label>
+              <Input
+                id="employee_count"
+                type="number"
+                value={formData.employee_count}
+                onChange={(e) => handleChange("employee_count", e.target.value)}
+                placeholder="100"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="revenue">売上規模（円）</Label>
+              <Input
+                id="revenue"
+                type="number"
+                value={formData.revenue}
+                onChange={(e) => handleChange("revenue", e.target.value)}
+                placeholder="1000000000"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

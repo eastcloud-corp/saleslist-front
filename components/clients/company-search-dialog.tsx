@@ -10,10 +10,49 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Building2, Plus, Loader2, X } from "lucide-react"
+import { Search, Building2, Plus, Loader2, X, ExternalLink } from "lucide-react"
 import { useCompanies } from "@/hooks/use-companies"
 import { useToast } from "@/hooks/use-toast"
 import type { CheckedState } from "@radix-ui/react-checkbox"
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP", {
+    style: "currency",
+    currency: "JPY",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatEmployeeCount = (count?: number | null) => {
+  if (count === null || count === undefined || Number.isNaN(Number(count))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP").format(count)
+}
+
+const getStatusBadge = (status?: string) => {
+  const variants = {
+    active: "default",
+    prospect: "secondary",
+    inactive: "outline",
+  } as const
+
+  const statusLabels = {
+    active: "アクティブ",
+    prospect: "見込み客",
+    inactive: "非アクティブ",
+  } as const
+
+  const statusValue = status || "active"
+  return (
+    <Badge variant={variants[statusValue as keyof typeof variants] || "outline"}>
+      {statusLabels[statusValue as keyof typeof statusLabels] || statusValue}
+    </Badge>
+  )
+}
 
 interface Company {
   id: number
@@ -205,9 +244,13 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, onAddCo
                     <TableRow>
                       <TableHead className="w-12">選択</TableHead>
                       <TableHead>企業名</TableHead>
+                      <TableHead>担当者</TableHead>
+                      <TableHead>Facebook</TableHead>
                       <TableHead>業界</TableHead>
-                      <TableHead>所在地</TableHead>
                       <TableHead>従業員数</TableHead>
+                      <TableHead>売上</TableHead>
+                      <TableHead>所在地</TableHead>
+                      <TableHead>ステータス</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -233,10 +276,44 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, onAddCo
                             </div>
                           </TableCell>
                         <TableCell className="font-medium">{company.name}</TableCell>
+                        <TableCell>
+                          {(company as any).contact_person_name ? (
+                            <div className="space-y-0.5">
+                              <p className="text-sm font-medium">{(company as any).contact_person_name}</p>
+                              {(company as any).contact_person_position && (
+                                <p className="text-xs text-muted-foreground">{(company as any).contact_person_position}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">未設定</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {(company as any).facebook_url ? (
+                            <a
+                              href={(company as any).facebook_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            >
+                              Facebook
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">未設定</span>
+                          )}
+                        </TableCell>
                         <TableCell>{company.industry}</TableCell>
+                        <TableCell>
+                          {formatEmployeeCount(company.employee_count)}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency((company as any).revenue)}
+                        </TableCell>
                         <TableCell>{company.prefecture}</TableCell>
                         <TableCell>
-                          {company.employee_count ? `${company.employee_count}名` : "-"}
+                          {getStatusBadge((company as any).status)}
                         </TableCell>
                       </TableRow>
                     )})}

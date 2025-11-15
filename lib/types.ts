@@ -99,10 +99,15 @@ export interface Client {
   id: number
   name: string // クライアント企業名
   contact_person?: string // 担当者名
+  contact_person_position?: string // 担当者役職
   email?: string // 連絡先メール
   phone?: string // 連絡先電話
   industry?: string // クライアントの業界
   notes?: string // 備考
+  facebook_url?: string // Facebookリンク
+  employee_count?: number | null // 従業員数
+  revenue?: number | null // 売上規模
+  prefecture?: string // 都道府県
   is_active: boolean // アクティブ状態
   created_at: string // 作成日時
   updated_at: string // 更新日時

@@ -137,8 +137,8 @@ export interface Company {
   description?: string
   
   // 規模情報
-  employee_count: number
-  revenue: number
+  employee_count?: number | null
+  revenue?: number | null
   capital?: number
   established_year: number
   

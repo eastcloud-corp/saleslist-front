@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
@@ -12,12 +12,20 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Search, Filter, Plus, AlertTriangle, ExternalLink } from "lucide-react"
+import { ArrowLeft, Search, Filter, Plus, AlertTriangle, ExternalLink, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useClient } from "@/hooks/use-clients"
 import type { Company, CompanyFilter } from "@/lib/types"
 import { apiClient } from "@/lib/api-config"
+import { API_CONFIG } from "@/lib/api-config"
 import { Switch } from "@/components/ui/switch"
+
+interface IndustryHierarchy {
+  id: number
+  name: string
+  is_category: boolean
+  sub_industries: IndustryHierarchy[]
+}
 
 const formatCurrency = (amount?: number | null) => {
   if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
@@ -81,8 +89,85 @@ export default function CompanySelectionPage() {
   const [isAddingToProject, setIsAddingToProject] = useState(false)
   const [isCreatingNewProject, setIsCreatingNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState("")
+  const [industryHierarchy, setIndustryHierarchy] = useState<IndustryHierarchy[]>([])
+  const [industryQuery, setIndustryQuery] = useState("")
+  const [isIndustryFocused, setIsIndustryFocused] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set())
+  const industryInputRef = useRef<HTMLInputElement>(null)
 
   const industryValue = Array.isArray(filters.industry) ? filters.industry[0] : filters.industry
+
+  useEffect(() => {
+    // 階層構造の業界データを取得
+    const fetchIndustries = async () => {
+      try {
+        const hierarchyData = await apiClient.get<{ results?: IndustryHierarchy[] }>(
+          `${API_CONFIG.ENDPOINTS.MASTER_INDUSTRIES}?hierarchy=true`
+        )
+        if (hierarchyData.results) {
+          setIndustryHierarchy(hierarchyData.results)
+        }
+      } catch (error) {
+        console.error('[select-companies] 業界候補取得に失敗しました:', error)
+      }
+    }
+    fetchIndustries()
+  }, [])
+
+  const filteredHierarchyOptions = useMemo(() => {
+    const normalizedQuery = industryQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return industryHierarchy
+    }
+    
+    const filterHierarchy = (items: IndustryHierarchy[]): IndustryHierarchy[] => {
+      return items
+        .map((item) => {
+          const matches = item.name.toLowerCase().includes(normalizedQuery)
+          const filteredSub = item.sub_industries ? filterHierarchy(item.sub_industries) : []
+          const hasMatchingSub = filteredSub.length > 0
+          
+          if (matches || hasMatchingSub) {
+            return {
+              ...item,
+              sub_industries: filteredSub,
+            }
+          }
+          return null
+        })
+        .filter((item): item is IndustryHierarchy => item !== null)
+    }
+    
+    return filterHierarchy(industryHierarchy)
+  }, [industryHierarchy, industryQuery])
+
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+      return next
+    })
+  }
+
+  const handleIndustrySelect = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return
+    }
+    setFilters((prev) => ({ ...prev, industry: trimmed, page: 1 }))
+    setIndustryQuery("")
+    setIsIndustryFocused(false)
+    // フォーカスを外す
+    if (industryInputRef.current) {
+      industryInputRef.current.blur()
+    }
+  }
+
+  const showIndustryDropdown = (isIndustryFocused || Boolean(industryQuery.trim())) && filteredHierarchyOptions.length > 0
   const sortValue = filters.ordering === '-name' ? '-name' : 'name'
   const pageSizeValue = filters.page_size ?? 100
   const currentPage = filters.page ?? 1
@@ -485,24 +570,96 @@ export default function CompanySelectionPage() {
               </div>
               <div>
                 <Label>業界</Label>
-                <Select
-                  value={industryValue || "all"}
-                  onValueChange={(value) =>
-                    setFilters((prev) => ({ ...prev, industry: value === "all" ? undefined : value, page: 1 }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="業界を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">すべて</SelectItem>
-                    <SelectItem value="IT・ソフトウェア">IT・ソフトウェア</SelectItem>
-                    <SelectItem value="製造業">製造業</SelectItem>
-                    <SelectItem value="商社・流通">商社・流通</SelectItem>
-                    <SelectItem value="金融・保険">金融・保険</SelectItem>
-                    <SelectItem value="建設・不動産">建設・不動産</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Input
+                    ref={industryInputRef}
+                    value={industryQuery}
+                    placeholder="業界を入力または選択..."
+                    onChange={(event) => setIndustryQuery(event.target.value)}
+                    onFocus={() => setIsIndustryFocused(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setIsIndustryFocused(false), 120)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        handleIndustrySelect(industryQuery)
+                      }
+                      if (event.key === "Escape") {
+                        setIndustryQuery("")
+                        setIsIndustryFocused(false)
+                        if (industryInputRef.current) {
+                          industryInputRef.current.blur()
+                        }
+                      }
+                    }}
+                  />
+                  {showIndustryDropdown && (
+                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
+                      <ul className="max-h-56 overflow-auto py-1 text-sm">
+                        {filteredHierarchyOptions.map((category) => (
+                          <li key={category.id}>
+                            <div className="flex items-center">
+                              <button
+                                type="button"
+                                className="flex-1 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground font-medium"
+                                onMouseDown={(event) => {
+                                  event.preventDefault()
+                                  handleIndustrySelect(category.name)
+                                }}
+                              >
+                                {category.name}
+                              </button>
+                              {category.sub_industries && category.sub_industries.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault()
+                                    toggleCategory(category.id)
+                                  }}
+                                >
+                                  {expandedCategories.has(category.id) ? '−' : '+'}
+                                </button>
+                              )}
+                            </div>
+                            {expandedCategories.has(category.id) && category.sub_industries && (
+                              <ul className="pl-4">
+                                {category.sub_industries.map((sub) => (
+                                  <li key={sub.id}>
+                                    <button
+                                      type="button"
+                                      className="w-full px-3 py-1.5 text-left hover:bg-accent hover:text-accent-foreground text-xs"
+                                      onMouseDown={(event) => {
+                                        event.preventDefault()
+                                        handleIndustrySelect(sub.name)
+                                      }}
+                                    >
+                                      {sub.name}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                {industryValue && (
+                  <div className="mt-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {industryValue}
+                      <button
+                        onClick={() => setFilters((prev) => ({ ...prev, industry: undefined, page: 1 }))}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  </div>
+                )}
               </div>
               <div>
                 <Label>都道府県</Label>

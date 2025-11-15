@@ -105,7 +105,9 @@ export function exportCompaniesToCSV(companies: Company[]): string {
 }
 
 export function downloadCSV(csvContent: string, filename: string): void {
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+  // BOMを追加してExcelで正しく日本語を表示
+  const bom = "\ufeff"
+  const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" })
   const link = document.createElement("a")
 
   if (link.download !== undefined) {

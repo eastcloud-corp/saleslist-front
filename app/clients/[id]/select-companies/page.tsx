@@ -101,9 +101,8 @@ export default function CompanySelectionPage() {
     // 階層構造の業界データを取得
     const fetchIndustries = async () => {
       try {
-        const hierarchyData = await apiClient.get<{ results?: IndustryHierarchy[] }>(
-          `${API_CONFIG.ENDPOINTS.MASTER_INDUSTRIES}?hierarchy=true`
-        )
+        const response = await apiClient.get(`${API_CONFIG.ENDPOINTS.MASTER_INDUSTRIES}?hierarchy=true`)
+        const hierarchyData = await response.json() as { results?: IndustryHierarchy[] }
         if (hierarchyData.results) {
           setIndustryHierarchy(hierarchyData.results)
         }

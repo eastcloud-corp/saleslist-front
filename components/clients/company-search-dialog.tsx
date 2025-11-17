@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Search, Building2, Plus, Loader2, X, ExternalLink } from "lucide-react"
 import { useCompanies } from "@/hooks/use-companies"
 import { useToast } from "@/hooks/use-toast"
+import type { Company } from "@/lib/types"
 import type { CheckedState } from "@radix-ui/react-checkbox"
 
 const formatCurrency = (amount?: number | null) => {
@@ -52,14 +53,6 @@ const getStatusBadge = (status?: string) => {
       {statusLabels[statusValue as keyof typeof statusLabels] || statusValue}
     </Badge>
   )
-}
-
-interface Company {
-  id: number
-  name: string
-  industry: string
-  prefecture: string
-  employee_count?: number
 }
 
 interface CompanySearchDialogProps {

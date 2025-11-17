@@ -162,8 +162,8 @@ export interface Company {
   facebook_latest_post_at?: string | null
   facebook_data_synced_at?: string | null
   latest_activity_at?: string | null
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
   executives?: Executive[]
 
   // NG判定情報（追加）
@@ -287,7 +287,7 @@ export interface ProjectCompany {
   id: number
   project_id: number
   company_id?: number
-  company?: Company
+  company?: Partial<Company>
   company_name?: string
   company_industry?: string
   status: "未接触" | "DM送信済み" | "返信あり" | "アポ獲得" | "成約" | "NG" | string

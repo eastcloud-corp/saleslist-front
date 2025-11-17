@@ -72,6 +72,8 @@ const createMockCompany = (overrides: Partial<Company> = {}): Company => ({
   is_global_ng: false,
   established_year: 2020,
   city: '渋谷区',
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
   ...overrides,
 })
 

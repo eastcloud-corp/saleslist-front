@@ -22,7 +22,7 @@ interface NGListTabProps {
 export function NGListTab({ clientId }: NGListTabProps) {
   const [isImporting, setIsImporting] = useState(false)
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false)
-  const { ngList, stats, isLoading, error, importCSV, deleteNG, addCompanyToNG } = useNGList(clientId)
+  const { ngList, stats, isLoading, error, importCSV, deleteNG, addCompanyToNG, addCompaniesToNG } = useNGList(clientId)
   const { toast } = useToast()
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +101,34 @@ export function NGListTab({ clientId }: NGListTabProps) {
 
   const handleAddCompanyToNG = async (company: any, reason?: string) => {
     await addCompanyToNG(company.id, company.name, reason)
+  }
+
+  const handleAddCompaniesToNG = async (companyIds: number[], reason?: string) => {
+    try {
+      const result = await addCompaniesToNG(companyIds, reason)
+      
+      if (result.added_count > 0) {
+        toast({
+          title: "追加完了",
+          description: result.message || `${result.added_count}社をNGリストに追加しました`,
+        })
+      }
+      
+      if (result.skipped_count > 0 || result.error_count > 0) {
+        toast({
+          title: "一部スキップされました",
+          description: result.message,
+          variant: "default",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "NGリストへの追加に失敗しました",
+        variant: "destructive",
+      })
+      throw error
+    }
   }
 
   if (isLoading) {
@@ -243,6 +271,7 @@ export function NGListTab({ clientId }: NGListTabProps) {
         open={isSearchDialogOpen}
         onOpenChange={setIsSearchDialogOpen}
         onAddToNGList={handleAddCompanyToNG}
+        onAddCompaniesToNG={handleAddCompaniesToNG}
         clientId={clientId}
       />
     </div>

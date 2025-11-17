@@ -15,7 +15,7 @@ if curl -s http://localhost:3002 > /dev/null 2>&1; then
     echo "✅ Next.jsサーバー稼働中 (localhost:3002)"
 else
     echo "❌ Next.jsサーバーが応答しません"
-    echo "   起動コマンド: PORT=3002 npm run dev"
+    echo "   起動コマンド: PORT=3002 pnpm run dev"
     exit 1
 fi
 
@@ -33,7 +33,7 @@ echo ""
 # Playwright依存関係確認
 if [ ! -d "node_modules/@playwright/test" ]; then
     echo "📦 Playwrightインストール中..."
-    npm install --save-dev @playwright/test
+    pnpm install --save-dev @playwright/test
     npx playwright install
 fi
 

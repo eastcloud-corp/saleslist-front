@@ -9,7 +9,39 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useCompanies } from "@/hooks/use-companies"
-import { Search, Building2, Loader2, AlertTriangle } from "lucide-react"
+import { Search, Building2, Loader2, AlertTriangle, ExternalLink } from "lucide-react"
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP", {
+    style: "currency",
+    currency: "JPY",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+const getStatusBadge = (status?: string) => {
+  const variants = {
+    active: "default",
+    prospect: "secondary",
+    inactive: "outline",
+  } as const
+
+  const statusLabels = {
+    active: "アクティブ",
+    prospect: "見込み客",
+    inactive: "非アクティブ",
+  } as const
+
+  const statusValue = status || "active"
+  return (
+    <Badge variant={variants[statusValue as keyof typeof variants] || "outline"}>
+      {statusLabels[statusValue as keyof typeof statusLabels] || statusValue}
+    </Badge>
+  )
+}
 
 interface AddCompanyDialogProps {
   open: boolean
@@ -123,9 +155,13 @@ export function AddCompanyDialog({
                   <TableRow>
                     <TableHead className="w-12">選択</TableHead>
                     <TableHead>企業名</TableHead>
+                    <TableHead>担当者</TableHead>
+                    <TableHead>Facebook</TableHead>
                     <TableHead>業界</TableHead>
                     <TableHead>従業員数</TableHead>
-                    <TableHead>都道府県</TableHead>
+                    <TableHead>売上</TableHead>
+                    <TableHead>所在地</TableHead>
+                    <TableHead>ステータス</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -148,10 +184,39 @@ export function AddCompanyDialog({
                         </div>
                       </TableCell>
                       <TableCell>
+                        {company.contact_person_name ? (
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-medium">{company.contact_person_name}</p>
+                            {company.contact_person_position && (
+                              <p className="text-xs text-muted-foreground">{company.contact_person_position}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">未設定</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {company.facebook_url ? (
+                          <a
+                            href={company.facebook_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            Facebook
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">未設定</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline">{company.industry}</Badge>
                       </TableCell>
-                      <TableCell>{company.employee_count || "不明"}</TableCell>
-                      <TableCell>{company.prefecture}</TableCell>
+                      <TableCell>{company.employee_count || "-"}</TableCell>
+                      <TableCell>{formatCurrency(company.revenue)}</TableCell>
+                      <TableCell>{company.prefecture || "-"}</TableCell>
+                      <TableCell>{getStatusBadge(company.status)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -10,10 +10,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import type { ProjectCompany } from "@/lib/types"
-import { Building2, Plus, ExternalLink, Calendar } from "lucide-react"
+import { Building2, Plus, ExternalLink, Calendar, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useMasterData } from "@/hooks/use-master-data"
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP", {
+    style: "currency",
+    currency: "JPY",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatEmployeeCount = (count?: number | null) => {
+  if (count === null || count === undefined || Number.isNaN(Number(count))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP").format(count)
+}
 
 interface ProjectCompaniesProps {
   companies: ProjectCompany[]
@@ -41,6 +60,9 @@ export function ProjectCompanies({
   const [editingCompany, setEditingCompany] = useState<ProjectCompany | null>(null)
   const [newStatus, setNewStatus] = useState("")
   const [newNotes, setNewNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [companyToDelete, setCompanyToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // 営業ステータス用のマスターデータ（フォールバック付き）
   const statusOptions = statuses.length > 0 ? statuses.map(status => ({
@@ -105,6 +127,35 @@ export function ProjectCompanies({
     setNewNotes(company.notes || "")
   }
 
+  const handleDeleteClick = (company: ProjectCompany) => {
+    const companyId = company.company_id?.toString() || company.id.toString()
+    setCompanyToDelete(companyId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!companyToDelete) return
+
+    setIsDeleting(true)
+    try {
+      await onRemoveCompany(companyToDelete)
+      toast({
+        title: "削除成功",
+        description: "企業を案件から削除しました",
+      })
+      setDeleteDialogOpen(false)
+      setCompanyToDelete(null)
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: error instanceof Error ? error.message : "企業の削除に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -132,7 +183,12 @@ export function ProjectCompanies({
               <TableHeader>
                 <TableRow>
                   <TableHead>企業名</TableHead>
+                  <TableHead>担当者</TableHead>
+                  <TableHead>Facebook</TableHead>
                   <TableHead>業界</TableHead>
+                  <TableHead>従業員数</TableHead>
+                  <TableHead>売上</TableHead>
+                  <TableHead>所在地</TableHead>
                   <TableHead>ステータス</TableHead>
                   <TableHead>最終接触</TableHead>
                   <TableHead>アクティブ</TableHead>
@@ -143,25 +199,79 @@ export function ProjectCompanies({
                 {companies.map((projectCompany) => {
                   const isActive = projectCompany.is_active !== false
                   
+                  // デバッグ: データ構造を確認
+                  if (process.env.NODE_ENV === 'development' && companies.length > 0 && companies.indexOf(projectCompany) === 0) {
+                    console.log('[ProjectCompanies] First company data:', {
+                      company_id: projectCompany.company_id,
+                      company_name: projectCompany.company_name,
+                      company: projectCompany.company,
+                      employee_count: projectCompany.company?.employee_count,
+                      revenue: projectCompany.company?.revenue,
+                      prefecture: projectCompany.company?.prefecture,
+                    })
+                  }
+                  
                   return (
                     <TableRow key={projectCompany.id} className={isActive ? "" : "opacity-60 bg-gray-50"}>
                     <TableCell>
                       <div>
                         <div className="font-medium">{projectCompany.company_name || projectCompany.company?.name || "企業名不明"}</div>
-                        {projectCompany.company?.website && (
+                        {projectCompany.company?.website_url && (
                           <a
-                            href={projectCompany.company.website}
+                            href={projectCompany.company.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1"
                           >
-                            {projectCompany.company?.website?.replace(/^https?:\/\//, "") || ""}
+                            {projectCompany.company?.website_url?.replace(/^https?:\/\//, "") || ""}
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      {projectCompany.company?.contact_person_name ? (
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">{projectCompany.company.contact_person_name}</p>
+                          {projectCompany.company.contact_person_position && (
+                            <p className="text-xs text-muted-foreground">{projectCompany.company.contact_person_position}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">未設定</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {projectCompany.company?.facebook_url ? (
+                        <a
+                          href={projectCompany.company.facebook_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          Facebook
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">未設定</span>
+                      )}
+                    </TableCell>
                     <TableCell>{projectCompany.company_industry || projectCompany.company?.industry || "-"}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const count = projectCompany.company?.employee_count
+                        if (count === null || count === undefined) return "-"
+                        return formatEmployeeCount(count)
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const revenue = projectCompany.company?.revenue
+                        if (revenue === null || revenue === undefined) return "-"
+                        return formatCurrency(revenue)
+                      })()}
+                    </TableCell>
+                    <TableCell>{projectCompany.company?.prefecture || "-"}</TableCell>
                     <TableCell>
                       <Select 
                         value={projectCompany.status} 
@@ -204,9 +314,20 @@ export function ProjectCompanies({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/projects/${projectId}/companies/${projectCompany.company_id || projectCompany.company?.id}`}>営業詳細</Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/projects/${projectId}/companies/${projectCompany.company_id || projectCompany.company?.id}`}>営業詳細</Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteClick(projectCompany)}
+                          disabled={isLoading || isDeleting}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                     </TableRow>
                   )
@@ -217,6 +338,17 @@ export function ProjectCompanies({
         )}
 
       </CardContent>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="企業を削除"
+        description={`この企業を案件から削除してもよろしいですか？この操作は取り消せません。`}
+        confirmText="削除"
+        cancelText="キャンセル"
+        onConfirm={handleDeleteConfirm}
+        variant="destructive"
+      />
     </Card>
   )
 }

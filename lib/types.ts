@@ -99,10 +99,15 @@ export interface Client {
   id: number
   name: string // クライアント企業名
   contact_person?: string // 担当者名
+  contact_person_position?: string // 担当者役職
   email?: string // 連絡先メール
   phone?: string // 連絡先電話
   industry?: string // クライアントの業界
   notes?: string // 備考
+  facebook_url?: string // Facebookリンク
+  employee_count?: number | null // 従業員数
+  revenue?: number | null // 売上規模
+  prefecture?: string // 都道府県
   is_active: boolean // アクティブ状態
   created_at: string // 作成日時
   updated_at: string // 更新日時
@@ -132,8 +137,8 @@ export interface Company {
   description?: string
   
   // 規模情報
-  employee_count: number
-  revenue: number
+  employee_count?: number | null
+  revenue?: number | null
   capital?: number
   established_year: number
   
@@ -157,8 +162,8 @@ export interface Company {
   facebook_latest_post_at?: string | null
   facebook_data_synced_at?: string | null
   latest_activity_at?: string | null
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
   executives?: Executive[]
 
   // NG判定情報（追加）
@@ -282,7 +287,7 @@ export interface ProjectCompany {
   id: number
   project_id: number
   company_id?: number
-  company?: Company
+  company?: Partial<Company>
   company_name?: string
   company_industry?: string
   status: "未接触" | "DM送信済み" | "返信あり" | "アポ獲得" | "成約" | "NG" | string

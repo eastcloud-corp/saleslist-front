@@ -261,11 +261,19 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 )}
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">従業員数</h4>
-                  <p>{new Intl.NumberFormat("ja-JP").format(company.employee_count)}</p>
+                  <p>
+                    {company.employee_count !== null && company.employee_count !== undefined
+                      ? new Intl.NumberFormat("ja-JP").format(company.employee_count)
+                      : "未設定"}
+                  </p>
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">売上</h4>
-                  <p>{formatCurrency(company.revenue)}</p>
+                  <p>
+                    {company.revenue !== null && company.revenue !== undefined
+                      ? formatCurrency(company.revenue)
+                      : "未設定"}
+                  </p>
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">所在地</h4>
@@ -311,7 +319,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">作成日</h4>
                   <p className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {formatDate(company.created_at)}
+                    {company.created_at ? formatDate(company.created_at) : "不明"}
                   </p>
                 </div>
               </div>

@@ -14,10 +14,11 @@ jest.mock('@/hooks/use-ng-list', () => ({
 }))
 
 jest.mock('@/components/clients/company-search-dialog', () => ({
-  CompanySearchDialog: ({ open, onAddToNGList }: any) =>
+  CompanySearchDialog: ({ open, onAddToNGList, onAddCompaniesToNG }: any) =>
     open ? (
       <div data-testid="company-search-dialog">
-        <button onClick={() => onAddToNGList({ id: 42, name: 'Mock Company' })}>追加</button>
+        <button onClick={() => onAddToNGList({ id: 42, name: 'Mock Company' })}>単一追加</button>
+        <button onClick={() => onAddCompaniesToNG && onAddCompaniesToNG([1, 2, 3], '複数追加テスト')}>複数追加</button>
       </div>
     ) : null,
 }))
@@ -26,6 +27,7 @@ describe('NGListTab', () => {
   const importCSV = jest.fn()
   const deleteNG = jest.fn()
   const addCompanyToNG = jest.fn()
+  const addCompaniesToNG = jest.fn()
 
   const baseValue = {
     ngList: [],
@@ -35,6 +37,7 @@ describe('NGListTab', () => {
     importCSV,
     deleteNG,
     addCompanyToNG,
+    addCompaniesToNG,
   }
 
   beforeEach(() => {
@@ -42,6 +45,7 @@ describe('NGListTab', () => {
     importCSV.mockReset()
     deleteNG.mockReset()
     addCompanyToNG.mockReset()
+    addCompaniesToNG.mockReset()
     useNGListMock.mockReturnValue(baseValue)
     Object.defineProperty(window, 'confirm', {
       writable: true,
@@ -250,10 +254,84 @@ describe('NGListTab', () => {
 
     fireEvent.click(screen.getByText('企業検索'))
 
-    fireEvent.click(screen.getByText('追加'))
+    fireEvent.click(screen.getByText('単一追加'))
 
     await waitFor(() => {
       expect(addCompanyToNG).toHaveBeenCalledWith(42, 'Mock Company', undefined)
+    })
+  })
+
+  it('adds multiple companies to NG list via search dialog', async () => {
+    const addCompaniesToNG = jest.fn().mockResolvedValue({
+      message: '3社をNGリストに追加しました',
+      added_count: 3,
+      skipped_count: 0,
+      error_count: 0,
+      added: [
+        { company_id: 1, company_name: '企業1', ng_id: 10 },
+        { company_id: 2, company_name: '企業2', ng_id: 11 },
+        { company_id: 3, company_name: '企業3', ng_id: 12 },
+      ],
+      skipped: [],
+      errors: [],
+    })
+    useNGListMock.mockReturnValue({ ...baseValue, addCompaniesToNG })
+
+    render(<NGListTab clientId={8} />)
+
+    fireEvent.click(screen.getByText('企業検索'))
+
+    fireEvent.click(screen.getByText('複数追加'))
+
+    await waitFor(() => {
+      expect(addCompaniesToNG).toHaveBeenCalledWith([1, 2, 3], '複数追加テスト')
+    })
+
+    await waitFor(() => {
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '追加完了',
+          description: expect.stringContaining('3社'),
+        }),
+      )
+    })
+  })
+
+  it('handles bulk add with partial success', async () => {
+    const addCompaniesToNG = jest.fn().mockResolvedValue({
+      message: '2社をNGリストに追加しました（1社スキップ、0件エラー）',
+      added_count: 2,
+      skipped_count: 1,
+      error_count: 0,
+      added: [
+        { company_id: 1, company_name: '企業1', ng_id: 10 },
+        { company_id: 2, company_name: '企業2', ng_id: 11 },
+      ],
+      skipped: [{ company_id: 3, company_name: '企業3', reason: '既にNGリストに登録されています' }],
+      errors: [],
+    })
+    useNGListMock.mockReturnValue({ ...baseValue, addCompaniesToNG })
+
+    render(<NGListTab clientId={9} />)
+
+    fireEvent.click(screen.getByText('企業検索'))
+    fireEvent.click(screen.getByText('複数追加'))
+
+    await waitFor(() => {
+      expect(addCompaniesToNG).toHaveBeenCalled()
+    })
+
+    await waitFor(() => {
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '追加完了',
+        }),
+      )
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '一部スキップされました',
+        }),
+      )
     })
   })
 })

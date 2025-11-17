@@ -14,7 +14,7 @@
     "test:e2e": "node scripts/run-playwright.js tests/e2e -- --config=playwright.config.js",
     "test:e2e:ui": "node scripts/run-playwright.js tests/e2e -- --config=playwright.config.js --ui",
     "test:e2e:debug": "node scripts/run-playwright.js tests/e2e -- --config=playwright.config.js --debug",
-    "test:all": "npm run test && npm run test:integration && npm run test:e2e"
+    "test:all": "pnpm run test && pnpm run test:integration && pnpm run test:e2e"
   },
   "dependencies": {
     "@emotion/react": "^11.13.0",

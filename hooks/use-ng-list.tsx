@@ -85,6 +85,35 @@ export function useNGList(clientId: number) {
     }
   }
 
+  const addCompaniesToNG = async (companyIds: number[], reason?: string) => {
+    console.log("[v0] Adding companies to NG list:", { companyIds, reason })
+
+    if (!companyIds || companyIds.length === 0) {
+      throw new Error("企業を選択してください")
+    }
+
+    try {
+      const response = await apiClient.post<{
+        message: string
+        added_count: number
+        skipped_count: number
+        error_count: number
+        added: Array<{ company_id: number; company_name: string; ng_id: number }>
+        skipped: Array<{ company_id: number; company_name: string; reason: string }>
+        errors: Array<{ company_id: number; error: string }>
+      }>(`/clients/${clientId}/ng-companies/bulk-add/`, {
+        company_ids: companyIds,
+        reason: reason ?? "",
+      })
+
+      await fetchNGList()
+      return response
+    } catch (err) {
+      console.error("[v0] NG companies bulk add error:", err)
+      throw new Error("NG企業の一括追加に失敗しました")
+    }
+  }
+
   useEffect(() => {
     if (clientId) {
       fetchNGList()
@@ -99,6 +128,7 @@ export function useNGList(clientId: number) {
     importCSV,
     deleteNG,
     addCompanyToNG,
+    addCompaniesToNG,
     refetch: fetchNGList,
   }
 }

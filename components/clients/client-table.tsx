@@ -5,10 +5,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Eye, Edit, FolderOpen, Archive } from "lucide-react"
+import { MoreHorizontal, Eye, Edit, FolderOpen, Archive, ExternalLink } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ja } from "date-fns/locale"
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP", {
+    style: "currency",
+    currency: "JPY",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatEmployeeCount = (count?: number | null) => {
+  if (count === null || count === undefined || Number.isNaN(Number(count))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP").format(count)
+}
 
 interface ClientTableProps {
   clients: Client[]
@@ -43,7 +61,11 @@ export function ClientTable({ clients, loading }: ClientTableProps) {
           <TableRow>
             <TableHead>クライアント名</TableHead>
             <TableHead>担当者</TableHead>
+            <TableHead>Facebook</TableHead>
             <TableHead>業界</TableHead>
+            <TableHead>従業員数</TableHead>
+            <TableHead>売上</TableHead>
+            <TableHead>所在地</TableHead>
             <TableHead>案件数</TableHead>
             <TableHead>進行中</TableHead>
             <TableHead>ステータス</TableHead>
@@ -65,8 +87,37 @@ export function ClientTable({ clients, loading }: ClientTableProps) {
                   {client.email && <div className="text-sm text-gray-500">{client.email}</div>}
                 </Link>
               </TableCell>
-              <TableCell>{client.contact_person || "-"}</TableCell>
+              <TableCell>
+                {client.contact_person ? (
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">{client.contact_person}</p>
+                    {client.contact_person_position && (
+                      <p className="text-xs text-muted-foreground">{client.contact_person_position}</p>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">未設定</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {client.facebook_url ? (
+                  <a
+                    href={client.facebook_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    Facebook
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">未設定</span>
+                )}
+              </TableCell>
               <TableCell>{client.industry || "-"}</TableCell>
+              <TableCell>{formatEmployeeCount(client.employee_count)}</TableCell>
+              <TableCell>{formatCurrency(client.revenue)}</TableCell>
+              <TableCell>{client.prefecture || "-"}</TableCell>
               <TableCell>
                 <span className="font-medium">{client.project_count || 0}</span>
               </TableCell>

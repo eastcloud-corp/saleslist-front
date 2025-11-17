@@ -33,31 +33,31 @@ tests/
 ### 単体テスト（Jest）
 ```bash
 # 全コンポーネントテスト
-npm run test
+pnpm run test
 
 # 特定コンポーネント
-npm run test -- components/auth/login-form.test.js
+pnpm run test -- components/auth/login-form.test.js
 
 # ウォッチモード
-npm run test:watch
+pnpm run test:watch
 ```
 
 ### 統合テスト（Playwright）
 ```bash
 # 画面統合テスト
-npm run test:integration
+pnpm run test:integration
 
 # デバッグモード
-npm run test:integration:debug
+pnpm run test:integration:debug
 ```
 
 ### E2Eテスト（Playwright）
 ```bash
 # フロント↔バックエンド統合テスト
-npm run test:e2e
+pnpm run test:e2e
 
 # UIモード
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 ```
 
 ## 📋 テスト対象

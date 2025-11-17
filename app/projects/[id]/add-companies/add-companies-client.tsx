@@ -14,8 +14,48 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { ArrowLeft, Search, Plus, AlertTriangle, Building2, Loader2 } from "lucide-react"
+import { ArrowLeft, Search, Plus, AlertTriangle, Building2, Loader2, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+
+const formatCurrency = (amount?: number | null) => {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP", {
+    style: "currency",
+    currency: "JPY",
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatEmployeeCount = (count?: number | null) => {
+  if (count === null || count === undefined || Number.isNaN(Number(count))) {
+    return "-"
+  }
+  return new Intl.NumberFormat("ja-JP").format(count)
+}
+
+const getStatusBadge = (status?: string) => {
+  const variants = {
+    active: "default",
+    prospect: "secondary",
+    inactive: "outline",
+  } as const
+
+  const statusLabels = {
+    active: "アクティブ",
+    prospect: "見込み客",
+    inactive: "非アクティブ",
+  } as const
+
+  const statusValue = status || "active"
+  return (
+    <Badge variant={variants[statusValue as keyof typeof variants] || "outline"}>
+      {statusLabels[statusValue as keyof typeof statusLabels] || statusValue}
+    </Badge>
+  )
+}
 
 interface AddCompaniesClientProps {
   projectId: string
@@ -204,68 +244,125 @@ export function AddCompaniesClient({ projectId }: AddCompaniesClientProps) {
           ) : filteredCompanies.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">追加可能な企業が見つかりません</div>
           ) : (
-            <div className="space-y-2">
-              {filteredCompanies.map((company) => {
-                const ngStatus = getCompanyNGStatus(company)
-                const isSelected = selectedCompanyIds.includes(company.id.toString())
-                const isDisabled = ngStatus.is_ng
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">選択</TableHead>
+                    <TableHead>企業名</TableHead>
+                    <TableHead data-testid="table-header-contact">担当者</TableHead>
+                    <TableHead data-testid="table-header-facebook">Facebook</TableHead>
+                    <TableHead data-testid="table-header-industry">業界</TableHead>
+                    <TableHead>従業員数</TableHead>
+                    <TableHead data-testid="table-header-revenue">売上</TableHead>
+                    <TableHead>所在地</TableHead>
+                    <TableHead data-testid="table-header-status">ステータス</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompanies.map((company) => {
+                    const ngStatus = getCompanyNGStatus(company)
+                    const isSelected = selectedCompanyIds.includes(company.id.toString())
+                    const isDisabled = ngStatus.is_ng
 
-                return (
-                  <TooltipProvider key={company.id}>
-                    <div
-                      className={`flex items-center space-x-3 p-3 rounded-lg border ${
-                        isDisabled
-                          ? "bg-red-50 border-red-200 opacity-60"
-                          : isSelected
-                            ? "bg-blue-50 border-blue-200"
-                            : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) => handleCompanySelect(company.id.toString(), checked as boolean)}
-                        disabled={isDisabled}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium truncate">{company.name}</h3>
-                          {ngStatus.is_ng && (
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Badge variant="destructive" className="text-xs">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  NG
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="text-sm space-y-1">
-                                  {ngStatus.types?.includes("global") && (
-                                    <div>
-                                      <p className="font-medium text-red-600">グローバルNG</p>
-                                      <p>{ngStatus.reasons?.global}</p>
+                    return (
+                      <TooltipProvider key={company.id}>
+                        <TableRow
+                          className={
+                            isDisabled
+                              ? "bg-red-50 opacity-60"
+                              : isSelected
+                                ? "bg-blue-50"
+                                : ""
+                          }
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => handleCompanySelect(company.id.toString(), checked as boolean)}
+                              disabled={isDisabled}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className={isDisabled ? "text-muted-foreground" : "font-medium"}>{company.name}</span>
+                              {ngStatus.is_ng && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="destructive" className="text-xs">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      NG
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-sm space-y-1">
+                                      {ngStatus.types?.includes("global") && (
+                                        <div>
+                                          <p className="font-medium text-red-600">グローバルNG</p>
+                                          <p>{ngStatus.reasons?.global}</p>
+                                        </div>
+                                      )}
+                                      {ngStatus.types?.includes("client") && (
+                                        <div>
+                                          <p className="font-medium text-orange-600">クライアントNG</p>
+                                          <p>理由: {ngStatus.reasons?.client?.reason}</p>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                  {ngStatus.types?.includes("client") && (
-                                    <div>
-                                      <p className="font-medium text-orange-600">クライアントNG</p>
-                                      <p>理由: {ngStatus.reasons?.client?.reason}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                          <span>{company.industry}</span>
-                          <span>{company.prefecture}</span>
-                          <span>従業員数: {company.employee_count}名</span>
-                        </div>
-                      </div>
-                    </div>
-                  </TooltipProvider>
-                )
-              })}
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-contact`}>
+                            {company.contact_person_name ? (
+                              <div className="space-y-0.5">
+                                <p className="text-sm font-medium">{company.contact_person_name}</p>
+                                {company.contact_person_position && (
+                                  <p className="text-xs text-muted-foreground">{company.contact_person_position}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">未設定</span>
+                            )}
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-facebook`}>
+                            {company.facebook_url ? (
+                              <a
+                                href={company.facebook_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                data-testid={`company-${company.id}-facebook-link`}
+                              >
+                                Facebook
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">未設定</span>
+                            )}
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-industry`}>
+                            {company.industry}
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""}>
+                            {formatEmployeeCount(company.employee_count)}
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-revenue`}>
+                            {formatCurrency(company.revenue)}
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""}>
+                            {company.prefecture || "-"}
+                          </TableCell>
+                          <TableCell className={isDisabled ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-status`}>
+                            {getStatusBadge(company.status)}
+                          </TableCell>
+                        </TableRow>
+                      </TooltipProvider>
+                    )
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

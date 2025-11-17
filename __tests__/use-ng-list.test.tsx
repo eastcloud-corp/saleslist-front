@@ -154,4 +154,67 @@ describe('useNGList', () => {
 
     await expect(result.current.addCompanyToNG(1, 'Error Company', '理由')).rejects.toThrow('NG企業の追加に失敗しました')
   })
+
+  it('adds multiple companies to NG list via bulk API', async () => {
+    const bulkResponse = {
+      message: '2社をNGリストに追加しました',
+      added_count: 2,
+      skipped_count: 0,
+      error_count: 0,
+      added: [
+        { company_id: 1, company_name: '企業1', ng_id: 10 },
+        { company_id: 2, company_name: '企業2', ng_id: 11 },
+      ],
+      skipped: [],
+      errors: [],
+    }
+    mockPost.mockResolvedValue(bulkResponse)
+    const { result } = renderHook(() => useNGList(70))
+    await waitFor(() => expect(mockGet).toHaveBeenCalled())
+    mockGet.mockClear()
+
+    await act(async () => {
+      await result.current.addCompaniesToNG([1, 2], '一括追加テスト')
+    })
+
+    expect(mockPost).toHaveBeenCalledWith('/clients/70/ng-companies/bulk-add/', {
+      company_ids: [1, 2],
+      reason: '一括追加テスト',
+    })
+    expect(mockGet).toHaveBeenCalled()
+  })
+
+  it('handles bulk add with partial success', async () => {
+    const bulkResponse = {
+      message: '1社をNGリストに追加しました（1社スキップ、0件エラー）',
+      added_count: 1,
+      skipped_count: 1,
+      error_count: 0,
+      added: [{ company_id: 1, company_name: '企業1', ng_id: 10 }],
+      skipped: [{ company_id: 2, company_name: '企業2', reason: '既にNGリストに登録されています' }],
+      errors: [],
+    }
+    mockPost.mockResolvedValue(bulkResponse)
+    const { result } = renderHook(() => useNGList(80))
+    await waitFor(() => expect(mockGet).toHaveBeenCalled())
+    mockGet.mockClear()
+
+    await act(async () => {
+      await result.current.addCompaniesToNG([1, 2], '部分成功テスト')
+    })
+
+    expect(mockPost).toHaveBeenCalledWith('/clients/80/ng-companies/bulk-add/', {
+      company_ids: [1, 2],
+      reason: '部分成功テスト',
+    })
+    expect(mockGet).toHaveBeenCalled()
+  })
+
+  it('handles bulk add errors', async () => {
+    mockPost.mockRejectedValueOnce(new Error('bulk add failed'))
+    const { result } = renderHook(() => useNGList(90))
+    await waitFor(() => expect(mockGet).toHaveBeenCalled())
+
+    await expect(result.current.addCompaniesToNG([1, 2], 'エラーテスト')).rejects.toThrow('NG企業の一括追加に失敗しました')
+  })
 })

@@ -49,10 +49,14 @@ export function CompanyFilters({
   const [isExpanded, setIsExpanded] = useState(false)
   const [industries, setIndustries] = useState<string[]>([])
   const [industryHierarchy, setIndustryHierarchy] = useState<IndustryHierarchy[]>([])
+  // 業界フィルタ用のstate
   const [industryQuery, setIndustryQuery] = useState("")
   const [isIndustryFocused, setIsIndustryFocused] = useState(false)
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set())
   const industryInputRef = useRef<HTMLInputElement>(null)
+  // 業種フィルタ用のstate
+  const [subIndustryQuery, setSubIndustryQuery] = useState("")
+  const [isSubIndustryFocused, setIsSubIndustryFocused] = useState(false)
+  const subIndustryInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     // 階層構造の業界データを取得
@@ -131,13 +135,56 @@ export function CompanyFilters({
     )
   }
 
+  // 業界カテゴリのみのリスト（業界フィルタ用）
+  const industryCategories = useMemo(() => {
+    return industryHierarchy.filter((item) => item.is_category)
+  }, [industryHierarchy])
+
+  // 業種のみのリスト（業種フィルタ用）- 全カテゴリから業種をフラットに取得
+  const subIndustries = useMemo(() => {
+    const subList: IndustryHierarchy[] = []
+    const collectSubIndustries = (items: IndustryHierarchy[]) => {
+      items.forEach((item) => {
+        if (item.sub_industries && item.sub_industries.length > 0) {
+          subList.push(...item.sub_industries)
+        }
+      })
+    }
+    collectSubIndustries(industryHierarchy)
+    return subList
+  }, [industryHierarchy])
+
+  const selectedIndustries = toArray(filters.industry)
+
+  // 業界カテゴリのフィルタリング
+  const filteredIndustryCategories = useMemo(() => {
+    const normalizedQuery = industryQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return industryCategories
+    }
+    return industryCategories.filter((category) =>
+      category.name.toLowerCase().includes(normalizedQuery)
+    )
+  }, [industryCategories, industryQuery])
+
+  // 業種のフィルタリング
+  const filteredSubIndustries = useMemo(() => {
+    const normalizedQuery = subIndustryQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return subIndustries
+    }
+    return subIndustries.filter((sub) =>
+      sub.name.toLowerCase().includes(normalizedQuery)
+    )
+  }, [subIndustries, subIndustryQuery])
+
+  // フォールバック用のフラットリスト（階層構造が取得できない場合）
   const combinedIndustryOptions = useMemo(() => {
     const dynamicOptions = industries.filter((option): option is string => Boolean(option))
     const merged = [...INDUSTRY_SUGGESTIONS, ...dynamicOptions]
     return Array.from(new Set(merged))
   }, [industries])
 
-  const selectedIndustries = toArray(filters.industry)
   const availableIndustryOptions = useMemo(
     () => combinedIndustryOptions.filter((option) => !selectedIndustries.includes(option)),
     [combinedIndustryOptions, selectedIndustries],
@@ -153,46 +200,7 @@ export function CompanyFilters({
       .slice(0, 15)
   }, [availableIndustryOptions, industryQuery])
 
-  // 階層構造から検索結果を生成
-  const filteredHierarchyOptions = useMemo(() => {
-    const normalizedQuery = industryQuery.trim().toLowerCase()
-    if (!normalizedQuery) {
-      return industryHierarchy
-    }
-    
-    const filterHierarchy = (items: IndustryHierarchy[]): IndustryHierarchy[] => {
-      return items
-        .map((item) => {
-          const matches = item.name.toLowerCase().includes(normalizedQuery)
-          const filteredSub = item.sub_industries ? filterHierarchy(item.sub_industries) : []
-          const hasMatchingSub = filteredSub.length > 0
-          
-          if (matches || hasMatchingSub) {
-            return {
-              ...item,
-              sub_industries: filteredSub,
-            }
-          }
-          return null
-        })
-        .filter((item): item is IndustryHierarchy => item !== null)
-    }
-    
-    return filterHierarchy(industryHierarchy)
-  }, [industryHierarchy, industryQuery])
-
-  const toggleCategory = (categoryId: number) => {
-    setExpandedCategories((prev) => {
-      const next = new Set(prev)
-      if (next.has(categoryId)) {
-        next.delete(categoryId)
-      } else {
-        next.add(categoryId)
-      }
-      return next
-    })
-  }
-
+  // 業界カテゴリ選択ハンドラ
   const handleIndustrySelect = (value: string) => {
     const trimmed = value.trim()
     if (!trimmed) {
@@ -201,9 +209,22 @@ export function CompanyFilters({
     addArrayFilter("industry", trimmed)
     setIndustryQuery("")
     setIsIndustryFocused(false)
-    // フォーカスを外す
     if (industryInputRef.current) {
       industryInputRef.current.blur()
+    }
+  }
+
+  // 業種選択ハンドラ
+  const handleSubIndustrySelect = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return
+    }
+    addArrayFilter("industry", trimmed)
+    setSubIndustryQuery("")
+    setIsSubIndustryFocused(false)
+    if (subIndustryInputRef.current) {
+      subIndustryInputRef.current.blur()
     }
   }
 
@@ -217,7 +238,11 @@ export function CompanyFilters({
     return value !== undefined && value !== null
   })
 
-  const showIndustryDropdown = (isIndustryFocused || Boolean(industryQuery.trim())) && filteredIndustryOptions.length > 0
+  const showIndustryDropdown = (isIndustryFocused || Boolean(industryQuery.trim())) && 
+    (industryHierarchy.length > 0 ? filteredIndustryCategories.length > 0 : filteredIndustryOptions.length > 0)
+  
+  const showSubIndustryDropdown = (isSubIndustryFocused || Boolean(subIndustryQuery.trim())) && 
+    (industryHierarchy.length > 0 ? filteredSubIndustries.length > 0 : false)
 
   return (
     <Card className="mb-6">
@@ -248,7 +273,7 @@ export function CompanyFilters({
         {/* Expanded Filters */}
         {isExpanded && (
           <div className="grid grid-cols-1 gap-4 pt-4 border-t md:grid-cols-2 lg:grid-cols-3">
-            {/* Industry Filter */}
+            {/* Industry Filter (業界カテゴリ) */}
             <div>
               <Label>業界</Label>
               <div className="flex items-start gap-2">
@@ -263,10 +288,6 @@ export function CompanyFilters({
                       window.setTimeout(() => setIsIndustryFocused(false), 120)
                     }}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault()
-                        handleIndustrySelect(industryQuery)
-                      }
                       if (event.key === "Escape") {
                         setIndustryQuery("")
                         setIsIndustryFocused(false)
@@ -280,51 +301,19 @@ export function CompanyFilters({
                     <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
                       <ul className="max-h-56 overflow-auto py-1 text-sm">
                         {industryHierarchy.length > 0 ? (
-                          // 階層構造を表示
-                          filteredHierarchyOptions.map((category) => (
+                          // 業界カテゴリのみを表示
+                          filteredIndustryCategories.map((category) => (
                             <li key={category.id}>
-                              <div className="flex items-center">
-                                <button
-                                  type="button"
-                                  className="flex-1 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground font-medium"
-                                  onMouseDown={(event) => {
-                                    event.preventDefault()
-                                    handleIndustrySelect(category.name)
-                                  }}
-                                >
-                                  {category.name}
-                                </button>
-                                {category.sub_industries && category.sub_industries.length > 0 && (
-                                  <button
-                                    type="button"
-                                    className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-                                    onMouseDown={(event) => {
-                                      event.preventDefault()
-                                      toggleCategory(category.id)
-                                    }}
-                                  >
-                                    {expandedCategories.has(category.id) ? '−' : '+'}
-                                  </button>
-                                )}
-                              </div>
-                              {expandedCategories.has(category.id) && category.sub_industries && (
-                                <ul className="pl-4">
-                                  {category.sub_industries.map((sub) => (
-                                    <li key={sub.id}>
-                                      <button
-                                        type="button"
-                                        className="w-full px-3 py-1.5 text-left hover:bg-accent hover:text-accent-foreground text-xs"
-                                        onMouseDown={(event) => {
-                                          event.preventDefault()
-                                          handleIndustrySelect(sub.name)
-                                        }}
-                                      >
-                                        {sub.name}
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
+                              <button
+                                type="button"
+                                className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
+                                onMouseDown={(event) => {
+                                  event.preventDefault()
+                                  handleIndustrySelect(category.name)
+                                }}
+                              >
+                                {category.name}
+                              </button>
                             </li>
                           ))
                         ) : (
@@ -359,20 +348,85 @@ export function CompanyFilters({
                   追加
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {toArray(filters.industry).map((industry) => (
-                  <Badge key={industry} variant="secondary" className="text-xs">
-                    {industry}
-                    <button
-                      onClick={() => removeArrayFilter("industry", industry)}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+            </div>
+
+            {/* Sub-Industry Filter (業種) */}
+            <div>
+              <Label>業種</Label>
+              <div className="flex items-start gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    ref={subIndustryInputRef}
+                    value={subIndustryQuery}
+                    placeholder="業種を入力または選択..."
+                    onChange={(event) => setSubIndustryQuery(event.target.value)}
+                    onFocus={() => setIsSubIndustryFocused(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setIsSubIndustryFocused(false), 120)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        setSubIndustryQuery("")
+                        setIsSubIndustryFocused(false)
+                        if (subIndustryInputRef.current) {
+                          subIndustryInputRef.current.blur()
+                        }
+                      }
+                    }}
+                  />
+                  {showSubIndustryDropdown && (
+                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
+                      <ul className="max-h-56 overflow-auto py-1 text-sm">
+                        {filteredSubIndustries.map((sub) => (
+                          <li key={sub.id}>
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                handleSubIndustrySelect(sub.name)
+                              }}
+                            >
+                              {sub.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSubIndustrySelect(subIndustryQuery)}
+                  disabled={!subIndustryQuery.trim()}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  追加
+                </Button>
               </div>
             </div>
+
+            {/* Selected Industries and Sub-Industries (統合表示) */}
+            {toArray(filters.industry).length > 0 && (
+              <div className="md:col-span-2 lg:col-span-3">
+                <Label className="text-xs text-muted-foreground">選択中の業界・業種</Label>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {toArray(filters.industry).map((industry) => (
+                    <Badge key={industry} variant="secondary" className="text-xs">
+                      {industry}
+                      <button
+                        onClick={() => removeArrayFilter("industry", industry)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Role Category */}
             <div>

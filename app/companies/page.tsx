@@ -16,12 +16,13 @@ import { API_CONFIG } from "@/lib/api-config"
 import { apiClient, ApiError } from "@/lib/api-client"
 import { useAuth } from "@/hooks/use-auth"
 import type { CompanyFilter as CompanyFiltersType, CompanyReviewBatch } from "@/lib/types"
-import { Download, Plus, Upload, Database, Building2, Loader2 } from "lucide-react"
+import { Download, Plus, Upload, Database, Building2, Loader2, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog"
 import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
 import Link from "next/link"
+import { copyToClipboard } from "@/lib/clipboard"
 
 function CompaniesPageContent() {
   const [pendingFilters, setPendingFilters] = useState<CompanyFiltersType>({})
@@ -29,6 +30,7 @@ function CompaniesPageContent() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isCopying, setIsCopying] = useState(false)
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
@@ -209,6 +211,47 @@ function CompaniesPageContent() {
     }
   }
 
+  const handleCopyCsv = async () => {
+    if (!isAdmin) return
+
+    if (companies.length === 0) {
+      toast({
+        title: "コピーできる企業データがありません",
+        description: "企業リストが空のため、CSVとしてコピーできるデータがありません。",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsCopying(true)
+    try {
+      const csvContent = exportCompaniesToCSV(companies)
+      const success = await copyToClipboard(csvContent)
+
+      if (success) {
+        toast({
+          title: "CSVをクリップボードにコピーしました",
+          description: "現在のフィルターと表示内容に基づく企業リストのCSVをコピーしました。",
+        })
+      } else {
+        toast({
+          title: "CSVのコピーに失敗しました",
+          description: "ブラウザの設定や権限によりコピーできませんでした。CSVファイルのダウンロードをお試しください。",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("[companies] failed to copy CSV", error)
+      toast({
+        title: "CSVのコピー中にエラーが発生しました",
+        description: "時間をおいて再度お試しください。",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCopying(false)
+    }
+  }
+
   const handleImport = async (
     file: File,
     context: { rowCount: number },
@@ -320,10 +363,24 @@ function CompaniesPageContent() {
               </Link>
             </Button>
             {isAdmin && (
-              <Button variant="outline" onClick={handleExport} disabled={isExporting}>
-                <Download className="h-4 w-4 mr-2" />
-                {isExporting ? "エクスポート中..." : "CSV エクスポート"}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleExport}
+                  disabled={isExporting || isCopying || companies.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "エクスポート中..." : "CSV エクスポート"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCopyCsv}
+                  disabled={isCopying || companies.length === 0}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  {isCopying ? "コピー中..." : "CSV コピー"}
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />

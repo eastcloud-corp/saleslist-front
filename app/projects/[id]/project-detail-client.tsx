@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Edit, Trash2, Calendar, FolderOpen, Loader2, Download } from "lucide-react"
+import { ArrowLeft, Edit, Trash2, Calendar, FolderOpen, Loader2, Download, Copy } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
 import { downloadCSV } from "@/lib/csv-utils"
 import { useToast } from "@/hooks/use-toast"
+import { copyToClipboard } from "@/lib/clipboard"
 
 interface ProjectDetailClientProps {
   projectId: string
@@ -25,6 +26,7 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isCopyingCsv, setIsCopyingCsv] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -110,6 +112,41 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
     }
   }
 
+  const handleCopyCompaniesCsv = async () => {
+    if (!project) return
+
+    setIsCopyingCsv(true)
+    try {
+      const blob = await apiClient.downloadFile(API_CONFIG.ENDPOINTS.PROJECT_EXPORT(project.id.toString()))
+      const csvContent = await blob.text()
+
+      const success = await copyToClipboard(csvContent)
+
+      if (success) {
+        toast({
+          title: "CSVをコピーしました",
+          description: "案件の企業リストをCSV形式でクリップボードにコピーしました。",
+        })
+      } else {
+        toast({
+          title: "CSVのコピーに失敗しました",
+          description: "ブラウザの設定や権限によりコピーできませんでした。CSVファイルのダウンロードをお試しください。",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("[ProjectDetail] 企業リストCSVのコピーに失敗しました:", error)
+      const message = error instanceof Error ? error.message : "企業リストCSVのコピーに失敗しました"
+      toast({
+        title: "エラー",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsCopyingCsv(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "未設定"
     return new Date(dateString).toLocaleDateString("ja-JP")
@@ -187,6 +224,14 @@ export function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
               <Button variant="outline" onClick={handleExportCompanies} disabled={isExporting}>
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? "エクスポート中..." : "企業リストをエクスポート"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopyCompaniesCsv}
+                disabled={isCopyingCsv}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                {isCopyingCsv ? "コピー中..." : "CSVをコピー"}
               </Button>
               <Button variant="outline" onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-2" />

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Company } from "@/lib/types"
-import { Save, X, ChevronDown, ChevronRight, ExternalLink } from "lucide-react"
+import { Save, X, ChevronDown, ChevronRight, ExternalLink, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
 
@@ -60,11 +60,19 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [industryHierarchy, setIndustryHierarchy] = useState<IndustryHierarchy[]>([])
-  const [industryQuery, setIndustryQuery] = useState(company?.industry || "")
+  // 業界フィルタ用のstate
+  const [industryQuery, setIndustryQuery] = useState("")
   const [isIndustryFocused, setIsIndustryFocused] = useState(false)
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set())
   const industryInputRef = useRef<HTMLInputElement>(null)
+  // 業種フィルタ用のstate
+  const [subIndustryQuery, setSubIndustryQuery] = useState("")
+  const [isSubIndustryFocused, setIsSubIndustryFocused] = useState(false)
+  const subIndustryInputRef = useRef<HTMLInputElement>(null)
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  
+  // 選択された業界と業種を管理
+  const [selectedIndustry, setSelectedIndustry] = useState<string>("")
+  const [selectedSubIndustry, setSelectedSubIndustry] = useState<string>("")
 
   useEffect(() => {
     // 階層構造の業界データを取得
@@ -75,59 +83,170 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
         )
         if (hierarchyData.results) {
           setIndustryHierarchy(hierarchyData.results)
+          
+          // 既存データをパース（「業界-業種」形式または業界名のみ）
+          if (company?.industry) {
+            const industryValue = company.industry
+            if (industryValue.includes('-')) {
+              // 「業界-業種」形式の場合
+              const [industryName, subIndustryName] = industryValue.split('-', 2)
+              setSelectedIndustry(industryName)
+              setSelectedSubIndustry(subIndustryName)
+              setIndustryQuery(industryName)
+              setSubIndustryQuery(subIndustryName)
+            } else {
+              // 業界名のみの場合
+              setSelectedIndustry(industryValue)
+              setIndustryQuery(industryValue)
+            }
+          }
         }
       } catch (error) {
         console.error('[company-form] 業界候補取得に失敗しました:', error)
       }
     }
     fetchIndustries()
-  }, [])
+  }, [company?.industry])
 
-  // 業界候補をフィルタリング
-  const filteredHierarchyOptions = useMemo(() => {
-    if (!industryQuery.trim()) {
-      return industryHierarchy
-    }
-    const query = industryQuery.toLowerCase()
-    return industryHierarchy
-      .map((category) => {
-        const matchingSubIndustries = category.sub_industries.filter((sub) =>
-          sub.name.toLowerCase().includes(query)
-        )
-        if (
-          category.name.toLowerCase().includes(query) ||
-          matchingSubIndustries.length > 0
-        ) {
-          return {
-            ...category,
-            sub_industries: matchingSubIndustries.length > 0 ? matchingSubIndustries : category.sub_industries,
-          }
-        }
-        return null
-      })
-      .filter((category): category is IndustryHierarchy => category !== null)
-  }, [industryHierarchy, industryQuery])
+  // 業界カテゴリのみのリスト（業界フィルタ用）
+  const industryCategories = useMemo(() => {
+    return industryHierarchy.filter((item) => item.is_category)
+  }, [industryHierarchy])
 
-  const toggleCategory = (categoryId: number) => {
-    setExpandedCategories((prev) => {
-      const next = new Set(prev)
-      if (next.has(categoryId)) {
-        next.delete(categoryId)
-      } else {
-        next.add(categoryId)
+  // 業種のみのリスト（業種フィルタ用）- 全カテゴリから業種をフラットに取得
+  const subIndustries = useMemo(() => {
+    const subList: Array<{ sub: IndustryHierarchy; category: IndustryHierarchy }> = []
+    industryHierarchy.forEach((category) => {
+      if (category.sub_industries && category.sub_industries.length > 0) {
+        category.sub_industries.forEach((sub) => {
+          subList.push({ sub, category })
+        })
       }
-      return next
     })
+    return subList
+  }, [industryHierarchy])
+
+  // 業界カテゴリのフィルタリング
+  const filteredIndustryCategories = useMemo(() => {
+    const normalizedQuery = industryQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return industryCategories
+    }
+    return industryCategories.filter((category) =>
+      category.name.toLowerCase().includes(normalizedQuery)
+    )
+  }, [industryCategories, industryQuery])
+
+  // 業種のフィルタリング
+  // 業界が選択されていない場合は全ての業種を表示
+  // 業界が選択されている場合はその業界に対応する業種のみを表示
+  const filteredSubIndustries = useMemo(() => {
+    let filtered = subIndustries
+    
+    // 業界が選択されている場合のみ、その業界に対応する業種をフィルタリング
+    // 業界が選択されていない場合は全業種を表示
+    if (selectedIndustry && selectedIndustry.trim() !== "") {
+      filtered = subIndustries.filter((item) => item.category.name === selectedIndustry)
+    }
+    
+    // 検索クエリでフィルタリング
+    const normalizedQuery = subIndustryQuery.trim().toLowerCase()
+    if (normalizedQuery) {
+      filtered = filtered.filter((item) =>
+        item.sub.name.toLowerCase().includes(normalizedQuery)
+      )
+    }
+    
+    return filtered
+  }, [subIndustries, subIndustryQuery, selectedIndustry])
+
+  // 業界クリアハンドラ
+  const handleIndustryClear = () => {
+    setSelectedIndustry("")
+    setSelectedSubIndustry("") // 業種もクリア
+    setIndustryQuery("")
+    setSubIndustryQuery("") // 業種の検索クエリもクリア
+    setIsIndustryFocused(false)
+    updateIndustryValue("", "")
+    
+    if (industryInputRef.current) {
+      industryInputRef.current.focus()
+    }
   }
 
-  const handleIndustrySelect = (categoryName: string, subIndustryName?: string) => {
+  // 業界カテゴリ選択ハンドラ
+  const handleIndustrySelect = (categoryName: string) => {
+    // タイムアウトをクリア
+    if (blurTimeoutRef.current !== null) {
+      clearTimeout(blurTimeoutRef.current)
+      blurTimeoutRef.current = null
+    }
+    
+    setSelectedIndustry(categoryName)
+    setSelectedSubIndustry("") // 業界を選択したら業種をクリア
+    setIndustryQuery(categoryName)
+    setSubIndustryQuery("") // 業種の検索クエリもクリア
+    setIsIndustryFocused(false) // ドロップダウンを閉じる
+    
+    // 業界のみの場合は業界名のみで保存
+    updateIndustryValue(categoryName, "")
+    
+    // フォーカスを外す
+    if (industryInputRef.current) {
+      industryInputRef.current.blur()
+    }
+  }
+
+  // 業種クリアハンドラ
+  const handleSubIndustryClear = () => {
+    setSelectedSubIndustry("")
+    setSubIndustryQuery("")
+    setIsSubIndustryFocused(false)
+    
+    // 業界が選択されている場合は業界のみで保存、選択されていない場合は空で保存
+    if (selectedIndustry) {
+      updateIndustryValue(selectedIndustry, "")
+      } else {
+      updateIndustryValue("", "")
+    }
+    
+    if (subIndustryInputRef.current) {
+      subIndustryInputRef.current.focus()
+    }
+  }
+
+  // 業種選択ハンドラ（業種が属する業界を自動検出）
+  const handleSubIndustrySelect = (subIndustryName: string, categoryName: string) => {
+    // タイムアウトをクリア
+    if (blurTimeoutRef.current !== null) {
+      clearTimeout(blurTimeoutRef.current)
+      blurTimeoutRef.current = null
+    }
+    
+    setSelectedSubIndustry(subIndustryName)
+    setSelectedIndustry(categoryName) // 業種が属する業界を自動設定
+    setSubIndustryQuery(subIndustryName)
+    setIndustryQuery(categoryName) // 業界フィールドにも表示
+    setIsSubIndustryFocused(false) // ドロップダウンを閉じる
+    
+    // 業種が選択された場合は「業界-業種」形式で保存
+    updateIndustryValue(categoryName, subIndustryName)
+    
+    // フォーカスを外す
+    if (subIndustryInputRef.current) {
+      subIndustryInputRef.current.blur()
+    }
+  }
+
+  // 業界値を更新するヘルパー関数
+  const updateIndustryValue = (industry: string, subIndustry: string) => {
     let industryValue: string
-    if (subIndustryName) {
-      // 業種が選択された場合：「カテゴリ名-業種名」の形式
-      industryValue = `${categoryName}-${subIndustryName}`
+    if (subIndustry) {
+      // 業種が選択された場合：「業界-業種」の形式
+      industryValue = `${industry}-${subIndustry}`
     } else {
-      // カテゴリのみ選択された場合：カテゴリ名のみ
-      industryValue = categoryName
+      // 業界のみ選択された場合：業界名のみ
+      industryValue = industry
     }
     
     // onBlurのタイムアウトをクリア
@@ -137,16 +256,11 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
     }
     
     setFormData((prev) => ({ ...prev, industry: industryValue }))
-    setIndustryQuery(industryValue)
-    setIsIndustryFocused(false)
-    // フォーカスを外す
-    if (industryInputRef.current) {
-      industryInputRef.current.blur()
-    }
   }
 
-  // 入力欄にフォーカスがあるときだけ候補を表示（選択後は閉じる）
-  const showIndustryDropdown = isIndustryFocused && filteredHierarchyOptions.length > 0
+  const showIndustryDropdown = isIndustryFocused && filteredIndustryCategories.length > 0
+  
+  const showSubIndustryDropdown = isSubIndustryFocused && filteredSubIndustries.length > 0
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -182,6 +296,17 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Enterキーでの送信を防ぐ（「変更を保存」ボタンからの送信のみ許可）
+    const target = e.target as HTMLElement
+    const submitButton = target.querySelector('button[type="submit"]')
+    const isFromButton = (e.nativeEvent as any).submitter?.tagName === "BUTTON" || 
+                         (e.nativeEvent as any).submitter?.type === "submit"
+    
+    // Enterキーで送信された場合は処理を中断
+    if (!isFromButton && (e.nativeEvent as KeyboardEvent).key === "Enter") {
+      return
+    }
+
     if (!validateForm()) {
       return
     }
@@ -206,7 +331,18 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
         <CardTitle>{company ? "企業情報の編集" : "新規企業登録"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        <form 
+          onSubmit={handleSubmit} 
+          onKeyDown={(e) => {
+            // Enterキーでの送信を防ぐ（「変更を保存」ボタンからの送信のみ許可）
+            if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "BUTTON") {
+              e.preventDefault()
+              e.stopPropagation()
+            }
+          }}
+          noValidate 
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Company Name */}
             <div className="md:col-span-2">
@@ -310,11 +446,11 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
               />
             </div>
 
-            {/* Industry */}
-            <div className="md:col-span-2">
+            {/* Industry (業界カテゴリ) */}
+            <div>
               <Label htmlFor="industry">業界 *</Label>
               <p className="text-xs text-muted-foreground mb-1">
-                業界カテゴリまたは業種を選択するか、自由に入力してください
+                業界カテゴリを選択するか、自由に入力してください
               </p>
               <div className="relative">
                 <Input
@@ -322,18 +458,35 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
                   id="industry"
                   value={industryQuery}
                   onChange={(e) => {
-                    setIndustryQuery(e.target.value)
-                    updateField("industry", e.target.value)
+                    const value = e.target.value
+                    setIndustryQuery(value)
+                    
+                    // 業界が変更されたら業種をクリア
+                    if (value !== selectedIndustry) {
+                      setSelectedSubIndustry("")
+                      setSubIndustryQuery("")
+                    }
+                    
+                    // 業界フィールドが空になった場合
+                    if (!value || value.trim() === "") {
+                      setSelectedIndustry("")
+                      setSelectedSubIndustry("")
+                      setSubIndustryQuery("")
+                      updateIndustryValue("", "")
+                    } else if (!filteredIndustryCategories.some(c => c.name === value)) {
+                      // 自由入力の場合
+                      setSelectedIndustry(value)
+                      setSelectedSubIndustry("")
+                      updateIndustryValue(value, "")
+                    }
                   }}
-                  placeholder="業界・業種を入力または選択（自由入力可）..."
+                  placeholder="業界を入力または選択..."
                   disabled={isLoading}
                   className={errors.industry ? "border-destructive" : ""}
                   onFocus={() => setIsIndustryFocused(true)}
                   onBlur={(e) => {
-                    // ドロップダウン内の要素へのフォーカス移動の場合は閉じない
                     const relatedTarget = e.relatedTarget as HTMLElement
                     if (!relatedTarget || !e.currentTarget.parentElement?.contains(relatedTarget)) {
-                      // 既存のタイムアウトをクリア
                       if (blurTimeoutRef.current !== null) {
                         clearTimeout(blurTimeoutRef.current)
                       }
@@ -344,20 +497,8 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
                     }
                   }}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault()
-                      // Enterキーで直接入力された場合はそのまま使用
-                      const trimmed = industryQuery.trim()
-                      if (trimmed) {
-                        setFormData((prev) => ({ ...prev, industry: trimmed }))
-                        setIsIndustryFocused(false)
-                        if (industryInputRef.current) {
-                          industryInputRef.current.blur()
-                        }
-                      }
-                    }
                     if (event.key === "Escape") {
-                      setIndustryQuery(formData.industry)
+                      setIndustryQuery(selectedIndustry)
                       setIsIndustryFocused(false)
                       if (industryInputRef.current) {
                         industryInputRef.current.blur()
@@ -365,67 +506,143 @@ export function CompanyForm({ company, onSave, onCancel, isLoading = false }: Co
                     }
                   }}
                 />
+                {industryQuery && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleIndustryClear()
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </button>
+                )}
                 {showIndustryDropdown && (
                   <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
                     <ul className="max-h-56 overflow-auto py-1 text-sm">
-                      {filteredHierarchyOptions.length > 0 ? (
-                        filteredHierarchyOptions.map((category) => (
+                      {filteredIndustryCategories.map((category) => (
                           <li key={category.id}>
-                            <div className="flex items-center">
                               <button
                                 type="button"
-                                className="flex-1 px-3 py-2 text-left hover:bg-gray-100 font-medium"
+                            className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              handleIndustrySelect(category.name)
+                            }}
                                 onMouseDown={(event) => {
                                   event.preventDefault()
-                                  handleIndustrySelect(category.name)
                                 }}
-                                title="業界カテゴリを選択"
                               >
                                 {category.name}
                               </button>
-                              {category.sub_industries && category.sub_industries.length > 0 && (
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-gray-100"
-                                  onMouseDown={(event) => {
-                                    event.preventDefault()
-                                    toggleCategory(category.id)
-                                  }}
-                                  title="業種を展開/折りたたみ"
-                                >
-                                  {expandedCategories.has(category.id) ? '−' : '+'}
-                                </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                               )}
                             </div>
-                            {expandedCategories.has(category.id) && category.sub_industries && (
-                              <ul className="pl-4">
-                                {category.sub_industries.map((sub) => (
-                                  <li key={sub.id}>
+            </div>
+
+            {/* Sub-Industry (業種) */}
+            <div>
+              <Label htmlFor="sub_industry">業種</Label>
+              <p className="text-xs text-muted-foreground mb-1">
+                {selectedIndustry 
+                  ? `「${selectedIndustry}」に対応する業種を選択できます`
+                  : "業種を選択すると、所属する業界が自動で設定されます"}
+              </p>
+              <div className="relative">
+                <Input
+                  ref={subIndustryInputRef}
+                  id="sub_industry"
+                  value={subIndustryQuery}
+                  onChange={(e) => {
+                    setSubIndustryQuery(e.target.value)
+                  }}
+                  placeholder="業種を入力または選択..."
+                  disabled={isLoading}
+                  onFocus={() => setIsSubIndustryFocused(true)}
+                  onBlur={(e) => {
+                    const relatedTarget = e.relatedTarget as HTMLElement
+                    if (!relatedTarget || !e.currentTarget.parentElement?.contains(relatedTarget)) {
+                      if (blurTimeoutRef.current !== null) {
+                        clearTimeout(blurTimeoutRef.current)
+                      }
+                      blurTimeoutRef.current = setTimeout(() => {
+                        setIsSubIndustryFocused(false)
+                        blurTimeoutRef.current = null
+                      }, 120)
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setSubIndustryQuery(selectedSubIndustry)
+                      setIsSubIndustryFocused(false)
+                      if (subIndustryInputRef.current) {
+                        subIndustryInputRef.current.blur()
+                      }
+                    }
+                  }}
+                />
+                {subIndustryQuery && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleSubIndustryClear()
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </button>
+                )}
+                {showSubIndustryDropdown && (
+                  <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
+                    <ul className="max-h-56 overflow-auto py-1 text-sm">
+                      {filteredSubIndustries.map((item) => (
+                        <li key={item.sub.id}>
                                     <button
                                       type="button"
-                                      className="w-full px-3 py-1.5 text-left hover:bg-gray-100 text-xs"
+                            className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              handleSubIndustrySelect(item.sub.name, item.category.name)
+                            }}
                                       onMouseDown={(event) => {
                                         event.preventDefault()
-                                        handleIndustrySelect(category.name, sub.name)
                                       }}
                                     >
-                                      {sub.name}
+                            {item.sub.name}
                                     </button>
                                   </li>
                                 ))}
-                              </ul>
-                            )}
-                          </li>
-                        ))
-                      ) : (
-                        <li className="px-2 py-1.5 text-muted-foreground">該当する業種が見つかりません</li>
-                      )}
                     </ul>
                   </div>
                 )}
               </div>
-              {errors.industry && <p className="text-sm text-destructive mt-1">{errors.industry}</p>}
             </div>
+
+            {/* 選択中の業界・業種の表示 */}
+            {(selectedIndustry || selectedSubIndustry) && (
+              <div className="md:col-span-2">
+                <p className="text-xs text-muted-foreground">
+                  保存される値: <span className="font-medium">{formData.industry}</span>
+                </p>
+              </div>
+            )}
+
+            {errors.industry && (
+              <div className="md:col-span-2">
+                <p className="text-sm text-destructive">{errors.industry}</p>
+              </div>
+            )}
 
             {/* Status */}
             <div>

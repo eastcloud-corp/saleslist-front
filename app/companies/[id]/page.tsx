@@ -277,18 +277,20 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">所在地</h4>
-                  <p>{company.location}</p>
+                  <p>
+                    {[company.prefecture, company.city].filter(Boolean).join(" ") || "未設定"}
+                  </p>
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">ウェブサイト</h4>
-                  {company.website ? (
+                  {company.website_url ? (
                     <a
-                      href={company.website}
+                      href={company.website_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline flex items-center gap-1"
                     >
-                      {company.website.replace(/^https?:\/\//, "")}
+                      {company.website_url.replace(/^https?:\/\//, "")}
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   ) : (
@@ -307,9 +309,9 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">メールアドレス</h4>
-                  {company.email ? (
-                    <a href={`mailto:${company.email}`} className="text-primary hover:underline">
-                      {company.email}
+                  {company.contact_email ? (
+                    <a href={`mailto:${company.contact_email}`} className="text-primary hover:underline">
+                      {company.contact_email}
                     </a>
                   ) : (
                     <p className="text-muted-foreground">未設定</p>

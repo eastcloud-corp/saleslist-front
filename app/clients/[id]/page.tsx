@@ -11,7 +11,7 @@ import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
 import { ClientForm } from "@/components/clients/client-form"
 import { NGListTab } from "@/components/clients/ng-list-tab"
-import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users, Download } from "lucide-react"
+import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users, Download, Copy } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -21,6 +21,7 @@ import { apiClient } from "@/lib/api-client"
 import { API_CONFIG } from "@/lib/api-config"
 import { downloadCSV } from "@/lib/csv-utils"
 import { useToast } from "@/hooks/use-toast"
+import { copyToClipboard } from "@/lib/clipboard"
 
 interface ClientDetailPageProps {
   params: Promise<{
@@ -42,6 +43,7 @@ function ClientDetailContent({ id }: { id: number }) {
   const [newProjectDescription, setNewProjectDescription] = useState("")
   const [newProjectManager, setNewProjectManager] = useState("")
   const [isExporting, setIsExporting] = useState(false)
+  const [isCopyingCsv, setIsCopyingCsv] = useState(false)
 
   const { client, loading: clientLoading, error: clientError } = useClient(id)
   const { stats, loading: statsLoading } = useClientStats(id)
@@ -122,6 +124,43 @@ function ClientDetailContent({ id }: { id: number }) {
     }
   }
 
+  const handleCopyCompaniesCsv = async () => {
+    if (!client) return
+
+    setIsCopyingCsv(true)
+    try {
+      const blob = await apiClient.downloadFile(
+        API_CONFIG.ENDPOINTS.CLIENT_EXPORT_COMPANIES(client.id.toString())
+      )
+      const csvContent = await blob.text()
+
+      const success = await copyToClipboard(csvContent)
+
+      if (success) {
+        toast({
+          title: "CSVをコピーしました",
+          description: "クライアント配下の企業リストをCSV形式でクリップボードにコピーしました。",
+        })
+      } else {
+        toast({
+          title: "CSVのコピーに失敗しました",
+          description: "ブラウザの設定や権限によりコピーできませんでした。CSVファイルのダウンロードをお試しください。",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("企業リストCSVのコピーに失敗しました:", error)
+      const message = error instanceof Error ? error.message : "企業リストCSVのコピーに失敗しました"
+      toast({
+        title: "エラー",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsCopyingCsv(false)
+    }
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -146,6 +185,14 @@ function ClientDetailContent({ id }: { id: number }) {
             <Button variant="outline" onClick={handleExportCompanies} disabled={isExporting}>
               <Download className="h-4 w-4 mr-2" />
               {isExporting ? "エクスポート中..." : "企業リストをエクスポート"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCopyCompaniesCsv}
+              disabled={isCopyingCsv}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              {isCopyingCsv ? "コピー中..." : "CSVをコピー"}
             </Button>
             <Link href={`/clients/${id}/select-companies`}>
               <Button variant="outline">

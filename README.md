@@ -43,7 +43,7 @@ docker-compose -f saleslist-backend/docker/docker-compose.yml up
 
 ## 🔧 技術スタック
 
-- **Next.js**: 15.2.4
+- **Next.js**: 15.2.6
 - **React**: 19
 - **TypeScript**: 5
 - **Tailwind CSS**: 4.1.9

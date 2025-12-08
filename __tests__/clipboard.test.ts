@@ -24,7 +24,6 @@ describe("copyToClipboard", () => {
 
     const execCommandMock = jest
       .spyOn(document, "execCommand")
-      // @ts-expect-error JSDOMでの戻り値型を簡略化
       .mockReturnValue(true)
 
     const result = await copyToClipboard("fallback test")
@@ -36,6 +35,5 @@ describe("copyToClipboard", () => {
   })
 }
 )
-
 
 

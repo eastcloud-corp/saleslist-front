@@ -69,6 +69,21 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Improve error handling for Server Actions and form processing
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+      allowedOrigins: process.env.NEXT_PUBLIC_API_URL 
+        ? [new URL(process.env.NEXT_PUBLIC_API_URL).origin]
+        : [],
+    },
+  },
+  // Add logging configuration
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
   async rewrites() {
     return [
       {

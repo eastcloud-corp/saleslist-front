@@ -193,7 +193,7 @@ export function CompanyReviewDialog({
     })
   }
 
-  const handleRejectionReasonChange = (itemId: number, value: string, item?: CompanyReviewItem) => {
+  const handleRejectionReasonChange = (itemId: number, value: string | undefined, item?: CompanyReviewItem) => {
     setDecisions((prev) => {
       const base =
         prev[itemId] ??
@@ -211,7 +211,7 @@ export function CompanyReviewDialog({
         ...prev,
         [itemId]: {
           ...base,
-          rejectionReasonCode: value,
+          rejectionReasonCode: value ?? "",
         },
       }
     })
@@ -516,14 +516,14 @@ export function CompanyReviewDialog({
                                 <div className="space-y-2">
                                   <Label className="text-xs font-medium text-red-700">否認理由</Label>
                                   <Select
-                                    value={state.rejectionReasonCode ?? ""}
+                                    value={state.rejectionReasonCode && state.rejectionReasonCode !== "" ? state.rejectionReasonCode : undefined}
                                     onValueChange={(value) => handleRejectionReasonChange(item.id, value, item)}
                                   >
                                     <SelectTrigger>
                                       <SelectValue placeholder="否認理由を選択" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {REJECTION_REASON_OPTIONS.map((option) => (
+                                      {REJECTION_REASON_OPTIONS.filter((option) => option.value !== "").map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
                                           {option.label}
                                         </SelectItem>

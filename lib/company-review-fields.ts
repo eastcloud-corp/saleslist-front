@@ -8,6 +8,8 @@ export const COMPANY_REVIEW_FIELDS: CompanyReviewFieldDefinition[] = [
   { value: "website_url", label: "WebサイトURL" },
   { value: "contact_email", label: "連絡先メール" },
   { value: "phone", label: "電話番号" },
+  { value: "contact_person_name", label: "担当者名" },
+  { value: "contact_person_position", label: "担当者役職" },
   { value: "prefecture", label: "都道府県" },
   { value: "city", label: "所在地詳細" },
   { value: "industry", label: "業種" },

@@ -2,16 +2,16 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { downloadCSV, CSV_HEADERS } from "@/lib/csv-utils"
+import { downloadCSV, CSV_HEADERS, CSV_HEADER_LABELS } from "@/lib/csv-utils"
 import { Download, FileText } from "lucide-react"
 
 export function CSVTemplateDownload() {
   const handleDownloadTemplate = () => {
-    // Create sample CSV template with headers and example data
-    const headers = CSV_HEADERS.join(",")
+    // Create sample CSV template with Japanese headers and example data
+    const headers = CSV_HEADERS.map((header) => CSV_HEADER_LABELS[header]).join(",")
     const sampleData = [
-      "株式会社テックワークス,IT,150,50000000,東京都千代田区丸の内1-1-1,https://techworks.example.com,03-1234-5678,info@techworks.example.com,クラウド型営業支援サービス,active",
-      "有限会社グリーンライフ,ヘルスケア,45,12000000,大阪府大阪市北区梅田1-2-3,http://greenlife.example.jp,06-9876-5432,contact@greenlife.example.jp,健康食品の製造・販売,prospect",
+      "田中太郎,株式会社テックワークス,部長,https://techworks.example.com,IT,1234567890123,150,50000000,東京都千代田区丸の内1-1-1,https://www.facebook.com/techworks,03-1234-5678,info@techworks.example.com,クラウド型営業支援サービス,active",
+      "鈴木花子,有限会社グリーンライフ,課長,http://greenlife.example.jp,ヘルスケア,9876543210987,45,12000000,大阪府大阪市北区梅田1-2-3,https://www.facebook.com/greenlife,06-9876-5432,contact@greenlife.example.jp,健康食品の製造・販売,prospect",
     ]
 
     const csvContent = [headers, ...sampleData].join("\n")

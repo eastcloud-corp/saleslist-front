@@ -522,6 +522,18 @@ export interface CompanyReviewDecisionPayload {
   items: CompanyReviewDecisionItemPayload[]
 }
 
+export interface CompanyReviewBulkDecisionPayload {
+  batch_ids: number[]
+  decision: Exclude<CompanyReviewDecisionAction, "update">
+  comment?: string
+}
+
+export interface CompanyReviewBulkDecisionResult {
+  updated_count: number
+  batch_ids: number[]
+  results?: CompanyReviewBatch[]
+}
+
 // Error Types
 export interface ApiError {
   error: string

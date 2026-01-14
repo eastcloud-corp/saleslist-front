@@ -1,7 +1,7 @@
 "use client"
 export const dynamic = "force-dynamic"
 
-import { Suspense, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 import { CompanyReviewDialog } from "@/components/companies/company-review-dialog"
 import { useCompanyReviewBatches, useCompanyReviewBatch } from "@/hooks/use-company-reviews"
 import type { CompanyReviewBatch } from "@/lib/types"
@@ -108,6 +111,8 @@ function CompanyReviewContent() {
     setFilters,
     refetch,
     lastUpdatedAt,
+    bulkDecide,
+    isBulkSubmitting,
     generateSample,
     isGeneratingSample,
     runCorporateNumberImport,
@@ -118,6 +123,10 @@ function CompanyReviewContent() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [bulkDecision, setBulkDecision] = useState<"approve" | "reject">("approve")
+  const [bulkComment, setBulkComment] = useState("")
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const {
     batch: selectedBatch,
     isLoading: isDetailLoading,
@@ -173,6 +182,78 @@ function CompanyReviewContent() {
       await refetch()
     } catch (err) {
       const message = err instanceof Error ? err.message : "レビュー結果の反映に失敗しました"
+      toast({
+        title: "エラーが発生しました",
+        description: message,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const decisionLabel = bulkDecision === "approve" ? "一括承認" : "一括否認"
+
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(filteredBatches.map((batch) => batch.id))
+    } else {
+      setSelectedIds([])
+    }
+  }
+
+  const handleToggleRow = (id: number, checked: boolean) => {
+    setSelectedIds((prev) => {
+      if (checked) {
+        if (prev.includes(id)) return prev
+        return [...prev, id]
+      }
+      return prev.filter((v) => v !== id)
+    })
+  }
+
+  useEffect(() => {
+    // フィルタ変更・再取得時に存在しないIDを除外
+    if (!filteredBatches || filteredBatches.length === 0) {
+      setSelectedIds([])
+      return
+    }
+    setSelectedIds((prev) => prev.filter((id) => filteredBatches.some((batch) => batch.id === id)))
+  }, [filteredBatches])
+
+  const handleOpenBulkDialog = (decision: "approve" | "reject") => {
+    setBulkDecision(decision)
+    setBulkDialogOpen(true)
+  }
+
+  const handleBulkSubmit = async () => {
+    if (selectedIds.length === 0) return
+    if (selectedIds.length > 200) {
+      toast({
+        title: "上限を超えています",
+        description: "一度に処理できるのは200件までです。選択件数を減らしてください。",
+        variant: "destructive",
+      })
+      return
+    }
+    try {
+      const payload: { batch_ids: number[]; decision: "approve" | "reject"; comment?: string } = {
+        batch_ids: selectedIds,
+        decision: bulkDecision,
+      }
+      const trimmedComment = bulkComment.trim()
+      if (trimmedComment) {
+        payload.comment = trimmedComment
+      }
+      await bulkDecide(payload)
+      toast({
+        title: "一括処理が完了しました",
+        description: `${selectedIds.length}件のレビューを${decisionLabel}しました。`,
+      })
+      setBulkDialogOpen(false)
+      setBulkComment("")
+      setSelectedIds([])
+      await refetch()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "一括処理に失敗しました"
       toast({
         title: "エラーが発生しました",
         description: message,
@@ -415,13 +496,46 @@ function CompanyReviewContent() {
 
         <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle>レビュー待ち企業一覧</CardTitle>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <CardTitle>レビュー待ち企業一覧</CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-sm text-muted-foreground">
+                  選択中: {selectedIds.length}件 / 上限200件
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedIds.length === 0 || isBulkSubmitting}
+                  onClick={() => handleOpenBulkDialog("approve")}
+                >
+                  一括承認
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedIds.length === 0 || isBulkSubmitting}
+                  onClick={() => handleOpenBulkDialog("reject")}
+                >
+                  一括否認
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="rounded-md border-t">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[48px]">
+                      <Checkbox
+                        checked={
+                          filteredBatches.length > 0 &&
+                          selectedIds.length === filteredBatches.length
+                        }
+                        onCheckedChange={(checked) => handleToggleAll(checked === true)}
+                        aria-label="全件選択"
+                      />
+                    </TableHead>
                     <TableHead>企業名</TableHead>
                     <TableHead>ステータス</TableHead>
                     <TableHead>候補件数</TableHead>
@@ -435,14 +549,14 @@ function CompanyReviewContent() {
                   {isLoading &&
                     Array.from({ length: 5 }).map((_, idx) => (
                       <TableRow key={idx}>
-                        <TableCell colSpan={7}>
+                        <TableCell colSpan={8}>
                           <div className="h-12 w-full animate-pulse rounded bg-gray-100" />
                         </TableCell>
                       </TableRow>
                     ))}
                   {!isLoading && filteredBatches.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
                         現在レビュー対象の企業はありません。
                       </TableCell>
                     </TableRow>
@@ -453,6 +567,8 @@ function CompanyReviewContent() {
                       batch={batch}
                       onReview={() => handleOpenDetail(batch.id)}
                       fieldLabels={COMPANY_REVIEW_FIELD_LABELS}
+                      selected={selectedIds.includes(batch.id)}
+                      onToggleSelect={(checked) => handleToggleRow(batch.id, checked)}
                     />
                   ))}
                 </TableBody>
@@ -476,6 +592,45 @@ function CompanyReviewContent() {
           <span>{detailError}</span>
         </div>
       )}
+
+      <Dialog
+        open={bulkDialogOpen}
+        onOpenChange={(open) => {
+          if (!isBulkSubmitting) setBulkDialogOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{decisionLabel}の確認</DialogTitle>
+            <DialogDescription>
+              選択中 {selectedIds.length} 件を {decisionLabel} します。対象ステータス: 未着手 / レビュー中。実行するとトランザクションで全件処理されます。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              placeholder="共通コメント（任意）"
+              value={bulkComment}
+              onChange={(event) => setBulkComment(event.target.value)}
+              maxLength={1000}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setBulkDialogOpen(false)} disabled={isBulkSubmitting}>
+                キャンセル
+              </Button>
+              <Button onClick={handleBulkSubmit} disabled={isBulkSubmitting || selectedIds.length === 0}>
+                {isBulkSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    実行中...
+                  </>
+                ) : (
+                  decisionLabel
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   )
 }
@@ -484,10 +639,14 @@ function ReviewTableRow({
   batch,
   onReview,
   fieldLabels,
+  selected,
+  onToggleSelect,
 }: {
   batch: CompanyReviewBatch
   onReview: () => void
   fieldLabels: Record<string, string>
+  selected: boolean
+  onToggleSelect: (checked: boolean) => void
 }) {
   const pendingClass =
     batch.pending_items > 0 ? "text-blue-600 font-medium" : "text-muted-foreground"
@@ -509,6 +668,13 @@ function ReviewTableRow({
 
   return (
     <TableRow>
+      <TableCell>
+        <Checkbox
+          checked={selected}
+          onCheckedChange={(checked) => onToggleSelect(checked === true)}
+          aria-label="レビューを選択"
+        />
+      </TableCell>
       <TableCell>
         <div className="flex flex-col">
           <span className="font-semibold text-foreground">{batch.company_name}</span>

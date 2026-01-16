@@ -745,7 +745,7 @@ export default function CompanySelectionPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">選択</TableHead>
-                    <TableHead>企業名</TableHead>
+                    <TableHead className="max-w-[250px]">企業名</TableHead>
                     <TableHead data-testid="table-header-contact">担当者</TableHead>
                     <TableHead data-testid="table-header-facebook">Facebook</TableHead>
                     <TableHead data-testid="table-header-industry">業界</TableHead>
@@ -770,9 +770,9 @@ export default function CompanySelectionPage() {
                             onCheckedChange={(checked) => handleCompanySelect(company.id, checked as boolean)}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-w-[250px]">
                           <div className="flex items-center space-x-2">
-                            <span className={isNG ? "text-muted-foreground" : ""}>{company.name}</span>
+                            <span className={`truncate ${isNG ? "text-muted-foreground" : ""}`}>{company.name}</span>
                             {isNG && (
                               <Tooltip>
                                 <TooltipTrigger>

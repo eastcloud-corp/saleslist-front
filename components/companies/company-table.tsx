@@ -137,7 +137,7 @@ export function CompanyTable({
                     />
                   </TableHead>
                 )}
-                <TableHead>企業名</TableHead>
+                <TableHead className="max-w-[250px]">企業名</TableHead>
                 <TableHead>担当者</TableHead>
                 <TableHead>Facebook</TableHead>
                 {showFacebookActivity && <TableHead>最新の更新</TableHead>}
@@ -178,10 +178,10 @@ export function CompanyTable({
                           />
                         </TableCell>
                       )}
-                      <TableCell>
+                      <TableCell className="max-w-[250px]">
                         <div className="flex items-center gap-2">
-                          <div>
-                            <div className="font-medium">{company.name}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{company.name}</div>
                             {company.website_url && (
                               <a
                                 href={company.website_url}

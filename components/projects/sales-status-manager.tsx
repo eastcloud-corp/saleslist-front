@@ -97,7 +97,7 @@ export function SalesStatusManager({ projectCompanies, onStatusUpdate }: SalesSt
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>企業名</TableHead>
+              <TableHead className="max-w-[250px]">企業名</TableHead>
               <TableHead>業界</TableHead>
               <TableHead>営業ステータス</TableHead>
               <TableHead>最終接触日</TableHead>
@@ -108,7 +108,9 @@ export function SalesStatusManager({ projectCompanies, onStatusUpdate }: SalesSt
           <TableBody>
             {projectCompanies.map((pc) => (
               <TableRow key={pc.id}>
-                <TableCell className="font-medium">{pc.company_name}</TableCell>
+                <TableCell className="font-medium max-w-[250px]">
+                  <div className="truncate">{pc.company_name}</div>
+                </TableCell>
                 <TableCell>{pc.company_industry}</TableCell>
                 <TableCell>
                   {editingCompany === pc.company?.id ? (

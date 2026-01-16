@@ -182,7 +182,7 @@ export function ProjectCompanies({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>企業名</TableHead>
+                  <TableHead className="max-w-[250px]">企業名</TableHead>
                   <TableHead>担当者</TableHead>
                   <TableHead>Facebook</TableHead>
                   <TableHead>業界</TableHead>
@@ -213,9 +213,9 @@ export function ProjectCompanies({
                   
                   return (
                     <TableRow key={projectCompany.id} className={isActive ? "" : "opacity-60 bg-gray-50"}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{projectCompany.company_name || projectCompany.company?.name || "企業名不明"}</div>
+                    <TableCell className="max-w-[250px]">
+                      <div className="truncate">
+                        <div className="font-medium truncate">{projectCompany.company_name || projectCompany.company?.name || "企業名不明"}</div>
                         {projectCompany.company?.website_url && (
                           <a
                             href={projectCompany.company.website_url}

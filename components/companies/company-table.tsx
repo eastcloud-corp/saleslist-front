@@ -137,7 +137,7 @@ export function CompanyTable({
                     />
                   </TableHead>
                 )}
-                <TableHead className="max-w-[250px]">企業名</TableHead>
+                <TableHead className="max-w-[350px]">企業名</TableHead>
                 <TableHead>担当者</TableHead>
                 <TableHead>Facebook</TableHead>
                 {showFacebookActivity && <TableHead>最新の更新</TableHead>}
@@ -178,7 +178,7 @@ export function CompanyTable({
                           />
                         </TableCell>
                       )}
-                      <TableCell className="max-w-[250px]">
+                      <TableCell className="max-w-[350px]">
                         <div className="flex items-center gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="font-medium truncate">{company.name}</div>
@@ -187,10 +187,11 @@ export function CompanyTable({
                                 href={company.website_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1"
+                                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 truncate"
+                                title={company.website_url.replace(/^https?:\/\//, "")}
                               >
-                                {company.website_url.replace(/^https?:\/\//, "")}
-                                <ExternalLink className="h-3 w-3" />
+                                <span className="truncate">{company.website_url.replace(/^https?:\/\//, "")}</span>
+                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
                               </a>
                             )}
                           </div>
@@ -296,7 +297,7 @@ export function CompanyTable({
                       <TableCell>{company.industry}</TableCell>
                       <TableCell>{formatEmployeeCount(company.employee_count)}</TableCell>
                       <TableCell>{formatCurrency(company.revenue)}</TableCell>
-                      <TableCell>{company.prefecture}</TableCell>
+                      <TableCell className="break-words">{company.prefecture}</TableCell>
                       <TableCell>{getStatusBadge(company.status || "active")}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">

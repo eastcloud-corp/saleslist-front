@@ -268,12 +268,14 @@ export function SalesTargetCompanyDetail({ projectId, companyId }: SalesTargetCo
               案件詳細に戻る
             </Link>
           </Button>
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Building2 className="h-8 w-8" />
+              <Building2 className="h-8 w-8 flex-shrink-0" />
               営業先企業詳細
             </h1>
-            <p className="text-muted-foreground">{projectCompany.company.name} の営業進捗管理</p>
+            <p className="text-muted-foreground truncate" title={`${projectCompany.company.name} の営業進捗管理`}>
+              {projectCompany.company.name} の営業進捗管理
+            </p>
           </div>
         </div>
 
@@ -286,7 +288,7 @@ export function SalesTargetCompanyDetail({ projectId, companyId }: SalesTargetCo
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">企業名</h4>
-                <p className="font-medium">{projectCompany.company.name}</p>
+                <p className="font-medium truncate" title={projectCompany.company.name}>{projectCompany.company.name}</p>
               </div>
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">業界</h4>
@@ -294,7 +296,7 @@ export function SalesTargetCompanyDetail({ projectId, companyId }: SalesTargetCo
               </div>
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">所在地</h4>
-                <p>{projectCompany.company.prefecture} {projectCompany.company.city}</p>
+                <p className="break-words">{projectCompany.company.prefecture} {projectCompany.company.city}</p>
               </div>
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-1">従業員数</h4>
@@ -316,10 +318,11 @@ export function SalesTargetCompanyDetail({ projectId, companyId }: SalesTargetCo
                   href={projectCompany.company.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                  className="inline-flex items-center text-blue-600 hover:text-blue-800 truncate max-w-full"
+                  title={projectCompany.company.website_url}
                 >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  {projectCompany.company.website_url}
+                  <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{projectCompany.company.website_url}</span>
                 </a>
               </div>
             )}

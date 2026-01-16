@@ -227,7 +227,7 @@ export function NGListTab({ clientId }: NGListTabProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="max-w-[250px]">企業名</TableHead>
+                  <TableHead className="max-w-[350px]">企業名</TableHead>
                   <TableHead>マッチ状態</TableHead>
                   <TableHead>理由</TableHead>
                   <TableHead>登録日</TableHead>
@@ -237,8 +237,8 @@ export function NGListTab({ clientId }: NGListTabProps) {
               <TableBody>
                 {ngList.map((ng) => (
                   <TableRow key={ng.id}>
-                    <TableCell className="font-medium max-w-[250px]">
-                      <div className="truncate">{ng.company_name}</div>
+                    <TableCell className="font-medium max-w-[350px]">
+                      <div className="truncate" title={ng.company_name}>{ng.company_name}</div>
                     </TableCell>
                     <TableCell>
                       {ng.matched ? (

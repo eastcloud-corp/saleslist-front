@@ -745,7 +745,7 @@ export default function CompanySelectionPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">選択</TableHead>
-                    <TableHead className="max-w-[250px]">企業名</TableHead>
+                    <TableHead className="max-w-[350px]">企業名</TableHead>
                     <TableHead data-testid="table-header-contact">担当者</TableHead>
                     <TableHead data-testid="table-header-facebook">Facebook</TableHead>
                     <TableHead data-testid="table-header-industry">業界</TableHead>
@@ -770,9 +770,9 @@ export default function CompanySelectionPage() {
                             onCheckedChange={(checked) => handleCompanySelect(company.id, checked as boolean)}
                           />
                         </TableCell>
-                        <TableCell className="max-w-[250px]">
+                        <TableCell className="max-w-[350px]">
                           <div className="flex items-center space-x-2">
-                            <span className={`truncate ${isNG ? "text-muted-foreground" : ""}`}>{company.name}</span>
+                            <span className={`truncate ${isNG ? "text-muted-foreground" : ""}`} title={company.name}>{company.name}</span>
                             {isNG && (
                               <Tooltip>
                                 <TooltipTrigger>
@@ -830,7 +830,7 @@ export default function CompanySelectionPage() {
                         <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-revenue`}>
                           {formatCurrency(company.revenue)}
                         </TableCell>
-                        <TableCell className={isNG ? "text-muted-foreground" : ""}>
+                        <TableCell className={`break-words ${isNG ? "text-muted-foreground" : ""}`}>
                           {company.prefecture || "-"}
                         </TableCell>
                         <TableCell className={isNG ? "text-muted-foreground" : ""} data-testid={`company-${company.id}-status`}>

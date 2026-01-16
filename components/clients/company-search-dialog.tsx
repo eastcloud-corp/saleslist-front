@@ -236,7 +236,7 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, onAddCo
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">選択</TableHead>
-                      <TableHead className="max-w-[250px]">企業名</TableHead>
+                      <TableHead className="max-w-[350px]">企業名</TableHead>
                       <TableHead>担当者</TableHead>
                       <TableHead>Facebook</TableHead>
                       <TableHead>業界</TableHead>
@@ -268,8 +268,8 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, onAddCo
                               />
                             </div>
                           </TableCell>
-                        <TableCell className="font-medium max-w-[250px]">
-                          <div className="truncate">{company.name}</div>
+                        <TableCell className="font-medium max-w-[350px]">
+                          <div className="truncate" title={company.name}>{company.name}</div>
                         </TableCell>
                         <TableCell>
                           {(company as any).contact_person_name ? (
@@ -306,7 +306,7 @@ export function CompanySearchDialog({ open, onOpenChange, onAddToNGList, onAddCo
                         <TableCell>
                           {formatCurrency((company as any).revenue)}
                         </TableCell>
-                        <TableCell>{company.prefecture}</TableCell>
+                        <TableCell className="break-words">{company.prefecture}</TableCell>
                         <TableCell>
                           {getStatusBadge((company as any).status)}
                         </TableCell>

@@ -168,10 +168,10 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 企業一覧に戻る
               </Link>
             </Button>
-            <div>
+            <div className="min-w-0 flex-1">
               <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Building2 className="h-8 w-8" />
-                {company.name}
+                <Building2 className="h-8 w-8 flex-shrink-0" />
+                <span className="truncate" title={company.name}>{company.name}</span>
               </h1>
               <p className="text-muted-foreground">企業詳細と管理</p>
             </div>
@@ -249,13 +249,13 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 </div>
                 <div className="col-span-full">
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">事業内容</h4>
-                  <p className="text-sm">{company.business_description || '未設定'}</p>
+                  <p className="text-sm break-words">{company.business_description || '未設定'}</p>
                 </div>
                 {company.facebook_url && (
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground mb-1">Facebook</h4>
-                    <a href={company.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                      {company.facebook_url}
+                    <a href={company.facebook_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm truncate block" title={company.facebook_url}>
+                      <span className="truncate">{company.facebook_url}</span>
                     </a>
                   </div>
                 )}
@@ -277,7 +277,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">所在地</h4>
-                  <p>
+                  <p className="break-words">
                     {[company.prefecture, company.city].filter(Boolean).join(" ") || "未設定"}
                   </p>
                 </div>
@@ -288,10 +288,11 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                       href={company.website_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1"
+                      className="text-primary hover:underline flex items-center gap-1 truncate"
+                      title={company.website_url.replace(/^https?:\/\//, "")}
                     >
-                      {company.website_url.replace(/^https?:\/\//, "")}
-                      <ExternalLink className="h-3 w-3" />
+                      <span className="truncate">{company.website_url.replace(/^https?:\/\//, "")}</span>
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   ) : (
                     <p className="text-muted-foreground">未設定</p>
@@ -300,8 +301,8 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">電話番号</h4>
                   {company.phone ? (
-                    <a href={`tel:${company.phone}`} className="text-primary hover:underline">
-                      {company.phone}
+                    <a href={`tel:${company.phone}`} className="text-primary hover:underline truncate block" title={company.phone}>
+                      <span className="truncate">{company.phone}</span>
                     </a>
                   ) : (
                     <p className="text-muted-foreground">未設定</p>
@@ -310,8 +311,8 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
                 <div>
                   <h4 className="font-medium text-sm text-muted-foreground mb-1">メールアドレス</h4>
                   {company.contact_email ? (
-                    <a href={`mailto:${company.contact_email}`} className="text-primary hover:underline">
-                      {company.contact_email}
+                    <a href={`mailto:${company.contact_email}`} className="text-primary hover:underline truncate block" title={company.contact_email}>
+                      <span className="truncate">{company.contact_email}</span>
                     </a>
                   ) : (
                     <p className="text-muted-foreground">未設定</p>
@@ -328,7 +329,7 @@ export default function CompanyDetailPage({ params }: CompanyDetailPageProps) {
               {company.description && (
                 <div className="mt-6 pt-6 border-t">
                   <h4 className="font-medium text-sm text-muted-foreground mb-2">説明</h4>
-                  <p className="text-sm leading-relaxed">{company.description}</p>
+                  <p className="text-sm leading-relaxed break-words">{company.description}</p>
                 </div>
               )}
             </CardContent>

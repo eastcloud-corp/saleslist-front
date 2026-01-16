@@ -182,7 +182,7 @@ export function ProjectCompanies({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="max-w-[250px]">企業名</TableHead>
+                  <TableHead className="max-w-[350px]">企業名</TableHead>
                   <TableHead>担当者</TableHead>
                   <TableHead>Facebook</TableHead>
                   <TableHead>業界</TableHead>
@@ -213,18 +213,19 @@ export function ProjectCompanies({
                   
                   return (
                     <TableRow key={projectCompany.id} className={isActive ? "" : "opacity-60 bg-gray-50"}>
-                    <TableCell className="max-w-[250px]">
-                      <div className="truncate">
+                    <TableCell className="max-w-[350px]">
+                      <div>
                         <div className="font-medium truncate">{projectCompany.company_name || projectCompany.company?.name || "企業名不明"}</div>
                         {projectCompany.company?.website_url && (
                           <a
                             href={projectCompany.company.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1"
+                            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 truncate"
+                            title={projectCompany.company?.website_url?.replace(/^https?:\/\//, "") || ""}
                           >
-                            {projectCompany.company?.website_url?.replace(/^https?:\/\//, "") || ""}
-                            <ExternalLink className="h-3 w-3" />
+                            <span className="truncate">{projectCompany.company?.website_url?.replace(/^https?:\/\//, "") || ""}</span>
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
                         )}
                       </div>
@@ -271,7 +272,7 @@ export function ProjectCompanies({
                         return formatCurrency(revenue)
                       })()}
                     </TableCell>
-                    <TableCell>{projectCompany.company?.prefecture || "-"}</TableCell>
+                    <TableCell className="break-words">{projectCompany.company?.prefecture || "-"}</TableCell>
                     <TableCell>
                       <Select 
                         value={projectCompany.status} 

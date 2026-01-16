@@ -154,7 +154,7 @@ export function AddCompanyDialog({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">選択</TableHead>
-                    <TableHead className="max-w-[250px]">企業名</TableHead>
+                    <TableHead className="max-w-[350px]">企業名</TableHead>
                     <TableHead>担当者</TableHead>
                     <TableHead>Facebook</TableHead>
                     <TableHead>業界</TableHead>
@@ -173,11 +173,11 @@ export function AddCompanyDialog({
                           onCheckedChange={() => handleCompanyToggle(company.id.toString())}
                         />
                       </TableCell>
-                      <TableCell className="max-w-[250px]">
-                        <div className="truncate">
-                          <div className="font-medium truncate">{company.name}</div>
+                      <TableCell className="max-w-[350px]">
+                        <div>
+                          <div className="font-medium truncate" title={company.name}>{company.name}</div>
                           {company.website && (
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground truncate" title={company.website.replace(/^https?:\/\//, "")}>
                               {company.website.replace(/^https?:\/\//, "")}
                             </div>
                           )}
@@ -215,7 +215,7 @@ export function AddCompanyDialog({
                       </TableCell>
                       <TableCell>{company.employee_count || "-"}</TableCell>
                       <TableCell>{formatCurrency(company.revenue)}</TableCell>
-                      <TableCell>{company.prefecture || "-"}</TableCell>
+                      <TableCell className="break-words">{company.prefecture || "-"}</TableCell>
                       <TableCell>{getStatusBadge(company.status)}</TableCell>
                     </TableRow>
                   ))}

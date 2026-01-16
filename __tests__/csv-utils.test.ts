@@ -17,14 +17,16 @@ describe("csv-utils", () => {
 
   it("parses the template format without errors", () => {
     const csvText = buildCSVText(
-      "Tech Solutions Inc.,1234567890123,Technology,150,5000000,Tokyo Japan,https://techsolutions.com,+81-3-1234-5678,contact@techsolutions.com,Leading technology solutions provider,active"
+      "John Smith,Tech Solutions Inc.,CEO,https://techsolutions.com,Technology,1234567890123,150,5000000,Tokyo Japan,,+81-3-1234-5678,contact@techsolutions.com,Leading technology solutions provider,active"
     )
 
     const parsed = parseCSV(csvText)
     expect(parsed).toHaveLength(1)
     expect(parsed[0]).toMatchObject({
+      contact_person_name: "John Smith",
       name: "Tech Solutions Inc.",
       corporate_number: "1234567890123",
+      contact_person_position: "CEO",
       industry: "Technology",
       employee_count: "150",
       revenue: "5000000",
@@ -36,7 +38,7 @@ describe("csv-utils", () => {
 
   it("returns descriptive errors for invalid numeric fields", () => {
     const csvText = buildCSVText(
-      "Example Corp.,1234567890123,Consulting,abc,5000000,Tokyo,https://example.com,03-0000-0000,info@example.com,Notes,active"
+      "Jane Doe,Example Corp.,Manager,https://example.com,Consulting,1234567890123,abc,5000000,Tokyo,,03-0000-0000,info@example.com,Notes,active"
     )
 
     const parsed = parseCSV(csvText)
@@ -52,7 +54,7 @@ describe("csv-utils", () => {
 
   it("validates corporate number format", () => {
     const csvText = buildCSVText(
-      "Number Test Corp,12345,Technology,100,1000000,Tokyo,https://number.test,+81-3-0000-0000,info@number.test,Notes,active"
+      "John Tester,Number Test Corp,Manager,https://number.test,Technology,12345,100,1000000,Tokyo,,+81-3-0000-0000,info@number.test,Notes,active"
     )
 
     const parsed = parseCSV(csvText)
@@ -66,7 +68,7 @@ describe("csv-utils", () => {
 
   it("allows rows with missing company name or industry", () => {
     const csvText = buildCSVText(
-      ",,,150,5000000,Tokyo,https://example.com,03-0000-0000,info@example.com,Notes,active"
+      ",,,,,,150,5000000,Tokyo,,03-0000-0000,info@example.com,Notes,active"
     )
 
     const parsed = parseCSV(csvText)
@@ -82,7 +84,7 @@ describe("csv-utils", () => {
 
   it("converts valid CSV rows into company payloads", () => {
     const csvText = buildCSVText(
-      "Growth Partners,1234567890123,Finance,200,8000000,Osaka,https://growthpartners.jp,06-1234-5678,contact@growthpartners.jp,Finance support,prospect"
+      "Mike Johnson,Growth Partners,Director,https://growthpartners.jp,Finance,1234567890123,200,8000000,Osaka,,06-1234-5678,contact@growthpartners.jp,Finance support,prospect"
     )
     const parsed = parseCSV(csvText)
     const companies = convertCSVToCompanyData(parsed)
@@ -197,7 +199,7 @@ describe("csv-utils", () => {
 
     const csv = exportCompaniesToCSV(companies)
     const lines = csv.split('\n')
-    expect(lines[0]).toContain('Company Name')
+    expect(lines[0]).toContain('企業名')
     expect(lines[1]).toContain('"Alpha, Inc."')
     expect(lines[1]).toContain('Leading ""edge"" provider')
   })
@@ -224,16 +226,19 @@ describe("csv-utils", () => {
   })
 
   it('parses CSV rows containing escaped quotes', () => {
-    const row = '"Quoted ""Name""",1234567890123,Industry,100,5000,Tokyo,https://example.com,03-0000-0000,info@example.com,"Notes with ""quotes""",active'
+    const row = '"John ""Doe""","Quoted ""Name""",Manager,https://example.com,Industry,1234567890123,100,5000,Tokyo,,"03-0000-0000",info@example.com,"Notes with ""quotes""",active'
     const csvText = buildCSVText(row)
     const parsed = parseCSV(csvText)
     expect(parsed[0]).toMatchObject({
+      contact_person_name: 'John "Doe"',
       name: 'Quoted "Name"',
       corporate_number: '1234567890123',
+      contact_person_position: 'Manager',
+      facebook_url: '',
       industry: 'Industry',
       employee_count: '100',
       revenue: '5000',
-      location: 'Tokyo',
+      prefecture: 'Tokyo',
       website: 'https://example.com',
       phone: '03-0000-0000',
       email: 'info@example.com',

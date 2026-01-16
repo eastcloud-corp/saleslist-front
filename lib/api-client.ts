@@ -56,13 +56,38 @@ class ApiClient {
             const parsed = JSON.parse(rawBody)
             errorData = parsed
             if (parsed && typeof parsed === "object") {
-              const candidate = (parsed as Record<string, unknown>).message || (parsed as Record<string, unknown>).error
-              if (typeof candidate === "string" && candidate.trim().length > 0) {
-                errorMessage = candidate
+              // DRFのバリデーションエラーの形式に対応
+              if (parsed.message) {
+                errorMessage = parsed.message
+              } else if (parsed.detail) {
+                errorMessage = parsed.detail
+              } else if (parsed.error) {
+                errorMessage = parsed.error
+              } else if (Array.isArray(parsed.non_field_errors)) {
+                errorMessage = parsed.non_field_errors.join(", ")
+              } else {
+                // フィールドごとのエラーを集約
+                const fieldErrors: string[] = []
+                for (const [key, value] of Object.entries(parsed)) {
+                  if (key === 'message' || key === 'detail' || key === 'error' || key === 'invalid_fields') {
+                    continue
+                  }
+                  if (Array.isArray(value)) {
+                    fieldErrors.push(`${key}: ${value.join(", ")}`)
+                  } else if (typeof value === "string") {
+                    fieldErrors.push(`${key}: ${value}`)
+                  }
+                }
+                if (fieldErrors.length > 0) {
+                  errorMessage = fieldErrors.join("; ")
+                }
               }
             }
           } catch {
             errorData = { raw: rawBody }
+            if (rawBody.trim().length > 0) {
+              errorMessage = rawBody
+            }
           }
         }
       } catch {

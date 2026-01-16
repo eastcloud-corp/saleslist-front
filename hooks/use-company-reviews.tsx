@@ -9,6 +9,8 @@ import type {
   CompanyReviewBatchDetail,
   CompanyReviewDecisionPayload,
   CompanyReviewDecisionAction,
+  CompanyReviewBulkDecisionPayload,
+  CompanyReviewBulkDecisionResult,
 } from "@/lib/types"
 
 const reviewLogger = createLogger("companies:reviews")
@@ -71,6 +73,7 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
   const [isGeneratingSample, setIsGeneratingSample] = useState(false)
   const [isRunningCorporateImport, setIsRunningCorporateImport] = useState(false)
   const [isRunningOpenDataIngestion, setIsRunningOpenDataIngestion] = useState(false)
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false)
 
   const fetchBatches = useCallback(async () => {
     setIsLoading(true)
@@ -139,6 +142,29 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
     setFilters,
     refetch: fetchBatches,
     lastUpdatedAt,
+    isBulkSubmitting,
+    bulkDecide: async (payload: CompanyReviewBulkDecisionPayload) => {
+      setIsBulkSubmitting(true)
+      setError(null)
+      try {
+        const endpoint = API_CONFIG.ENDPOINTS.COMPANY_REVIEW_BULK_DECIDE
+        reviewLogger.info("bulkDecide: request", {
+          batchIds: payload.batch_ids,
+          decision: payload.decision,
+        })
+        const data = await apiClient.post<CompanyReviewBulkDecisionResult>(endpoint, payload)
+        reviewLogger.info("bulkDecide: success", { updated_count: data.updated_count, batch_ids: data.batch_ids })
+        await fetchBatches()
+        return data
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "一括承認/否認の実行に失敗しました"
+        reviewLogger.error("bulkDecide: error", { message })
+        setError(message)
+        throw err
+      } finally {
+        setIsBulkSubmitting(false)
+      }
+    },
     generateSample: async (options?: { companyId?: number; fields?: string[] }) => {
       setIsGeneratingSample(true)
       setError(null)

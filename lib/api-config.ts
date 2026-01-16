@@ -34,6 +34,7 @@ export const API_CONFIG = {
     COMPANY_REVIEW_BATCHES: "/companies/reviews/",
     COMPANY_REVIEW_BATCH_DETAIL: (id: string | number) => `/companies/reviews/${id}/`,
     COMPANY_REVIEW_DECIDE: (id: string | number) => `/companies/reviews/${id}/decide/`,
+    COMPANY_REVIEW_BULK_DECIDE: "/companies/reviews/bulk-decide/",
     COMPANY_REVIEW_RUN_CORPORATE_IMPORT: "/companies/reviews/run-corporate-number-import/",
     COMPANY_REVIEW_RUN_OPENDATA_INGESTION: "/companies/reviews/run-opendata-ingestion/",
 

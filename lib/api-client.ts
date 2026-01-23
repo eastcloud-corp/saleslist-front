@@ -241,10 +241,40 @@ class ApiClient {
     })
 
     if (!response.ok) {
+      let errorMessage = `Failed to download file: ${response.statusText}`
+      let errorData: unknown = null
+
+      try {
+        const rawBody = await response.text()
+        if (rawBody) {
+          try {
+            const parsed = JSON.parse(rawBody)
+            errorData = parsed
+            if (parsed && typeof parsed === "object") {
+              if (parsed.error) {
+                errorMessage = parsed.error
+              } else if (parsed.message) {
+                errorMessage = parsed.message
+              } else if (parsed.detail) {
+                errorMessage = parsed.detail
+              }
+            }
+          } catch {
+            // JSON解析に失敗した場合は、テキストをそのまま使用
+            if (rawBody.trim().length > 0 && rawBody.length < 500) {
+              errorMessage = rawBody
+            }
+          }
+        }
+      } catch {
+        // レスポンス本文の読み取りに失敗した場合は、デフォルトメッセージを使用
+      }
+
       throw new ApiError(
-        `Failed to download file: ${response.statusText}`,
+        errorMessage,
         response.status,
-        response
+        response,
+        errorData
       )
     }
 

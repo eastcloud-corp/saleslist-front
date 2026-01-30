@@ -235,6 +235,12 @@ export function CompanyFilters({
     }
   }
 
+  const clearSubIndustryInput = () => {
+    setSubIndustryQuery("")
+    setSubIndustryFilterQuery("")
+    closeSubIndustryDropdown()
+  }
+
   // 業界カテゴリ選択ハンドラ（選択は入力欄へ反映のみ）
   const handleIndustrySelect = (value: string) => {
     const trimmed = value.trim()
@@ -243,6 +249,7 @@ export function CompanyFilters({
     }
     setIndustryQuery(trimmed)
     setIndustryFilterQuery("")
+    clearSubIndustryInput()
     closeIndustryDropdown()
   }
 
@@ -265,6 +272,7 @@ export function CompanyFilters({
     addArrayFilter("industry", trimmed)
     setIndustryQuery("")
     setIndustryFilterQuery("")
+    clearSubIndustryInput()
     closeIndustryDropdown()
   }
 
@@ -363,7 +371,10 @@ export function CompanyFilters({
                               <button
                                 type="button"
                                 className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
-                                onClick={() => handleIndustrySelect(category.name)}
+                                onMouseDown={(event) => {
+                                  event.preventDefault()
+                                  handleIndustrySelect(category.name)
+                                }}
                               >
                                 {category.name}
                               </button>
@@ -376,7 +387,10 @@ export function CompanyFilters({
                               <button
                                 type="button"
                                 className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
-                                onClick={() => handleIndustrySelect(option)}
+                                onMouseDown={(event) => {
+                                  event.preventDefault()
+                                  handleIndustrySelect(option)
+                                }}
                               >
                                 {option}
                               </button>
@@ -437,7 +451,10 @@ export function CompanyFilters({
                             <button
                               type="button"
                               className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
-                              onClick={() => handleSubIndustrySelect(sub.name)}
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                handleSubIndustrySelect(sub.name)
+                              }}
                             >
                               {sub.name}
                             </button>

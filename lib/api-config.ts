@@ -26,7 +26,7 @@ export const API_CONFIG = {
     COMPANIES: "/companies/",
     COMPANY_DETAIL: (id: string) => `/companies/${id}/`,
     COMPANY_SEARCH: "/companies/search/",
-    COMPANY_EXPORT: "/companies/export/",
+    COMPANY_EXPORT: "/companies/export_csv/",
     COMPANY_IMPORT_CSV: "/companies/import_csv/",
     COMPANY_IMPORT: "/companies/import/",
     COMPANY_BULK_IMPORT: "/companies/bulk-import/",

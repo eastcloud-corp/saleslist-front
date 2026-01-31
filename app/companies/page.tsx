@@ -11,7 +11,7 @@ import type { ImportErrorItem } from "@/components/companies/csv-import-dialog"
 import { useCompanies } from "@/hooks/use-companies"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { exportCompaniesToCSV, downloadCSV } from "@/lib/csv-utils"
+import { downloadCSV } from "@/lib/csv-utils"
 import { API_CONFIG } from "@/lib/api-config"
 import { apiClient, ApiError } from "@/lib/api-client"
 import { useAuth } from "@/hooks/use-auth"
@@ -98,6 +98,46 @@ function CompaniesPageContent() {
   const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const endItem = totalCount === 0 ? 0 : Math.min(currentPage * pageSize, totalCount)
   const totalPages = pagination?.total_pages ?? (pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1)
+
+  const buildExportQueryParams = useCallback(() => {
+    const params = new URLSearchParams()
+
+    Object.entries(appliedFilters).forEach(([key, value]) => {
+      if (key === 'page' || key === 'page_size' || key === 'limit' || key === 'random_seed') {
+        return
+      }
+
+      if (value === undefined || value === null) {
+        return
+      }
+
+      if (Array.isArray(value)) {
+        value
+          .filter((item) => item !== undefined && item !== null && String(item).trim().length > 0)
+          .forEach((item) => params.append(key, String(item)))
+        return
+      }
+
+      if (typeof value === "string") {
+        if (value.trim().length === 0) {
+          return
+        }
+        params.append(key, value)
+        return
+      }
+
+      if (typeof value === "number" && Number.isFinite(value)) {
+        params.append(key, value.toString())
+        return
+      }
+
+      if (typeof value === "boolean") {
+        params.append(key, value.toString())
+      }
+    })
+
+    return params
+  }, [appliedFilters])
 
   useEffect(() => {
     setSelectedCompanyIds((prev) => prev.filter((id) => companies.some((company) => company.id === id)))
@@ -201,7 +241,10 @@ function CompaniesPageContent() {
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const csvContent = exportCompaniesToCSV(companies)
+      const params = buildExportQueryParams()
+      const endpoint = `${API_CONFIG.ENDPOINTS.COMPANY_EXPORT}?${params.toString()}`
+      const blob = await apiClient.downloadFile(endpoint)
+      const csvContent = await blob.text()
       const timestamp = new Date().toISOString().split("T")[0]
       downloadCSV(csvContent, `companies-export-${timestamp}.csv`)
     } catch (error) {
@@ -225,7 +268,10 @@ function CompaniesPageContent() {
 
     setIsCopying(true)
     try {
-      const csvContent = exportCompaniesToCSV(companies)
+      const params = buildExportQueryParams()
+      const endpoint = `${API_CONFIG.ENDPOINTS.COMPANY_EXPORT}?${params.toString()}`
+      const blob = await apiClient.downloadFile(endpoint)
+      const csvContent = await blob.text()
       const success = await copyToClipboard(csvContent)
 
       if (success) {

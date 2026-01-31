@@ -51,10 +51,12 @@ export function CompanyFilters({
   const [industryHierarchy, setIndustryHierarchy] = useState<IndustryHierarchy[]>([])
   // 業界フィルタ用のstate
   const [industryQuery, setIndustryQuery] = useState("")
+  const [industryFilterQuery, setIndustryFilterQuery] = useState("")
   const [isIndustryFocused, setIsIndustryFocused] = useState(false)
   const industryInputRef = useRef<HTMLInputElement>(null)
   // 業種フィルタ用のstate
   const [subIndustryQuery, setSubIndustryQuery] = useState("")
+  const [subIndustryFilterQuery, setSubIndustryFilterQuery] = useState("")
   const [isSubIndustryFocused, setIsSubIndustryFocused] = useState(false)
   const subIndustryInputRef = useRef<HTMLInputElement>(null)
 
@@ -140,7 +142,20 @@ export function CompanyFilters({
     return industryHierarchy.filter((item) => item.is_category)
   }, [industryHierarchy])
 
-  // 業種のみのリスト（業種フィルタ用）- 全カテゴリから業種をフラットに取得
+  const selectedIndustries = toArray(filters.industry)
+  const activeIndustryCategories = useMemo(() => {
+    if (industryHierarchy.length === 0) {
+      return []
+    }
+    const categoryNameSet = new Set(industryHierarchy.filter((item) => item.is_category).map((item) => item.name))
+    const activeFromInput = industryQuery.trim()
+    if (activeFromInput && categoryNameSet.has(activeFromInput)) {
+      return [activeFromInput]
+    }
+    return []
+  }, [industryHierarchy, industryQuery])
+
+  // 業種のみのリスト（業種フィルタ用）- 選択中の業界カテゴリがあればそれに絞る
   const subIndustries = useMemo(() => {
     const subList: IndustryHierarchy[] = []
     const collectSubIndustries = (items: IndustryHierarchy[]) => {
@@ -150,33 +165,39 @@ export function CompanyFilters({
         }
       })
     }
+
+    if (activeIndustryCategories.length > 0) {
+      industryHierarchy
+        .filter((item) => item.is_category && activeIndustryCategories.includes(item.name))
+        .forEach((item) => collectSubIndustries([item]))
+      return subList
+    }
+
     collectSubIndustries(industryHierarchy)
     return subList
-  }, [industryHierarchy])
-
-  const selectedIndustries = toArray(filters.industry)
+  }, [industryHierarchy, activeIndustryCategories])
 
   // 業界カテゴリのフィルタリング
   const filteredIndustryCategories = useMemo(() => {
-    const normalizedQuery = industryQuery.trim().toLowerCase()
+    const normalizedQuery = industryFilterQuery.trim().toLowerCase()
     if (!normalizedQuery) {
       return industryCategories
     }
     return industryCategories.filter((category) =>
       category.name.toLowerCase().includes(normalizedQuery)
     )
-  }, [industryCategories, industryQuery])
+  }, [industryCategories, industryFilterQuery])
 
   // 業種のフィルタリング
   const filteredSubIndustries = useMemo(() => {
-    const normalizedQuery = subIndustryQuery.trim().toLowerCase()
+    const normalizedQuery = subIndustryFilterQuery.trim().toLowerCase()
     if (!normalizedQuery) {
       return subIndustries
     }
     return subIndustries.filter((sub) =>
       sub.name.toLowerCase().includes(normalizedQuery)
     )
-  }, [subIndustries, subIndustryQuery])
+  }, [subIndustries, subIndustryFilterQuery])
 
   // フォールバック用のフラットリスト（階層構造が取得できない場合）
   const combinedIndustryOptions = useMemo(() => {
@@ -191,41 +212,79 @@ export function CompanyFilters({
   )
 
   const filteredIndustryOptions = useMemo(() => {
-    const normalizedQuery = industryQuery.trim().toLowerCase()
+    const normalizedQuery = industryFilterQuery.trim().toLowerCase()
     if (!normalizedQuery) {
       return availableIndustryOptions.slice(0, 15)
     }
     return availableIndustryOptions
       .filter((option) => option.toLowerCase().includes(normalizedQuery))
       .slice(0, 15)
-  }, [availableIndustryOptions, industryQuery])
+  }, [availableIndustryOptions, industryFilterQuery])
 
-  // 業界カテゴリ選択ハンドラ
-  const handleIndustrySelect = (value: string) => {
-    const trimmed = value.trim()
-    if (!trimmed) {
-      return
-    }
-    addArrayFilter("industry", trimmed)
-    setIndustryQuery("")
+  const closeIndustryDropdown = () => {
     setIsIndustryFocused(false)
     if (industryInputRef.current) {
       industryInputRef.current.blur()
     }
   }
 
-  // 業種選択ハンドラ
+  const closeSubIndustryDropdown = () => {
+    setIsSubIndustryFocused(false)
+    if (subIndustryInputRef.current) {
+      subIndustryInputRef.current.blur()
+    }
+  }
+
+  const clearSubIndustryInput = () => {
+    setSubIndustryQuery("")
+    setSubIndustryFilterQuery("")
+    closeSubIndustryDropdown()
+  }
+
+  // 業界カテゴリ選択ハンドラ（選択は入力欄へ反映のみ）
+  const handleIndustrySelect = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return
+    }
+    setIndustryQuery(trimmed)
+    setIndustryFilterQuery("")
+    clearSubIndustryInput()
+    closeIndustryDropdown()
+  }
+
+  // 業種選択ハンドラ（選択は入力欄へ反映のみ）
   const handleSubIndustrySelect = (value: string) => {
     const trimmed = value.trim()
     if (!trimmed) {
       return
     }
+    setSubIndustryQuery(trimmed)
+    setSubIndustryFilterQuery("")
+    closeSubIndustryDropdown()
+  }
+
+  const addIndustryFromQuery = () => {
+    const trimmed = industryQuery.trim()
+    if (!trimmed) {
+      return
+    }
+    addArrayFilter("industry", trimmed)
+    setIndustryQuery("")
+    setIndustryFilterQuery("")
+    clearSubIndustryInput()
+    closeIndustryDropdown()
+  }
+
+  const addSubIndustryFromQuery = () => {
+    const trimmed = subIndustryQuery.trim()
+    if (!trimmed) {
+      return
+    }
     addArrayFilter("industry", trimmed)
     setSubIndustryQuery("")
-    setIsSubIndustryFocused(false)
-    if (subIndustryInputRef.current) {
-      subIndustryInputRef.current.blur()
-    }
+    setSubIndustryFilterQuery("")
+    closeSubIndustryDropdown()
   }
 
   const hasActiveFilters = Object.values(filters).some((value) => {
@@ -238,10 +297,10 @@ export function CompanyFilters({
     return value !== undefined && value !== null
   })
 
-  const showIndustryDropdown = (isIndustryFocused || Boolean(industryQuery.trim())) && 
+  const showIndustryDropdown = (isIndustryFocused || Boolean(industryFilterQuery.trim())) && 
     (industryHierarchy.length > 0 ? filteredIndustryCategories.length > 0 : filteredIndustryOptions.length > 0)
   
-  const showSubIndustryDropdown = (isSubIndustryFocused || Boolean(subIndustryQuery.trim())) && 
+  const showSubIndustryDropdown = (isSubIndustryFocused || Boolean(subIndustryFilterQuery.trim())) && 
     (industryHierarchy.length > 0 ? filteredSubIndustries.length > 0 : false)
 
   return (
@@ -282,7 +341,11 @@ export function CompanyFilters({
                     ref={industryInputRef}
                     value={industryQuery}
                     placeholder="業界を入力または選択..."
-                    onChange={(event) => setIndustryQuery(event.target.value)}
+                    onChange={(event) => {
+                      const nextValue = event.target.value
+                      setIndustryQuery(nextValue)
+                      setIndustryFilterQuery(nextValue)
+                    }}
                     onFocus={() => setIsIndustryFocused(true)}
                     onBlur={() => {
                       window.setTimeout(() => setIsIndustryFocused(false), 120)
@@ -290,6 +353,7 @@ export function CompanyFilters({
                     onKeyDown={(event) => {
                       if (event.key === "Escape") {
                         setIndustryQuery("")
+                        setIndustryFilterQuery("")
                         setIsIndustryFocused(false)
                         if (industryInputRef.current) {
                           industryInputRef.current.blur()
@@ -341,7 +405,7 @@ export function CompanyFilters({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleIndustrySelect(industryQuery)}
+                  onClick={addIndustryFromQuery}
                   disabled={!industryQuery.trim()}
                 >
                   <Plus className="mr-1 h-4 w-4" />
@@ -359,7 +423,11 @@ export function CompanyFilters({
                     ref={subIndustryInputRef}
                     value={subIndustryQuery}
                     placeholder="業種を入力または選択..."
-                    onChange={(event) => setSubIndustryQuery(event.target.value)}
+                    onChange={(event) => {
+                      const nextValue = event.target.value
+                      setSubIndustryQuery(nextValue)
+                      setSubIndustryFilterQuery(nextValue)
+                    }}
                     onFocus={() => setIsSubIndustryFocused(true)}
                     onBlur={() => {
                       window.setTimeout(() => setIsSubIndustryFocused(false), 120)
@@ -367,6 +435,7 @@ export function CompanyFilters({
                     onKeyDown={(event) => {
                       if (event.key === "Escape") {
                         setSubIndustryQuery("")
+                        setSubIndustryFilterQuery("")
                         setIsSubIndustryFocused(false)
                         if (subIndustryInputRef.current) {
                           subIndustryInputRef.current.blur()
@@ -399,7 +468,7 @@ export function CompanyFilters({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleSubIndustrySelect(subIndustryQuery)}
+                  onClick={addSubIndustryFromQuery}
                   disabled={!subIndustryQuery.trim()}
                 >
                   <Plus className="mr-1 h-4 w-4" />

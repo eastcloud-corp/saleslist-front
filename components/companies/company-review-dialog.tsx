@@ -41,7 +41,7 @@ const SOURCE_LABEL: Record<string, string> = {
 }
 
 const REJECTION_REASON_OPTIONS = [
-  { value: "", label: "指定なし" },
+  { value: "none", label: "指定なし" },
   { value: "mismatch_company", label: "同名別会社" },
   { value: "invalid_value", label: "不正値" },
   { value: "outdated", label: "古い情報" },
@@ -266,7 +266,11 @@ export function CompanyReviewDialog({
         }
         if (state.decision === "reject") {
           entry.block_reproposal = state.blockReproposal ?? false
-          if (state.rejectionReasonCode && state.rejectionReasonCode.length > 0) {
+          if (
+            state.rejectionReasonCode &&
+            state.rejectionReasonCode.length > 0 &&
+            state.rejectionReasonCode !== "none"
+          ) {
             entry.rejection_reason_code = state.rejectionReasonCode
           }
           if (state.rejectionReasonDetail && state.rejectionReasonDetail.trim().length > 0) {
@@ -516,7 +520,7 @@ export function CompanyReviewDialog({
                                 <div className="space-y-2">
                                   <Label className="text-xs font-medium text-red-700">否認理由</Label>
                                   <Select
-                                    value={state.rejectionReasonCode ?? ""}
+                                    value={state.rejectionReasonCode || "none"}
                                     onValueChange={(value) => handleRejectionReasonChange(item.id, value, item)}
                                   >
                                     <SelectTrigger>

@@ -18,6 +18,7 @@ import {
   BookOpen,
   ClipboardList,
   History,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -45,6 +46,11 @@ const navigation: NavigationItem[] = [
     name: "案件",
     href: "/projects",
     icon: FolderOpen,
+  },
+  {
+    name: "DM作成補助",
+    href: "/dm-assistant",
+    icon: MessageSquare,
   },
   {
     name: "企業管理",

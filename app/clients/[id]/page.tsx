@@ -11,7 +11,8 @@ import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
 import { ClientForm } from "@/components/clients/client-form"
 import { NGListTab } from "@/components/clients/ng-list-tab"
-import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users, Download, Copy } from "lucide-react"
+import { DmCandidatesTab } from "@/components/clients/dm-candidates-tab"
+import { ArrowLeft, Edit, BarChart3, FolderOpen, Building2, Shield, Users, Download, Copy, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -246,6 +247,10 @@ function ClientDetailContent({ id }: { id: number }) {
                 <BarChart3 className="h-4 w-4 mr-2" />
                 統計情報
               </TabsTrigger>
+              <TabsTrigger value="dm-candidates">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                DM候補
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic-info">
@@ -451,6 +456,10 @@ function ClientDetailContent({ id }: { id: number }) {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="dm-candidates">
+              <DmCandidatesTab clientId={id} clientName={client.name} />
             </TabsContent>
 
             <TabsContent value="stats">

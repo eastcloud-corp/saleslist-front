@@ -77,6 +77,9 @@ export const API_CONFIG = {
     DASHBOARD_RECENT_PROJECTS: "/dashboard/recent-projects/",
     DASHBOARD_RECENT_COMPANIES: "/dashboard/recent-companies/",
 
+    // DM Assistant
+    DM_ASSISTANT_GENERATE: "/dm-assistant/generate",
+
     // Masters
     MASTER_INDUSTRIES: "/master/industries/",
     MASTER_STATUSES: "/master/statuses/",

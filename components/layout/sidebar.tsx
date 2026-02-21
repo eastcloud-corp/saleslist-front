@@ -53,7 +53,7 @@ const navigation: NavigationItem[] = [
     icon: MessageSquare,
   },
   {
-    name: "企業管理",
+    name: "企業リスト",
     href: "/companies",
     icon: Building2,
     match: (pathname) =>

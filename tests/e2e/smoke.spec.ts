@@ -18,7 +18,7 @@ test.describe('E2E Smoke Tests', () => {
     await expect(page.getByRole('link', { name: 'ダッシュボード' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'クライアント' })).toBeVisible()
     await expect(page.getByRole('link', { name: '案件' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '企業管理' })).toBeVisible()
+    await expect(page.getByRole('link', { name: '企業リスト' })).toBeVisible()
   })
 
   test('ダッシュボードの主要ウィジェットを参照できる', async ({ page }) => {

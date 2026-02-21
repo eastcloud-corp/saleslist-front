@@ -25,7 +25,7 @@ test.describe('ダッシュボード画面統合テスト', () => {
     await page.goto('/dashboard')
     await page.getByRole('link', { name: 'クライアント' }).click()
     await expect(page).toHaveURL(/\/clients/)
-    await page.getByRole('link', { name: '企業管理' }).click()
+    await page.getByRole('link', { name: '企業リスト' }).click()
     await expect(page).toHaveURL(/\/companies/)
     await page.getByRole('link', { name: '案件' }).click()
     await expect(page).toHaveURL(/\/projects/)

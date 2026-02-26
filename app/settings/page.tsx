@@ -9,7 +9,8 @@ import { CompanySettings } from "@/components/settings/company-settings"
 import { useUsers } from "@/hooks/use-users"
 import { LoadingSpinner } from "@/components/common/loading-spinner"
 import { ErrorAlert } from "@/components/common/error-alert"
-import { Users, Shield, SettingsIcon } from "lucide-react"
+import { Users, Shield, SettingsIcon, Lock } from "lucide-react"
+import { ChangePasswordForm } from "@/components/settings/change-password-form"
 
 export default function SettingsPage() {
   const { users, loading, error, refetch } = useUsers()
@@ -33,6 +34,10 @@ export default function SettingsPage() {
           <TabsTrigger value="permissions">
             <Shield className="mr-2 h-4 w-4" />
             権限設定
+          </TabsTrigger>
+          <TabsTrigger value="password">
+            <Lock className="mr-2 h-4 w-4" />
+            パスワード
           </TabsTrigger>
           <TabsTrigger value="system" data-testid="system-tab">
             <SettingsIcon className="mr-2 h-4 w-4" />
@@ -93,6 +98,10 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="password" className="space-y-4">
+          <ChangePasswordForm />
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">

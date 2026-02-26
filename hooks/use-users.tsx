@@ -18,6 +18,10 @@ export interface UserInvitation {
   email: string
   role: "admin" | "user" | "viewer"
   message?: string
+  /** ユーザー作成時に指定。未指定時はメールの@より前を使用 */
+  name?: string
+  /** ユーザー作成時に指定。未指定時はAPIが受け付けないため必須 */
+  password?: string
 }
 
 export function useUsers() {
@@ -56,10 +60,10 @@ export function useUsers() {
       console.log("[v0] Inviting user:", invitation)
 
       const response = await apiClient.post("/auth/users/create/", {
-        name: invitation.email.split('@')[0], // emailからデフォルト名
+        name: invitation.name?.trim() || invitation.email.split('@')[0],
         email: invitation.email,
         role: invitation.role,
-        password: 'temp123' // 一時パスワード
+        password: invitation.password ?? '',
       })
       console.log("[v0] User creation response:", response)
 
@@ -124,6 +128,27 @@ export function useUsers() {
     return await updateUserStatus(userId, false)
   }
 
+  const deleteUser = async (userId: number): Promise<{ success: boolean; message: string }> => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await apiClient.delete(`/auth/users/${userId}/`)
+      if (response.ok || response.status === 204) {
+        await fetchUsers()
+        return { success: true, message: "ユーザーを削除しました" }
+      }
+      const body = await response.json().catch(() => ({}))
+      return { success: false, message: body?.error ?? "ユーザーの削除に失敗しました" }
+    } catch (err) {
+      console.error("[useUsers] Delete user error:", err)
+      const message = err instanceof Error ? err.message : "ユーザーの削除に失敗しました"
+      setError(message)
+      return { success: false, message }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchUsers()
   }, [])
@@ -138,5 +163,6 @@ export function useUsers() {
     updateUserRole,
     updateUserStatus,
     deactivateUser,
+    deleteUser,
   }
 }

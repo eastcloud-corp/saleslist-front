@@ -73,6 +73,7 @@ export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
 
     const invitation: UserInvitation & { password: string } = {
       email,
+      name: username.trim() || undefined,
       password,
       role,
       message: message || undefined,
@@ -95,6 +96,7 @@ export function UserInviteDialog({ onUserCreated }: UserInviteDialogProps) {
     setOpen(newOpen)
     if (!newOpen) {
       setEmail("")
+      setUsername("")
       setPassword("")
       setRole("user")
       setMessage("")

@@ -70,6 +70,8 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<ReviewFilters>(initialFilters)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
+  /** 一覧をAPIから取得した日時（refetch のたびに更新され、ボタンで「更新した」ことが分かる） */
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const [isGeneratingSample, setIsGeneratingSample] = useState(false)
   const [isRunningCorporateImport, setIsRunningCorporateImport] = useState(false)
   const [isRunningOpenDataIngestion, setIsRunningOpenDataIngestion] = useState(false)
@@ -111,6 +113,7 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
       }
 
       setBatches(results)
+      setFetchedAt(new Date().toISOString())
       if (results.length > 0) {
         const latest = results.reduce((acc, batch) => {
           if (!acc) return batch.updated_at
@@ -142,6 +145,7 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
     setFilters,
     refetch: fetchBatches,
     lastUpdatedAt,
+    fetchedAt,
     isBulkSubmitting,
     bulkDecide: async (payload: CompanyReviewBulkDecisionPayload) => {
       setIsBulkSubmitting(true)

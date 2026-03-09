@@ -459,7 +459,7 @@ function ClientDetailContent({ id }: { id: number }) {
             </TabsContent>
 
             <TabsContent value="dm-candidates">
-              <DmCandidatesTab clientId={id} clientName={client.name} />
+              <DmCandidatesTab client={client} />
             </TabsContent>
 
             <TabsContent value="stats">

@@ -54,6 +54,8 @@ const LABELS: Record<string, string> = {
 export default function DmAssistantPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [clientInfo, setClientInfo] = useState("")
+  const [senderInfo, setSenderInfo] = useState("")
+  const [productInfo, setProductInfo] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [generation, setGeneration] = useState<DmGeneration | null>(null)
   const [clientSelectOpen, setClientSelectOpen] = useState(false)
@@ -63,7 +65,7 @@ export default function DmAssistantPage() {
     setSelectedClient(client)
     setClientInfo(formatClientInfo(client))
     toast({
-      title: "クライアントを選択しました",
+      title: "送信先を選択しました",
       description: client.name,
     })
   }
@@ -77,8 +79,8 @@ export default function DmAssistantPage() {
     const trimmed = clientInfo.trim()
     if (!trimmed) {
       toast({
-        title: "入力してください",
-        description: "クライアント情報を入力してから生成してください。",
+        title: "送信先を入力してください",
+        description: "送信先（DMの送り先）を入力してから生成してください。",
         variant: "destructive",
       })
       return
@@ -90,6 +92,8 @@ export default function DmAssistantPage() {
     try {
       const response = await apiClient.post(API_CONFIG.ENDPOINTS.DM_ASSISTANT_GENERATE, {
         client_info: trimmed,
+        sender_info: senderInfo.trim(),
+        product_info: productInfo.trim(),
       })
 
       if (!response.ok) {
@@ -106,6 +110,16 @@ export default function DmAssistantPage() {
         results: resultsList,
         generatedAt: new Date(),
       })
+      if (selectedClient?.id && resultsList.length > 0) {
+        try {
+          await apiClient.post(
+            API_CONFIG.ENDPOINTS.CLIENT_DM_CANDIDATES(selectedClient.id),
+            { results: resultsList }
+          )
+        } catch {
+          // 保存失敗時はトーストのみ（生成結果は画面に表示済み）
+        }
+      }
       toast({
         title: "生成完了",
         description: "4つのDM文面を生成しました。",
@@ -137,41 +151,22 @@ export default function DmAssistantPage() {
         <div>
           <h1 className="text-3xl font-bold">DM作成補助</h1>
           <p className="text-muted-foreground mt-1">
-            クライアント情報を入力すると、ChatGPT（GPT）と Gemini がそれぞれ2種類のプロンプトでDM文面を生成します。
+            送信先（DMの送り先）・自社情報・商材を入力すると、自社から送信先へ送るDM文面を ChatGPT（GPT）と Gemini が生成します。
             計4つのメッセージ（GPT プロンプトA/B、Gemini プロンプトA/B）が表示されます。
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>クライアント情報</CardTitle>
+            <CardTitle>DM生成に必要な情報</CardTitle>
             <p className="text-sm text-muted-foreground">
-              企業名・担当者・業界・事業内容などをテキストで入力してください。
+              送信先（DMを受け取る相手）・自社（送信元）・商材を入力してください。送信先は必須です。
             </p>
-            {selectedClient && (
-              <div className="mt-3 flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
-                <span className="text-sm font-medium text-muted-foreground">選択中のクライアント:</span>
-                <Badge variant="secondary" className="font-normal">
-                  {selectedClient.name}
-                </Badge>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearClient}
-                  disabled={isGenerating}
-                  className="ml-auto h-7 px-2 text-muted-foreground hover:text-foreground"
-                  aria-label="クライアント選択を解除"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="client-info">クライアント情報</Label>
+                <Label htmlFor="client-info">送信先（DMの送り先）</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -180,19 +175,74 @@ export default function DmAssistantPage() {
                   disabled={isGenerating}
                 >
                   <Users className="mr-2 h-4 w-4" />
-                  {selectedClient ? "クライアントを変更" : "クライアントを選択"}
+                  {selectedClient ? "送信先を変更" : "送信先を選択"}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                DMを受け取る相手の情報。企業名・担当者・業界・課題など。
+              </p>
+              {selectedClient && (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                  <span className="text-sm font-medium text-muted-foreground">選択中の送信先:</span>
+                  <Badge variant="secondary" className="font-normal">
+                    {selectedClient.name}
+                  </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearClient}
+                    disabled={isGenerating}
+                    className="ml-auto h-7 px-2 text-muted-foreground hover:text-foreground"
+                    aria-label="送信先選択を解除"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <Textarea
                 id="client-info"
-                placeholder="例：&#10;株式会社サンプル&#10;業界：ITコンサル&#10;担当者：山田太郎 様&#10;事業内容：DX推進支援、業務効率化コンサルティング"
+                placeholder="例：&#10;企業名：株式会社〇〇&#10;業界：IT・SaaS&#10;担当者：山田太郎 様（経営企画部）&#10;課題：営業効率化、リード獲得"
                 value={clientInfo}
                 onChange={(e) => setClientInfo(e.target.value)}
-                rows={6}
+                rows={4}
                 disabled={isGenerating}
                 className="resize-y"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sender-info">自社情報（送信元）</Label>
+              <p className="text-xs text-muted-foreground">
+                DMを送る側の情報。自社の企業名・担当者名・提供サービス・強みなど。
+              </p>
+              <Textarea
+                id="sender-info"
+                placeholder="例：&#10;企業名：自社名&#10;担当者：〇〇&#10;提供サービス：営業代行、リード獲得支援&#10;強み：専属営業、月〇件の商談設定実績"
+                value={senderInfo}
+                onChange={(e) => setSenderInfo(e.target.value)}
+                rows={4}
+                disabled={isGenerating}
+                className="resize-y"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="product-info">商材・サービス</Label>
+              <p className="text-xs text-muted-foreground">
+                提案する商材やサービスの内容・価格帯・実績など。
+              </p>
+              <Textarea
+                id="product-info"
+                placeholder="例：&#10;営業代行（月額〇万円〜）&#10;商談を月に〇件設定&#10;無料相談・ヒアリングから開始"
+                value={productInfo}
+                onChange={(e) => setProductInfo(e.target.value)}
+                rows={3}
+                disabled={isGenerating}
+                className="resize-y"
+              />
+            </div>
+
             <Button onClick={handleGenerate} disabled={isGenerating}>
               {isGenerating ? (
                 <>
@@ -213,7 +263,7 @@ export default function DmAssistantPage() {
           <div className="space-y-4">
             {generation.clientName && (
               <p className="text-sm text-muted-foreground">
-                クライアント: <span className="font-medium text-foreground">{generation.clientName}</span>
+                送信先: <span className="font-medium text-foreground">{generation.clientName}</span>
               </p>
             )}
             <div className="grid gap-4 md:grid-cols-2">

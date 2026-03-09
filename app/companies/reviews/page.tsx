@@ -111,6 +111,7 @@ function CompanyReviewContent() {
     setFilters,
     refetch,
     lastUpdatedAt,
+    fetchedAt,
     bulkDecide,
     isBulkSubmitting,
     generateSample,
@@ -299,11 +300,14 @@ function CompanyReviewContent() {
             <p className="text-gray-600 mt-1">
               ルールベース／AI 提案で収集した候補を確認し、正しい情報だけを企業マスタに反映します
             </p>
-            {lastUpdatedAt && (
-              <p className="text-xs text-muted-foreground mt-1">
-                最終更新: {format(new Date(lastUpdatedAt), "yyyy/MM/dd HH:mm", { locale: ja })}
-              </p>
-            )}
+            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+              {fetchedAt && (
+                <p>一覧取得: {format(new Date(fetchedAt), "yyyy/MM/dd HH:mm", { locale: ja })}</p>
+              )}
+              {lastUpdatedAt && (
+                <p>表示データの最終更新: {format(new Date(lastUpdatedAt), "yyyy/MM/dd HH:mm", { locale: ja })}</p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>

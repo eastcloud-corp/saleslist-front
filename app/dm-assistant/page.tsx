@@ -5,12 +5,11 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { apiClient, API_CONFIG } from "@/lib/api-config"
 import { Loader2, Sparkles, MessageSquare, Users, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ClientSelectDialog } from "@/components/dm-assistant/client-select-dialog"
+import { DmWizardDialog, type DmWizardAnswers } from "@/components/dm-assistant/dm-wizard-dialog"
 import type { Client } from "@/lib/types"
 
 interface DmResult {
@@ -51,19 +50,69 @@ const LABELS: Record<string, string> = {
   "gemini-b": "Gemini プロンプトB",
 }
 
+type ParsedDmInput = {
+  recipientInfo: string
+  senderInfo: string
+  productInfo: string
+  goal: string
+  tone: string
+}
+
+function parseUnifiedInput(inputText: string, selectedClient: Client | null): ParsedDmInput {
+  const text = inputText.trim()
+  const fallbackRecipient = selectedClient ? formatClientInfo(selectedClient) : ""
+
+  // 見出し（【...】）で分割。見出しが無ければ全体を送信先側に寄せる。
+  const sections: Record<string, string> = {}
+  const re = /【([^】]+)】/g
+  let lastIndex = 0
+  let lastKey: string | null = null
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    if (lastKey != null) {
+      sections[lastKey] = (sections[lastKey] || "") + text.slice(lastIndex, m.index).trim()
+    }
+    lastKey = m[1].trim()
+    lastIndex = re.lastIndex
+  }
+  if (lastKey != null) {
+    sections[lastKey] = (sections[lastKey] || "") + text.slice(lastIndex).trim()
+  }
+
+  const norm = (k: string) => k.replace(/\s+/g, "").toLowerCase()
+  const pick = (keys: string[]) => {
+    for (const k of Object.keys(sections)) {
+      const nk = norm(k)
+      if (keys.some((t) => nk.includes(t))) return sections[k].trim()
+    }
+    return ""
+  }
+
+  const recipientFromSections = pick(["送信先", "相手", "クライアント", "宛先", "recipient"])
+  const senderInfo = pick(["自社", "送信元", "sender"])
+  const productInfo = pick(["商材", "サービス", "商品", "product"])
+  const goal = pick(["ゴール", "目的", "目標", "cta"])
+  const tone = pick(["トーン", "文体", "雰囲気", "tone"])
+
+  const recipientInfo =
+    (recipientFromSections || "").trim() ||
+    (fallbackRecipient || "").trim() ||
+    // 見出しが無い場合は全体を送信先側として扱う
+    (Object.keys(sections).length === 0 ? text : "")
+
+  return { recipientInfo, senderInfo, productInfo, goal, tone }
+}
+
 export default function DmAssistantPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [clientInfo, setClientInfo] = useState("")
-  const [senderInfo, setSenderInfo] = useState("")
-  const [productInfo, setProductInfo] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [generation, setGeneration] = useState<DmGeneration | null>(null)
   const [clientSelectOpen, setClientSelectOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const { toast } = useToast()
 
   const handleClientSelect = (client: Client) => {
     setSelectedClient(client)
-    setClientInfo(formatClientInfo(client))
     toast({
       title: "送信先を選択しました",
       description: client.name,
@@ -72,15 +121,14 @@ export default function DmAssistantPage() {
 
   const handleClearClient = () => {
     setSelectedClient(null)
-    setClientInfo("")
   }
 
-  const handleGenerate = async () => {
-    const trimmed = clientInfo.trim()
-    if (!trimmed) {
+  const handleGenerate = async (answers: DmWizardAnswers) => {
+    const parsed = parseUnifiedInput(answers.inputText, selectedClient)
+    if (!parsed.recipientInfo.trim()) {
       toast({
-        title: "送信先を入力してください",
-        description: "送信先（DMの送り先）を入力してから生成してください。",
+        title: "送信先（相手）の情報が必要です",
+        description: "クライアントを選択するか、入力内に送信先情報（例：企業名・担当者など）を含めてください。",
         variant: "destructive",
       })
       return
@@ -91,9 +139,13 @@ export default function DmAssistantPage() {
 
     try {
       const response = await apiClient.post(API_CONFIG.ENDPOINTS.DM_ASSISTANT_GENERATE, {
-        client_info: trimmed,
-        sender_info: senderInfo.trim(),
-        product_info: productInfo.trim(),
+        client_info: parsed.recipientInfo,
+        sender_info: [parsed.senderInfo, parsed.tone ? `文体・トーン: ${parsed.tone}` : ""]
+          .filter(Boolean)
+          .join("\n"),
+        product_info: [parsed.productInfo, parsed.goal ? `ゴール: ${parsed.goal}` : ""]
+          .filter(Boolean)
+          .join("\n"),
       })
 
       if (!response.ok) {
@@ -106,7 +158,7 @@ export default function DmAssistantPage() {
       setGeneration({
         clientId: selectedClient?.id ?? null,
         clientName: selectedClient?.name ?? null,
-        clientInfo: trimmed,
+        clientInfo: parsed.recipientInfo,
         results: resultsList,
         generatedAt: new Date(),
       })
@@ -134,7 +186,7 @@ export default function DmAssistantPage() {
       setGeneration({
         clientId: selectedClient?.id ?? null,
         clientName: selectedClient?.name ?? null,
-        clientInfo: trimmed,
+        clientInfo: parsed.recipientInfo,
         results: [],
         generatedAt: new Date(),
       })
@@ -158,15 +210,15 @@ export default function DmAssistantPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>DM生成に必要な情報</CardTitle>
+            <CardTitle>DM生成（対話形式）</CardTitle>
             <p className="text-sm text-muted-foreground">
-              送信先（DMを受け取る相手）・自社（送信元）・商材を入力してください。送信先は必須です。
+              まずは対話（質問→入力）で情報を整理し、最後にまとめてDM文面を生成します。送信先（相手）の情報は必須です。
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="client-info">送信先（DMの送り先）</Label>
+                <p className="text-sm font-medium">送信先（クライアント）</p>
                 <Button
                   type="button"
                   variant="outline"
@@ -175,15 +227,15 @@ export default function DmAssistantPage() {
                   disabled={isGenerating}
                 >
                   <Users className="mr-2 h-4 w-4" />
-                  {selectedClient ? "送信先を変更" : "送信先を選択"}
+                  {selectedClient ? "送信先を変更" : "送信先を選択（任意）"}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                DMを受け取る相手の情報。企業名・担当者・業界・課題など。
+                送信先は必須ではありません。選択された場合のみ、生成したDMがクライアントに保存されます。
               </p>
               {selectedClient && (
                 <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
-                  <span className="text-sm font-medium text-muted-foreground">選択中の送信先:</span>
+                  <span className="text-sm font-medium text-muted-foreground">選択中:</span>
                   <Badge variant="secondary" className="font-normal">
                     {selectedClient.name}
                   </Badge>
@@ -200,50 +252,9 @@ export default function DmAssistantPage() {
                   </Button>
                 </div>
               )}
-              <Textarea
-                id="client-info"
-                placeholder="例：&#10;企業名：株式会社〇〇&#10;業界：IT・SaaS&#10;担当者：山田太郎 様（経営企画部）&#10;課題：営業効率化、リード獲得"
-                value={clientInfo}
-                onChange={(e) => setClientInfo(e.target.value)}
-                rows={4}
-                disabled={isGenerating}
-                className="resize-y"
-              />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="sender-info">自社情報（送信元）</Label>
-              <p className="text-xs text-muted-foreground">
-                DMを送る側の情報。自社の企業名・担当者名・提供サービス・強みなど。
-              </p>
-              <Textarea
-                id="sender-info"
-                placeholder="例：&#10;企業名：自社名&#10;担当者：〇〇&#10;提供サービス：営業代行、リード獲得支援&#10;強み：専属営業、月〇件の商談設定実績"
-                value={senderInfo}
-                onChange={(e) => setSenderInfo(e.target.value)}
-                rows={4}
-                disabled={isGenerating}
-                className="resize-y"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-info">商材・サービス</Label>
-              <p className="text-xs text-muted-foreground">
-                提案する商材やサービスの内容・価格帯・実績など。
-              </p>
-              <Textarea
-                id="product-info"
-                placeholder="例：&#10;営業代行（月額〇万円〜）&#10;商談を月に〇件設定&#10;無料相談・ヒアリングから開始"
-                value={productInfo}
-                onChange={(e) => setProductInfo(e.target.value)}
-                rows={3}
-                disabled={isGenerating}
-                className="resize-y"
-              />
-            </div>
-
-            <Button onClick={handleGenerate} disabled={isGenerating}>
+            <Button onClick={() => setWizardOpen(true)} disabled={isGenerating}>
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -252,7 +263,7 @@ export default function DmAssistantPage() {
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  DM文面を生成
+                  対話を開始してDMを作成
                 </>
               )}
             </Button>
@@ -306,6 +317,14 @@ export default function DmAssistantPage() {
           open={clientSelectOpen}
           onOpenChange={setClientSelectOpen}
           onSelect={handleClientSelect}
+        />
+
+        <DmWizardDialog
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          defaultRecipientInfo={selectedClient ? formatClientInfo(selectedClient) : ""}
+          disabled={isGenerating}
+          onComplete={handleGenerate}
         />
       </div>
     </MainLayout>

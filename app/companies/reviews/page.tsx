@@ -1,7 +1,7 @@
 "use client"
 export const dynamic = "force-dynamic"
 
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react"
 import { useSearchParams } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -69,6 +69,98 @@ const STATUS_BADGE_VARIANT: Record<string, "default" | "secondary" | "destructiv
   approved: "default",
   rejected: "destructive",
   partial: "outline",
+}
+
+type ReviewQueuePaginationBarProps = {
+  isLoading: boolean
+  totalCount: number | null
+  rangeStart: number
+  rangeEnd: number
+  page: number
+  pageSize: number
+  totalPages: number
+  setPage: Dispatch<SetStateAction<number>>
+  setPageSize: (size: number) => void
+}
+
+function ReviewQueuePaginationBar({
+  isLoading,
+  totalCount,
+  rangeStart,
+  rangeEnd,
+  page,
+  pageSize,
+  totalPages,
+  setPage,
+  setPageSize,
+}: ReviewQueuePaginationBarProps) {
+  return (
+    <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <p className="text-sm text-muted-foreground">
+        {isLoading && totalCount == null ? (
+          "件数を取得しています…"
+        ) : totalCount != null ? (
+          <>
+            全 {totalCount.toLocaleString("ja-JP")} 件
+            {totalCount > 0 ? (
+              <>
+                {" "}
+                · {rangeStart.toLocaleString("ja-JP")}〜{rangeEnd.toLocaleString("ja-JP")} 件を表示
+              </>
+            ) : null}
+          </>
+        ) : (
+          "件数を取得できませんでした"
+        )}
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground whitespace-nowrap">表示件数</span>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => setPageSize(Number(v))}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="h-9 w-[100px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="200">200</SelectItem>
+              <SelectItem value="500">500</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            disabled={isLoading || page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            aria-label="前のページ"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[5.5rem] text-center text-sm tabular-nums text-foreground">
+            {page} / {totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            disabled={isLoading || page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            aria-label="次のページ"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function CompanyReviewPage() {
@@ -609,71 +701,17 @@ function CompanyReviewContent() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <p className="text-sm text-muted-foreground">
-                {isLoading && totalCount == null ? (
-                  "件数を取得しています…"
-                ) : totalCount != null ? (
-                  <>
-                    全 {totalCount.toLocaleString("ja-JP")} 件
-                    {totalCount > 0 ? (
-                      <>
-                        {" "}
-                        · {rangeStart.toLocaleString("ja-JP")}〜{rangeEnd.toLocaleString("ja-JP")} 件を表示
-                      </>
-                    ) : null}
-                  </>
-                ) : (
-                  "件数を取得できませんでした"
-                )}
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">表示件数</span>
-                  <Select
-                    value={String(pageSize)}
-                    onValueChange={(v) => setPageSize(Number(v))}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger className="h-9 w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="100">100</SelectItem>
-                      <SelectItem value="200">200</SelectItem>
-                      <SelectItem value="500">500</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    disabled={isLoading || page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    aria-label="前のページ"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="min-w-[5.5rem] text-center text-sm tabular-nums text-foreground">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    disabled={isLoading || page >= totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                    aria-label="次のページ"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <ReviewQueuePaginationBar
+              isLoading={isLoading}
+              totalCount={totalCount}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              page={page}
+              pageSize={pageSize}
+              totalPages={totalPages}
+              setPage={setPage}
+              setPageSize={setPageSize}
+            />
             <div className="rounded-md border-t">
               <Table>
                 <TableHeader>
@@ -726,6 +764,17 @@ function CompanyReviewContent() {
                 </TableBody>
               </Table>
             </div>
+            <ReviewQueuePaginationBar
+              isLoading={isLoading}
+              totalCount={totalCount}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              page={page}
+              pageSize={pageSize}
+              totalPages={totalPages}
+              setPage={setPage}
+              setPageSize={setPageSize}
+            />
           </CardContent>
         </Card>
       </div>

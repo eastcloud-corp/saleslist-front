@@ -15,7 +15,11 @@ import { downloadCSV } from "@/lib/csv-utils"
 import { API_CONFIG } from "@/lib/api-config"
 import { apiClient, ApiError } from "@/lib/api-client"
 import { useAuth } from "@/hooks/use-auth"
-import type { CompanyFilter as CompanyFiltersType, CompanyReviewBatch } from "@/lib/types"
+import type {
+  CompanyFilter as CompanyFiltersType,
+  CompanyReviewBatch,
+  PaginatedResponse,
+} from "@/lib/types"
 import { Download, Plus, Upload, Database, Building2, Loader2, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
@@ -60,28 +64,29 @@ function CompaniesPageContent() {
   const [isCorporateSummaryLoading, setIsCorporateSummaryLoading] = useState(true)
   const [corporateSummaryError, setCorporateSummaryError] = useState<string | null>(null)
   const [corporateReviewSummary, setCorporateReviewSummary] = useState<{
-    pendingItems: number
-    batchCount: number
+    /** 未着手（pending）のレビューバッチ件数（一覧の「全 N 件」と同じ API の count） */
+    pendingBatchCount: number
   } | null>(null)
 
   const fetchCorporateReviewSummary = useCallback(async () => {
     setIsCorporateSummaryLoading(true)
     setCorporateSummaryError(null)
     try {
-      const params = new URLSearchParams({ field: "corporate_number", status: "pending" })
+      const params = new URLSearchParams({
+        status: "pending",
+        page: "1",
+        page_size: "1",
+      })
       const endpoint = `${API_CONFIG.ENDPOINTS.COMPANY_REVIEW_BATCHES}?${params.toString()}`
-      type ReviewResponse = { results?: CompanyReviewBatch[] } | CompanyReviewBatch[]
-      const data = await apiClient.get<ReviewResponse>(endpoint)
-      const maybeResults = (data as { results?: CompanyReviewBatch[] })?.results
-      const batches: CompanyReviewBatch[] = Array.isArray(data)
-        ? data
-        : Array.isArray(maybeResults)
-          ? maybeResults
-          : []
-      const pendingItems = batches.reduce((sum, batch) => sum + (batch.pending_items ?? 0), 0)
+      const data = await apiClient.get<PaginatedResponse<CompanyReviewBatch> | CompanyReviewBatch[]>(endpoint)
+      let pendingBatchCount = 0
+      if (Array.isArray(data)) {
+        pendingBatchCount = data.length
+      } else if (data && typeof data === "object" && typeof data.count === "number") {
+        pendingBatchCount = data.count
+      }
       setCorporateReviewSummary({
-        pendingItems,
-        batchCount: batches.length,
+        pendingBatchCount,
       })
     } catch (err) {
       const message =
@@ -402,7 +407,7 @@ function CompaniesPageContent() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="secondary" className="flex items-center gap-2">
-              <Link href="/companies/reviews?field=corporate_number&status=pending">
+              <Link href="/companies/reviews?status=pending">
                 <Building2 className="h-4 w-4" />
                 会社情報自動取得レビュー
                 <span className="ml-1 flex items-center gap-1">
@@ -414,10 +419,10 @@ function CompaniesPageContent() {
                     </Badge>
                   ) : (
                     <Badge
-                      variant={(corporateReviewSummary?.pendingItems ?? 0) > 0 ? "destructive" : "outline"}
+                      variant={(corporateReviewSummary?.pendingBatchCount ?? 0) > 0 ? "destructive" : "outline"}
                       className="pointer-events-none"
                     >
-                      未レビュー {corporateReviewSummary?.pendingItems ?? 0}
+                      未レビュー {corporateReviewSummary?.pendingBatchCount ?? 0}
                     </Badge>
                   )}
                 </span>

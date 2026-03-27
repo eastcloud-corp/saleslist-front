@@ -29,6 +29,8 @@ import {
   RefreshCcw,
   Building2,
   CloudDownload,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 
 const STATUS_OPTIONS = [
@@ -109,6 +111,11 @@ function CompanyReviewContent() {
     error,
     filters,
     setFilters,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalCount,
     refetch,
     lastUpdatedAt,
     fetchedAt,
@@ -122,6 +129,7 @@ function CompanyReviewContent() {
     isRunningOpenDataIngestion,
   } = useCompanyReviewBatches(initialFilters)
 
+  const [companySearchDraft, setCompanySearchDraft] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
@@ -138,6 +146,35 @@ function CompanyReviewContent() {
   } = useCompanyReviewBatch(selectedBatchId)
 
   const filteredBatches = useMemo(() => batches, [batches])
+
+  const totalPages = useMemo(() => {
+    if (totalCount == null || totalCount === 0) {
+      return 1
+    }
+    return Math.max(1, Math.ceil(totalCount / pageSize))
+  }, [totalCount, pageSize])
+
+  const rangeStart = useMemo(() => {
+    if (totalCount == null || totalCount === 0) {
+      return 0
+    }
+    return (page - 1) * pageSize + 1
+  }, [totalCount, page, pageSize])
+
+  const rangeEnd = useMemo(() => {
+    if (totalCount == null || totalCount === 0) {
+      return 0
+    }
+    return Math.min(page * pageSize, totalCount)
+  }, [totalCount, page, pageSize])
+
+  const handleCompanySearch = () => {
+    const q = companySearchDraft.trim()
+    setFilters((prev) => ({
+      ...prev,
+      companyName: q || undefined,
+    }))
+  }
 
   const handleStatusChange = (value: string) => {
     setFilters((prev) => ({
@@ -476,12 +513,58 @@ function CompanyReviewContent() {
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <label className="text-sm font-medium text-gray-700" htmlFor="company-review-name-search">
+                企業名で検索
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  id="company-review-name-search"
+                  className="sm:max-w-md"
+                  placeholder="企業名（部分一致）"
+                  value={companySearchDraft}
+                  onChange={(e) => setCompanySearchDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      handleCompanySearch()
+                    }
+                  }}
+                />
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" onClick={handleCompanySearch} disabled={isLoading}>
+                    検索
+                  </Button>
+                  {filters.companyName ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setCompanySearchDraft("")
+                        setFilters((prev) => {
+                          const next = { ...prev }
+                          delete next.companyName
+                          return next
+                        })
+                      }}
+                    >
+                      企業名条件をクリア
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                レビューキュー API の企業名フィルタ（部分一致）です。一覧はページ送りで続きを表示できます。
+              </p>
+            </div>
+
             <div className="flex justify-end">
               <Button
                 variant="ghost"
                 onClick={() => {
+                  setCompanySearchDraft("")
                   setFilters({})
                 }}
               >
@@ -526,6 +609,71 @@ function CompanyReviewContent() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <p className="text-sm text-muted-foreground">
+                {isLoading && totalCount == null ? (
+                  "件数を取得しています…"
+                ) : totalCount != null ? (
+                  <>
+                    全 {totalCount.toLocaleString("ja-JP")} 件
+                    {totalCount > 0 ? (
+                      <>
+                        {" "}
+                        · {rangeStart.toLocaleString("ja-JP")}〜{rangeEnd.toLocaleString("ja-JP")} 件を表示
+                      </>
+                    ) : null}
+                  </>
+                ) : (
+                  "件数を取得できませんでした"
+                )}
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">表示件数</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v) => setPageSize(Number(v))}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="h-9 w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    disabled={isLoading || page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-label="前のページ"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="min-w-[5.5rem] text-center text-sm tabular-nums text-foreground">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    disabled={isLoading || page >= totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                    aria-label="次のページ"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
             <div className="rounded-md border-t">
               <Table>
                 <TableHeader>

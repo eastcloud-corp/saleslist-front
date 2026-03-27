@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react"
 import { API_CONFIG } from "@/lib/api-config"
 import { apiClient, ApiError } from "@/lib/api-client"
 import { createLogger } from "@/lib/logger"
@@ -62,13 +62,18 @@ export interface ReviewFilters {
   sourceType?: string
   confidenceMin?: number
   field?: string
+  /** 企業名の部分一致（API: company_name） */
+  companyName?: string
 }
 
 export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
   const [batches, setBatches] = useState<CompanyReviewBatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<ReviewFilters>(initialFilters)
+  const [filters, setFiltersState] = useState<ReviewFilters>(initialFilters)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSizeState] = useState(100)
+  const [totalCount, setTotalCount] = useState<number | null>(null)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
   /** 一覧をAPIから取得した日時（refetch のたびに更新され、ボタンで「更新した」ことが分かる） */
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
@@ -77,12 +82,24 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
   const [isRunningOpenDataIngestion, setIsRunningOpenDataIngestion] = useState(false)
   const [isBulkSubmitting, setIsBulkSubmitting] = useState(false)
 
+  const setFilters: Dispatch<SetStateAction<ReviewFilters>> = useCallback((updater) => {
+    setFiltersState(updater)
+    setPage(1)
+  }, [])
+
+  const setPageSize = useCallback((size: number) => {
+    setPageSizeState(size)
+    setPage(1)
+  }, [])
+
   const fetchBatches = useCallback(async () => {
     setIsLoading(true)
     setError(null)
 
     try {
       const params = new URLSearchParams()
+      params.append("page", String(page))
+      params.append("page_size", String(pageSize))
       if (filters.status && filters.status !== "all") {
         params.append("status", filters.status)
       }
@@ -95,11 +112,12 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
       if (filters.field && filters.field !== "all") {
         params.append("field", filters.field)
       }
+      const trimmedCompany = filters.companyName?.trim()
+      if (trimmedCompany) {
+        params.append("company_name", trimmedCompany)
+      }
 
-      const endpoint =
-        params.toString().length > 0
-          ? `${API_CONFIG.ENDPOINTS.COMPANY_REVIEW_BATCHES}?${params.toString()}`
-          : API_CONFIG.ENDPOINTS.COMPANY_REVIEW_BATCHES
+      const endpoint = `${API_CONFIG.ENDPOINTS.COMPANY_REVIEW_BATCHES}?${params.toString()}`
 
       reviewLogger.debug("fetchBatches: request", { endpoint })
       type ReviewListResponse = { results?: CompanyReviewBatch[]; count?: number } | CompanyReviewBatch[]
@@ -108,8 +126,12 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
       let results: CompanyReviewBatch[] = []
       if (Array.isArray(data)) {
         results = data
+        setTotalCount(data.length)
       } else if (Array.isArray(data?.results)) {
         results = data.results
+        setTotalCount(typeof data.count === "number" ? data.count : results.length)
+      } else {
+        setTotalCount(0)
       }
 
       setBatches(results)
@@ -131,7 +153,7 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [filters])
+  }, [filters, page, pageSize])
 
   useEffect(() => {
     fetchBatches()
@@ -143,6 +165,11 @@ export function useCompanyReviewBatches(initialFilters: ReviewFilters = {}) {
     error,
     filters,
     setFilters,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalCount,
     refetch: fetchBatches,
     lastUpdatedAt,
     fetchedAt,

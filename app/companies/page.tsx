@@ -20,7 +20,10 @@ import { Download, Plus, Upload, Database, Building2, Loader2, Copy } from "luci
 import { useToast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { AddToProjectDialog } from "@/components/companies/add-to-project-dialog"
-import { ListPaginationSummary } from "@/components/common/list-pagination-summary"
+import {
+  DEFAULT_LIST_PAGE_SIZE_OPTIONS,
+  ListPaginationSummary,
+} from "@/components/common/list-pagination-summary"
 import Link from "next/link"
 import { copyToClipboard } from "@/lib/clipboard"
 
@@ -28,6 +31,7 @@ function CompaniesPageContent() {
   const [pendingFilters, setPendingFilters] = useState<CompanyFiltersType>({})
   const [appliedFilters, setAppliedFilters] = useState<CompanyFiltersType>({})
   const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(100)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
@@ -46,7 +50,11 @@ function CompaniesPageContent() {
     ),
     [appliedFilters]
   )
-  const { companies, pagination, isLoading, error, refetch } = useCompanies(appliedFilters, currentPage, 100)
+  const { companies, pagination, isLoading, error, refetch } = useCompanies(
+    appliedFilters,
+    currentPage,
+    pageSize,
+  )
   const { toast } = useToast()
   const router = useRouter()
   const [isCorporateSummaryLoading, setIsCorporateSummaryLoading] = useState(true)
@@ -94,10 +102,12 @@ function CompaniesPageContent() {
   const isAdmin = user?.role === 'admin'
 
   const totalCount = pagination?.total ?? companies.length
-  const pageSize = pagination?.limit ?? (companies.length || 1)
-  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const endItem = totalCount === 0 ? 0 : Math.min(currentPage * pageSize, totalCount)
-  const totalPages = pagination?.total_pages ?? (pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : 1)
+  const itemsPerPage = pagination?.limit ?? (companies.length || pageSize || 1)
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1
+  const endItem = totalCount === 0 ? 0 : Math.min(currentPage * itemsPerPage, totalCount)
+  const totalPages =
+    pagination?.total_pages ??
+    (itemsPerPage > 0 ? Math.max(1, Math.ceil(totalCount / itemsPerPage)) : 1)
 
   const buildExportQueryParams = useCallback(() => {
     const params = new URLSearchParams()
@@ -177,6 +187,11 @@ function CompaniesPageContent() {
     setAppliedFilters({})
     setCurrentPage(1)
   }
+
+  const handlePageSizeChange = useCallback((size: number) => {
+    setPageSize(size)
+    setCurrentPage(1)
+  }, [])
 
   const handleSelectChange = useCallback((companyId: number, selected: boolean) => {
     setSelectedCompanyIds((prev) => {
@@ -492,6 +507,9 @@ function CompaniesPageContent() {
           totalPages={totalPages}
           onPageChange={(page) => setCurrentPage(page)}
           isLoading={isLoading}
+          pageSize={pageSize}
+          pageSizeOptions={DEFAULT_LIST_PAGE_SIZE_OPTIONS}
+          onPageSizeChange={handlePageSizeChange}
         />
 
         {/* Company Table */}
@@ -517,6 +535,9 @@ function CompaniesPageContent() {
             totalPages={totalPages}
             onPageChange={(page) => setCurrentPage(page)}
             isLoading={isLoading}
+            pageSize={pageSize}
+            pageSizeOptions={DEFAULT_LIST_PAGE_SIZE_OPTIONS}
+            onPageSizeChange={handlePageSizeChange}
           />
         )}
 
